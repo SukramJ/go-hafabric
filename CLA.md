@@ -1,8 +1,8 @@
-# go-hafabric Individual Contributor Licence Agreement
+# go-hamapping Individual Contributor Licence Agreement
 
 Version 1.0, 2026-10-15.
 
-Thank you for contributing to go-hafabric. This agreement clarifies the
+Thank you for contributing to go-hamapping. This agreement clarifies the
 rights you grant to the project's owner, SukramJ ("the Owner"), for every
 contribution you make, so the project can be licensed and relicensed as a
 whole. It does not change your rights to use your own contribution for any
@@ -13,7 +13,7 @@ comment that proposes code or text — you agree to the following for that
 contribution and every later one.
 
 1. **Definitions.** "Contribution" is any original work of authorship you
-   intentionally submit to the Owner for inclusion in go-hafabric. "You" is
+   intentionally submit to the Owner for inclusion in go-hamapping. "You" is
    the copyright owner of the Contribution, or the legal entity authorised
    by that owner.
 2. **Copyright licence.** You grant the Owner, and everyone who receives
@@ -28,9 +28,9 @@ contribution and every later one.
    non-exclusive, royalty-free, irrevocable patent licence to make, have
    made, use, offer to sell, sell, import and otherwise transfer the work,
    for those patent claims you own or control that are necessarily
-   infringed by your Contribution alone or in combination with go-hafabric.
+   infringed by your Contribution alone or in combination with go-hamapping.
    If anyone institutes patent litigation alleging that your Contribution
-   or go-hafabric infringes a patent, the patent licences granted to that
+   or go-hamapping infringes a patent, the patent licences granted to that
    party under this agreement end on the date the litigation is filed.
 4. **Your representations.** You are legally entitled to grant these
    licences. If your employer has rights to intellectual property you

@@ -1,4 +1,4 @@
-# GitHub Actions CI for go-hafabric, the form of the sibling repositories
+# GitHub Actions CI for go-hamapping, the form of the sibling repositories
 # (go-zendure2mqtt and go-fabric): lint (go vet + gofumpt + golangci-lint +
 # go.mod tidiness), security (govulncheck + go-licenses; the secrets scan
 # joins with the first code that handles a credential), test (the OS

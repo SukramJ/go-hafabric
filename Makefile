@@ -1,4 +1,4 @@
-# go-hafabric — make targets. `make help` lists them.
+# go-hamapping — make targets. `make help` lists them.
 GO ?= go
 GOFUMPT_VERSION ?= v0.12.0
 GOLANGCI_LINT_VERSION ?= v2.14.0
