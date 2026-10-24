@@ -1,7 +1,7 @@
-# go-hafabric
+# go-hamapping
 
-[![ci](https://github.com/SukramJ/go-hafabric/actions/workflows/ci.yml/badge.svg)](https://github.com/SukramJ/go-hafabric/actions/workflows/ci.yml)
-[![codeql](https://github.com/SukramJ/go-hafabric/actions/workflows/codeql.yml/badge.svg)](https://github.com/SukramJ/go-hafabric/actions/workflows/codeql.yml)
+[![ci](https://github.com/SukramJ/go-hamapping/actions/workflows/ci.yml/badge.svg)](https://github.com/SukramJ/go-hamapping/actions/workflows/ci.yml)
+[![codeql](https://github.com/SukramJ/go-hamapping/actions/workflows/codeql.yml/badge.svg)](https://github.com/SukramJ/go-hamapping/actions/workflows/codeql.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 
 The table from Home Assistant's component vocabulary (`light`, `switch`,

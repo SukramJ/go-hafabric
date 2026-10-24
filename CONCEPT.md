@@ -1,4 +1,4 @@
-# go-hafabric: concept
+# go-hamapping: concept
 
 Status: concept, not started. Written 2026-10-24 from go-fabric's concept
 v6 part C (2026-10-20) and the owner's decisions of 2026-10-24 (go-fabric
@@ -82,3 +82,12 @@ validator of go-fabric judges every generated declaration.
   decisions 0.4, 0.6, 0.9.
 - go-hamqtt and go-ha-catalog: the Home Assistant vocabulary the table
   reads.
+
+## Name
+
+`go-hamapping` names what the module is: the mapping of Home Assistant's
+vocabulary onto go-fabric's device types and clusters, and back. It sits
+with `go-hamqtt` and `go-ha-catalog` (go-ha + noun). The repository was
+created as `go-hafabric` on 2026-10-24 and renamed the same day because
+that name sat too close to `go-ha2fabric`, the bridge; GitHub redirects the
+old name.
