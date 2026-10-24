@@ -23,10 +23,10 @@ catalogue of `go-ha-catalog`), so one table serves every consumer.
   embed go-fabric in process: the table's **Go form** turns an entity
   into a typed declaration (`device.<Type>` with `<cluster>def.Declare`)
   and a command into a handler call.
-- `go-habridge` speaks to `go-fabric-server` over its protocol: the
-  table's **data form** (the same rows as JSON, generated from the Go
-  form and versioned) turns an entity into a declaration document and a
-  protocol command into a service call, without running Go.
+- `go-ha2fabric` embeds go-fabric in process too (owner decision
+  2026-10-24, evening) and maps a Home Assistant registry entity onto
+  go-hamqtt's vocabulary with a small adapter, then applies the same Go
+  form. There is no JSON form of the table: no consumer runs outside Go.
 
 ## Boundary
 
@@ -61,13 +61,13 @@ validator of go-fabric judges every generated declaration.
 2. The row format and the first rows (`light`, `switch`, `sensor`,
    `binary_sensor`, `cover`, `climate`, `lock`, `fan`), each with its
    round trip.
-3. The data form for `go-habridge` once `go-fabric-server`'s declaration
-   document is fixed (go-fabric concept v8).
+3. The rows go-ha2fabric needs first, with the registry adapter's
+   expectations written into the row format.
 
 ## Open decisions
 
-- The row format (YAML in this repository, generated Go and JSON) and
-  the guard that holds them equal.
+- The row format (YAML in this repository, generated Go) and the guard
+  that holds them equal.
 - How a daemon states what its entity does not support (a `cover`
   without position, a `light` without colour) so the declaration leaves
   the cluster or feature out.
