@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Home Assistant component to Matter cluster mapping for go-fabric bridges. Twin of `go-habridge`; both are built on
+Home Assistant component to Matter cluster mapping for go-fabric bridges. Twin of `go-ha2fabric`; both are built on
 [go-fabric](https://github.com/SukramJ/go-fabric) and share its project
 setup. **State: concept, not started.** `CONCEPT.md` is the design; the
 go-fabric roadmap names the milestone in which work starts. Nothing runs

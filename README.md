@@ -10,10 +10,10 @@ The table from Home Assistant's component vocabulary (`light`, `switch`,
 `hvac_modes` and `device_class`) to a Matter device type with its cluster
 declaration, and back from a Matter command to a Home Assistant service
 call, as a Go module on [go-fabric](https://github.com/SukramJ/go-fabric)'s
-device kit. Two consumers: [`go-habridge`](https://github.com/SukramJ/go-habridge)
+device kit. Two consumers: [`go-ha2fabric`](https://github.com/SukramJ/go-ha2fabric)
 and the `go-*2mqtt` daemons that embed go-fabric in process.
 
-Twin of [`go-habridge`](https://github.com/SukramJ/go-habridge); both are built on
+Twin of [`go-ha2fabric`](https://github.com/SukramJ/go-ha2fabric); both are built on
 [go-fabric](https://github.com/SukramJ/go-fabric) and share its project
 setup (pure Go, `CGO_ENABLED=0`, Apache-2.0 with a contributor licence
 agreement, the same guards in CI).
