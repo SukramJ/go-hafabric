@@ -113,10 +113,19 @@ rows:
           - {attribute: ExpressedState, from: state, enum: {"on": ExpressedStateCoAlarm, "off": ExpressedStateNormal}}
   - id: generic
     when: {device_class: [none]}
-    type: OnOffSensor
-    verdict: "partial: OnOffSensor serves no attribute that carries the state (its OnOff is a client cluster); a controller sees the endpoint and its reachability, not on and off"
+    # Not OnOffSensor: its OnOff is a client cluster, so a controller would
+    # never see the state (docs/by_design.md).
+    type: ContactSensor
+    verdict: mappable
     cites:
-      - matter.js packages/model/src/standard/elements/on-off-sensor.element.ts:25 @862ad75f (OnOff is a client cluster)
+      - matter.js packages/model/src/standard/elements/contact-sensor.element.ts:19 @862ad75f (BooleanState mandatory)
+      - matter.js packages/model/src/standard/resources/boolean-state.resource.ts:26-30 @862ad75f (Contact Sensor - FALSE=open or no contact, TRUE=closed or contact)
+      - matter.js packages/model/src/standard/elements/on-off-sensor.element.ts:25 @862ad75f (OnOffSensor's OnOff is a client cluster)
+    clusters:
+      - cluster: BooleanState
+        attributes:
+          # As opening: Home Assistant's on is StateValue false.
+          - {attribute: StateValue, from: state, enum: {"on": false, "off": true}}
   - id: no_device_type
     when: {device_class: [battery, battery_charging, cold, connectivity, gas, glass_break, heat, light, lock, moving, plug, power, problem, running, safety, sound, tamper, update, vibration]}
     verdict: "unmappable: no Matter device type for a binary_sensor of device_class {device_class} in H1"

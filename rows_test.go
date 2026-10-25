@@ -326,7 +326,7 @@ func TestBinarySensors(t *testing.T) {
 	wantType(t, r, "leak", &device.WaterLeakDetectorType, eligibility.StateMappable)
 	wantType(t, r, "smoke", &device.SmokeCoAlarmType, eligibility.StateMappable)
 	wantType(t, r, "co", &device.SmokeCoAlarmType, eligibility.StateMappable)
-	wantType(t, r, "plain", &device.OnOffSensorType, eligibility.StatePartial)
+	wantType(t, r, "plain", &device.ContactSensorType, eligibility.StateMappable)
 	for _, k := range []string{"door", "motion", "leak", "smoke", "co", "plain"} {
 		r.apply(k, value(true))
 	}
@@ -351,8 +351,8 @@ func TestBinarySensors(t *testing.T) {
 		st.ExpressedState != smokecoalarmdef.ExpressedStateCoAlarm {
 		t.Fatalf("co %+v", st)
 	}
-	if !r.reachable("plain") {
-		t.Fatal("the generic binary sensor is unreachable")
+	if st, _ := booleanstatedef.StateFrom(r.values("plain", booleanstatedef.ClusterID)); st.StateValue {
+		t.Fatal("generic on: StateValue true, want false (as opening)")
 	}
 }
 

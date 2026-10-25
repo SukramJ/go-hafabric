@@ -59,7 +59,7 @@ each with its predicate, clusters, verdict and citations):
 - **binary_sensor**: door, window, opening, garage door → ContactSensor;
   motion, occupancy, presence → OccupancySensor; moisture →
   WaterLeakDetector; smoke and carbon monoxide → SmokeCoAlarm; no class →
-  OnOffSensor (Partial).
+  ContactSensor ([by design](docs/by_design.md)).
 - **cover** → WindowCovering (lift, tilt, position-aware by the entity's
   feature flags; the device class sets Type and EndProductType).
 - **climate** → Thermostat (heating, cooling, auto from the hvac modes).

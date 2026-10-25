@@ -29,7 +29,7 @@ in-process controller.
   atmospheric pressure, illuminance, power, voltage, current, energy;
   battery riding on the device's primary endpoint, Partial), `binary_sensor`
   (ContactSensor, OccupancySensor, WaterLeakDetector, SmokeCoAlarm for smoke
-  and carbon monoxide, OnOffSensor Partial), `cover` (WindowCovering),
+  and carbon monoxide, ContactSensor for a sensor without device class), `cover` (WindowCovering),
   `climate` (Thermostat), `lock` (DoorLock), `fan` (Fan); `number`,
   `select`, `button`, `event` and `text` Unmappable with their reasons.
 - Guards: the generated rows are current; every row names go-fabric's

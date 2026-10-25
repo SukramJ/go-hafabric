@@ -357,12 +357,38 @@ var rows = []Row{
 	},
 	{
 		ID: "binary_sensor/generic", Platform: "binary_sensor",
-		When:     When{DeviceClass: []string{""}},
-		State:    eligibility.StatePartial,
-		Reason:   "OnOffSensor serves no attribute that carries the state (its OnOff is a client cluster); a controller sees the endpoint and its reachability, not on and off",
-		Cites:    []string{"matter.js packages/model/src/standard/elements/on-off-sensor.element.ts:25 @862ad75f (OnOff is a client cluster)", "go-ha-catalog data/mqtt.json:780-934 (binary_sensor schema; payload_on/payload_off at 898-907)", "go-ha-catalog data/device_classes.json:2-32 (binary_sensor device classes)"},
-		Type:     &device.OnOffSensorType,
-		Clusters: []Cluster{},
+		When:  When{DeviceClass: []string{""}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/contact-sensor.element.ts:19 @862ad75f (BooleanState mandatory)", "matter.js packages/model/src/standard/resources/boolean-state.resource.ts:26-30 @862ad75f (Contact Sensor - FALSE=open or no contact, TRUE=closed or contact)", "matter.js packages/model/src/standard/elements/on-off-sensor.element.ts:25 @862ad75f (OnOffSensor's OnOff is a client cluster)", "go-ha-catalog data/mqtt.json:780-934 (binary_sensor schema; payload_on/payload_off at 898-907)", "go-ha-catalog data/device_classes.json:2-32 (binary_sensor device classes)"},
+		Type:  &device.ContactSensorType,
+		Clusters: []Cluster{
+			{
+				Name: "BooleanState", ID: booleanstatedef.ClusterID,
+				Attributes: []Attr{
+					{Name: "StateValue", Value: Value{From: "state"}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d booleanstatedef.Declare
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p booleanstatedef.Patch
+					n := 0
+					switch b.text(&st, ci, 0) {
+					case "off":
+						p.StateValue = new(true)
+						n++
+					case "on":
+						p.StateValue = new(false)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, booleanstatedef.Wrap(b.server(booleanstatedef.ClusterID)).Set(p)
+				},
+			},
+		},
 	},
 	{
 		ID: "binary_sensor/no_device_type", Platform: "binary_sensor",
