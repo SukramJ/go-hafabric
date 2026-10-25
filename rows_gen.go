@@ -33,6 +33,24 @@ import (
 	"github.com/SukramJ/go-hamqtt/model"
 )
 
+// The methods the rows' commands deliver as model.Command.Method: a
+// consumer's command handler compares against these, not against literals.
+const (
+	MethodDirection       = "direction"
+	MethodMode            = "mode"
+	MethodOscillation     = "oscillation"
+	MethodPercentage      = "percentage"
+	MethodPresetMode      = "preset_mode"
+	MethodSetPosition     = "set_position"
+	MethodTemperature     = "temperature"
+	MethodTemperatureHigh = "temperature_high"
+	MethodTemperatureLow  = "temperature_low"
+	MethodTilt            = "tilt"
+)
+
+// methods are the method constants, sorted.
+var methods = []string{MethodDirection, MethodMode, MethodOscillation, MethodPercentage, MethodPresetMode, MethodSetPosition, MethodTemperature, MethodTemperatureHigh, MethodTemperatureLow, MethodTilt}
+
 // rows is the table, in the order [Map] tries it.
 var rows = []Row{
 	{

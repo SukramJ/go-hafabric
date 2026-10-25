@@ -44,7 +44,7 @@ func run(root string) error {
 	}
 	// A checkout that converted line endings (git autocrlf) writes LF again.
 	page = bytes.ReplaceAll(page, []byte("\r\n"), []byte("\n"))
-	page, err = gen.Splice(page, gen.Table(files))
+	page, err = gen.Page(page, files)
 	if err != nil {
 		return err
 	}
