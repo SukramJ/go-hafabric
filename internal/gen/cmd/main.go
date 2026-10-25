@@ -6,6 +6,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"os"
@@ -41,6 +42,8 @@ func run(root string) error {
 	if err != nil {
 		return err
 	}
+	// A checkout that converted line endings (git autocrlf) writes LF again.
+	page = bytes.ReplaceAll(page, []byte("\r\n"), []byte("\n"))
 	page, err = gen.Splice(page, gen.Table(files))
 	if err != nil {
 		return err

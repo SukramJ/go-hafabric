@@ -243,6 +243,7 @@ func Load(dir string) ([]File, error) {
 // error.
 func Parse(data []byte) (File, error) {
 	var f File
+	data = bytes.ReplaceAll(data, []byte("\r\n"), []byte("\n"))
 	dec := yaml.NewDecoder(bytes.NewReader(data))
 	dec.KnownFields(true)
 	if err := dec.Decode(&f); err != nil {

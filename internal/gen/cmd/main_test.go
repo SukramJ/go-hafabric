@@ -26,6 +26,8 @@ func TestRun(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// As a Windows checkout with autocrlf has it.
+	page = bytes.ReplaceAll(bytes.ReplaceAll(page, []byte("\r\n"), []byte("\n")), []byte("\n"), []byte("\r\n"))
 	if err := os.WriteFile(filepath.Join(root, gen.Docs), page, 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -35,7 +37,8 @@ func TestRun(t *testing.T) {
 	for _, name := range []string{gen.Output, gen.Docs} {
 		got, _ := os.ReadFile(filepath.Join(root, name))
 		want, _ := os.ReadFile(filepath.Join("..", "..", "..", name))
-		if !bytes.Equal(got, want) {
+		lf := func(b []byte) []byte { return bytes.ReplaceAll(b, []byte("\r\n"), []byte("\n")) }
+		if !bytes.Equal(lf(got), lf(want)) {
 			t.Errorf("%s differs from the committed one", name)
 		}
 	}
