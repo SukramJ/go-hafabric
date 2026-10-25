@@ -1,7 +1,8 @@
 # go-hamapping: concept
 
-Status: H1 delivered (v0.1.0, 2026-10-25): the row format, the generated
-Go form, the guards and the rows of Sequence step 2 with their round
+Status: H3 delivered (v0.2.0, 2026-10-25): `Options.StableKey`, the method
+constants and the generated key table; H1 (v0.1.0, 2026-10-25): the row
+format, the generated Go form, the guards and the rows of Sequence step 2 with their round
 trips; see [`docs/rows.md`](docs/rows.md) and
 [`docs/reports/H1.md`](docs/reports/H1.md). Written 2026-10-24 from go-fabric's concept
 v6 part C (2026-10-20) and the owner's decisions of 2026-10-24 (go-fabric

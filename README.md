@@ -18,9 +18,11 @@ Twin of [`go-ha2fabric`](https://github.com/SukramJ/go-ha2fabric); both are buil
 setup (pure Go, `CGO_ENABLED=0`, Apache-2.0 with a contributor licence
 agreement, the same guards in CI).
 
-> **Status: v0.1.0, the first release (brief H1).** The row format, its
-> generated Go form, the guards and the first rows, each with a round trip
-> through go-fabric's in-process controller. The design is in
+> **Status: v0.2.0 (brief H3).** The row format, its generated Go form,
+> the guards and the first rows, each with a round trip through go-fabric's
+> in-process controller (v0.1.0, brief H1); a stable identity a source
+> supplies, the method constants and the table of keys a source fills
+> (v0.2.0). The design is in
 > [`CONCEPT.md`](CONCEPT.md), the rows in [`docs/rows.md`](docs/rows.md).
 
 ## Why "Matter" is not in the name
@@ -91,13 +93,27 @@ plan.Apply(ctx, lamp.Key(), state)                    // each state the daemon r
 ```
 
 `verdicts` says for each entity what Matter makes of it, with a reason an
-operator can read for a Partial or Unmappable one.
+operator can read for a Partial or Unmappable one. A source whose entity
+key can change (a Home Assistant entity id the user renames) passes the
+identity that survives the rename, so the endpoint keeps its number:
+
+```go
+plan, _ := hamapping.Map(dev, entities, hamapping.Options{
+	StableKey: func(e model.Entity) string { return registryID[e.Key()] },
+})
+```
+
+A command handler compares `model.Command.Method` with the generated
+constants (`hamapping.MethodSetPosition`, …), not with literals.
 
 ## Configuration
 
 None: the table is the module's. A daemon states what its entities
 support in `model.Description.Extra` under the catalog's key names
-([`docs/rows.md`](docs/rows.md#the-format)).
+([`docs/rows.md`](docs/rows.md#the-format)); which `state.<key>` and
+`extra.<key>` names each platform's rows read, and which have a catalog
+default, is the generated table in
+[`docs/rows.md`](docs/rows.md#the-keys-a-source-fills).
 
 ## Development
 

@@ -6,6 +6,37 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-25
+
+The follow-ups of go-ha2fabric's H2 report (Q3–Q5), brief H3.
+
+### Added
+
+- `hamapping.Options` and `Map(dev, entities, opts ...Options)`:
+  `Options.StableKey func(model.Entity) string` supplies the identity of an
+  entity that survives a change of its key (a registry id). The endpoint's
+  stable key — the one go-fabric numbers the endpoint by — is the device
+  UID, `/` and this identity; the entity's `Key()` stays the address of the
+  verdict, the endpoint, `Plan.Apply` and `Plan.DeviceFor`. Nil or an empty
+  result keeps v0.1.0's stable key (`uid/Key()`). go-hamqtt's model carries
+  no entity identity besides `Key()`, so the source passes it.
+- Method constants (`MethodDirection`, `MethodMode`, `MethodOscillation`,
+  `MethodPercentage`, `MethodPresetMode`, `MethodSetPosition`,
+  `MethodTemperature`, `MethodTemperatureHigh`, `MethodTemperatureLow`,
+  `MethodTilt`), generated from the rows' `method` names by
+  `internal/gen`; a test holds them equal to the rows.
+- `docs/rows.md` §The keys a source fills: per platform, every `state`,
+  `state.<key>` and `extra.<key>` the rows read, by which rows, as
+  predicate or value, and whether the catalog states a default — generated
+  from the rows and held current by `TestGeneratedRowsAreCurrent`.
+
+### Note for consumers
+
+- A consumer that starts passing `Options.StableKey` changes the stable
+  key, and with it the endpoint number, of every entity once. go-ha2fabric
+  moves in its v0.2.0 (the registry entry id), so a controller re-learns
+  its bridged endpoints once at that upgrade.
+
 ## [0.1.0] - 2026-10-25
 
 The first release (brief H1): the row format, its generated Go form, the
