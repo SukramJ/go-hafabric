@@ -1,0 +1,227 @@
+# Home Assistant's sensor, by device class. The units of every mapped class
+# are the catalog's (data/sensor.json device_class_units); a test fails when
+# the catalog lists a unit a row does not convert, and when a device class
+# of the catalog has no row.
+platform: sensor
+cites:
+  - go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)
+  - go-ha-catalog data/device_classes.json:129-192 (sensor device classes)
+rows:
+  - id: temperature
+    when: {device_class: [temperature]}
+    type: TemperatureSensor
+    verdict: mappable
+    cites:
+      - matter.js packages/model/src/standard/elements/temperature-sensor.element.ts:18 @862ad75f (TemperatureMeasurement mandatory)
+      - matter.js packages/model/src/standard/elements/temperature.element.ts:12 @862ad75f (MeasuredValue is the temperature datatype, int16 in 0.01 degC)
+      - go-ha-catalog data/sensor.json:633-637 (temperature units K, degC, degF)
+    clusters:
+      - cluster: TemperatureMeasurement
+        start_null: [MeasuredValue, MinMeasuredValue, MaxMeasuredValue]
+        attributes:
+          - attribute: MeasuredValue
+            from: state
+            units:
+              "°C": {scale: 100}
+              "°F": {offset: -32, scale: 55.55555555555556}
+              "K": {offset: -273.15, scale: 100}
+  - id: humidity
+    when: {device_class: [humidity]}
+    type: HumiditySensor
+    verdict: mappable
+    cites:
+      - matter.js packages/model/src/standard/elements/humidity-sensor.element.ts:19 @862ad75f (RelativeHumidityMeasurement mandatory)
+      - matter.js packages/model/src/standard/resources/relative-humidity-measurement.resource.ts:20-26 @862ad75f (MeasuredValue = 100 x water content)
+      - go-ha-catalog data/sensor.json:511-513 (humidity unit %)
+    clusters:
+      - cluster: RelativeHumidityMeasurement
+        start_null: [MeasuredValue, MinMeasuredValue, MaxMeasuredValue]
+        attributes:
+          - attribute: MeasuredValue
+            from: state
+            min: 0
+            max: 10000
+            units: {"%": {scale: 100}}
+  - id: pressure
+    when: {device_class: [pressure, atmospheric_pressure]}
+    type: PressureSensor
+    verdict: mappable
+    cites:
+      - matter.js packages/model/src/standard/elements/pressure-sensor.element.ts:19 @862ad75f (PressureMeasurement mandatory)
+      - matter.js packages/model/src/standard/resources/pressure-measurement.resource.ts:24-27 @862ad75f (MeasuredValue = 10 x Pressure [kPa])
+      - go-ha-catalog data/sensor.json:362-375,579-592 (atmospheric_pressure and pressure units)
+    clusters:
+      - cluster: PressureMeasurement
+        start_null: [MeasuredValue, MinMeasuredValue, MaxMeasuredValue]
+        attributes:
+          - attribute: MeasuredValue
+            from: state
+            units:
+              "atm": {scale: 1013.25}
+              "bar": {scale: 10000}
+              "cbar": {scale: 100}
+              "hPa": {scale: 1}
+              "inHg": {scale: 33.8639}
+              "inH₂O": {scale: 2.49089}
+              "kPa": {scale: 10}
+              "mbar": {scale: 1}
+              "mmHg": {scale: 1.33322}
+              "mPa": {scale: 0.00001}
+              "Pa": {scale: 0.01}
+              "psi": {scale: 68.9476}
+  - id: illuminance
+    when: {device_class: [illuminance]}
+    type: LightSensor
+    verdict: mappable
+    cites:
+      - matter.js packages/model/src/standard/elements/light-sensor.element.ts:19 @862ad75f (IlluminanceMeasurement mandatory)
+      - matter.js packages/model/src/standard/resources/illuminance-measurement.resource.ts:19-30 @862ad75f (MeasuredValue = 10,000 x log10(illuminance) + 1, 1 to 0xFFFE; 0 too low to measure)
+      - go-ha-catalog data/sensor.json:514-516 (illuminance unit lx)
+    clusters:
+      - cluster: IlluminanceMeasurement
+        start_null: [MeasuredValue, MinMeasuredValue, MaxMeasuredValue]
+        attributes:
+          - attribute: MeasuredValue
+            from: state
+            func: log10
+            scale: 10000
+            add: 1
+            min: 0
+            max: 65534
+  - id: power
+    when: {device_class: [power]}
+    type: ElectricalSensor
+    verdict: mappable
+    cites: &electrical_cites
+      - matter.js packages/model/src/standard/elements/electrical-sensor.element.ts:18-20 @862ad75f (PowerTopology mandatory, ElectricalPowerMeasurement and ElectricalEnergyMeasurement O.a+)
+      - matter.js packages/model/src/standard/resources/electrical-power-measurement.resource.ts:80,97,158,385-389 @862ad75f (Voltage mV, ActiveCurrent mA, ActivePower mW)
+      - go-fabric docs/guides/embed-in-a-daemon.md section 3 @v0.11.0 (the ElectricalSensor declaration of the cookbook)
+      - go-ha-catalog data/sensor.json:397-401,457-473,556-563,651-657 (current, energy, power, voltage units)
+    clusters:
+      - &topology
+        cluster: PowerTopology
+        features: [NodeTopology]
+      - cluster: ElectricalPowerMeasurement
+        features: [AlternatingCurrent]
+        initial:
+          - {attribute: PowerMode, const: PowerModeAc}
+          - {attribute: NumberOfMeasurementTypes, const: 1}
+          - attribute: Accuracy
+            literal:
+              - {MeasurementType: MeasurementTypeActivePower, Measured: true, MinMeasuredValue: -4611686018427387904, MaxMeasuredValue: 4611686018427387904, AccuracyRanges: [{RangeMin: -4611686018427387904, RangeMax: 4611686018427387904, FixedMax: 1}]}
+        start_null: [ActivePower]
+        attributes:
+          - attribute: ActivePower
+            from: state
+            units: {"TW": {scale: 1.0e15}, "GW": {scale: 1.0e12}, "MW": {scale: 1.0e9}, "kW": {scale: 1.0e6}, "W": {scale: 1000}, "mW": {scale: 1}}
+  - id: voltage
+    when: {device_class: [voltage]}
+    type: ElectricalSensor
+    verdict: mappable
+    cites: *electrical_cites
+    clusters:
+      - *topology
+      - cluster: ElectricalPowerMeasurement
+        features: [AlternatingCurrent]
+        initial:
+          - {attribute: PowerMode, const: PowerModeAc}
+          - {attribute: NumberOfMeasurementTypes, const: 1}
+          - attribute: Accuracy
+            literal:
+              - {MeasurementType: MeasurementTypeVoltage, Measured: true, MinMeasuredValue: -4611686018427387904, MaxMeasuredValue: 4611686018427387904, AccuracyRanges: [{RangeMin: -4611686018427387904, RangeMax: 4611686018427387904, FixedMax: 1}]}
+        start_null: [ActivePower, Voltage]
+        attributes:
+          - attribute: Voltage
+            from: state
+            units: {"MV": {scale: 1.0e9}, "kV": {scale: 1.0e6}, "V": {scale: 1000}, "mV": {scale: 1}, "μV": {scale: 0.001}}
+  - id: current
+    when: {device_class: [current]}
+    type: ElectricalSensor
+    verdict: mappable
+    cites: *electrical_cites
+    clusters:
+      - *topology
+      - cluster: ElectricalPowerMeasurement
+        features: [AlternatingCurrent]
+        initial:
+          - {attribute: PowerMode, const: PowerModeAc}
+          - {attribute: NumberOfMeasurementTypes, const: 1}
+          - attribute: Accuracy
+            literal:
+              - {MeasurementType: MeasurementTypeActiveCurrent, Measured: true, MinMeasuredValue: -4611686018427387904, MaxMeasuredValue: 4611686018427387904, AccuracyRanges: [{RangeMin: -4611686018427387904, RangeMax: 4611686018427387904, FixedMax: 1}]}
+        start_null: [ActivePower, ActiveCurrent]
+        attributes:
+          - attribute: ActiveCurrent
+            from: state
+            units: {"A": {scale: 1000}, "mA": {scale: 1}, "μA": {scale: 0.001}}
+  - id: energy
+    when: {device_class: [energy]}
+    type: ElectricalSensor
+    verdict: mappable
+    cites: *electrical_cites
+    clusters:
+      - *topology
+      - cluster: ElectricalEnergyMeasurement
+        features: [ImportedEnergy, CumulativeEnergy]
+        initial:
+          - attribute: Accuracy
+            literal: {MeasurementType: MeasurementTypeElectricalEnergy, Measured: true, MinMeasuredValue: 0, MaxMeasuredValue: 4611686018427387904, AccuracyRanges: [{RangeMin: 0, RangeMax: 4611686018427387904, FixedMax: 1}]}
+        start_null: [CumulativeEnergyImported]
+        attributes:
+          - attribute: CumulativeEnergyImported.Energy
+            from: state
+            min: 0
+            units:
+              "cal": {scale: 1.1622222222222223}
+              "kcal": {scale: 1162.2222222222222}
+              "Mcal": {scale: 1162222.2222222222}
+              "Gcal": {scale: 1162222222.2222222}
+              "J": {scale: 0.2777777777777778}
+              "kJ": {scale: 277.77777777777777}
+              "MJ": {scale: 277777.7777777778}
+              "GJ": {scale: 277777777.7777778}
+              "mWh": {scale: 1}
+              "Wh": {scale: 1000}
+              "kWh": {scale: 1.0e6}
+              "MWh": {scale: 1.0e9}
+              "GWh": {scale: 1.0e12}
+              "TWh": {scale: 1.0e15}
+              "thm": {scale: 2.9307107017222222e7}
+  - id: battery
+    when: {device_class: [battery]}
+    type: PowerSource
+    ride: primary
+    # go-fabric v0.11.0: a powersourcedef.Declare on a bridged device fails
+    # the device-type validator (BridgedNode's PowerSourceConfiguration under
+    # BridgedPowerSourceInfo, which the kit neither mounts nor accepts), so
+    # the battery rides as the kit's measurement source; see the report's
+    # Questions.
+    ride_measurement: {class: battery, from: state, min: 0, max: 100, units: {"%": {scale: 1}}, default_unit: "%"}
+    verdict: "partial: the battery rides on the device's primary endpoint as go-fabric's battery measurement (PowerSource, BatPercentRemaining), not as a declared PowerSource, until the kit carries PowerSourceConfiguration for a bridged PowerSource"
+    cites:
+      - matter.js packages/model/src/standard/elements/power-source-device.element.ts:18 @862ad75f (PowerSource mandatory)
+      - matter.js packages/model/src/standard/elements/bridged-node.element.ts:23 @862ad75f (PowerSource under BridgedPowerSourceInfo on a bridged node)
+      - matter.js packages/model/src/standard/resources/power-source-cluster.resource.ts:120-125 @862ad75f (BatPercentRemaining in half percent, 0 to 200)
+      - go-fabric docs/guides/embed-in-a-daemon.md section 3 @v0.11.0 (powersourcedef.Declare on the primary endpoint)
+      - go-ha-catalog data/sensor.json:376-378 (battery unit %)
+    clusters:
+      - cluster: PowerSource
+        features: [Battery]
+        initial:
+          - {attribute: Order, const: 0}
+          - {attribute: BatReplacementNeeded, const: false}
+        start_null: [BatPercentRemaining]
+        attributes:
+          - attribute: BatPercentRemaining
+            from: state
+            min: 0
+            max: 200
+            units: {"%": {scale: 2}}
+            default_unit: "%"
+  - id: no_device_type
+    when:
+      device_class: [absolute_humidity, apparent_power, aqi, area, blood_glucose_concentration, carbon_dioxide, carbon_monoxide, conductivity, data_rate, data_size, date, distance, duration, energy_distance, energy_storage, enum, frequency, gas, irradiance, moisture, monetary, nitrogen_dioxide, nitrogen_monoxide, nitrous_oxide, ozone, ph, pm1, pm10, pm25, pm4, power_factor, precipitation, precipitation_intensity, radon, reactive_energy, reactive_power, signal_strength, sound_pressure, speed, sulphur_dioxide, temperature_delta, timestamp, uptime, volatile_organic_compounds, volatile_organic_compounds_parts, volume, volume_flow_rate, volume_storage, water, weight, wind_direction, wind_speed]
+    verdict: "unmappable: no Matter device type for a sensor of device_class {device_class} in H1"
+  - id: no_device_class
+    when: {device_class: [none]}
+    verdict: "unmappable: a sensor without device_class has no Matter device type"

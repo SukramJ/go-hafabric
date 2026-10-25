@@ -1,0 +1,76 @@
+# Home Assistant's fan. State is on or off; percentage, preset_mode,
+# oscillating and direction are keys of the state. A command goes to the
+# entity's command binding (on, off) or its named method (percentage,
+# preset_mode, oscillation, direction: the MQTT <name>_command_topic keys).
+platform: fan
+cites:
+  - go-ha-catalog data/mqtt.json:2516-2786 (fan schema; payload_on/off at 2670-2679, payload_oscillation_on/off at 2680-2689, percentage_command_topic at 2705, preset_modes at 2740)
+  - go-ha-catalog data/features.json:36-43 (fan feature flags)
+rows:
+  - id: fan
+    when: {}
+    type: Fan
+    verdict: mappable
+    caveats:
+      - when: {extra: {preset_modes: {present: true}}}
+        reason: "preset modes map to FanMode only where the names are low, medium, high or auto"
+    cites:
+      - matter.js packages/model/src/standard/elements/fan.element.ts:25 @862ad75f (FanControl mandatory)
+      - matter.js packages/model/src/standard/resources/fan-control.resource.ts:44,80,95 @862ad75f (FanMode, PercentSetting, PercentCurrent)
+    clusters:
+      - cluster: FanControl
+        features:
+          - {name: Rocking, when: &osc {features: {any: [OSCILLATE]}}}
+          - {name: AirflowDirection, when: &dir {features: {any: [DIRECTION]}}}
+          - {name: Auto, when: &autop {extra: {preset_modes: {any: [auto]}}}}
+        initial:
+          - {attribute: FanMode, const: FanModeOff}
+          - {attribute: FanModeSequence, const: FanModeSequenceOffLowMedHigh}
+          - {attribute: FanModeSequence, const: FanModeSequenceOffLowMedHighAuto, when: *autop}
+          - {attribute: PercentCurrent, const: 0}
+          - {attribute: RockSupport, const: RockRockLeftRight, when: *osc}
+          - {attribute: RockSetting, const: 0, when: *osc}
+          - {attribute: AirflowDirection, const: AirflowDirectionForward, when: *dir}
+        start_null: [PercentSetting]
+        attributes:
+          - {attribute: PercentCurrent, from: state.percentage, min: 0, max: 100}
+          - {attribute: PercentSetting, from: state.percentage, min: 0, max: 100}
+          - {attribute: FanMode, from: state.preset_mode, enum: {low: FanModeLow, medium: FanModeMedium, high: FanModeHigh, auto: FanModeAuto}}
+          - {attribute: PercentCurrent, from: state, enum: {"off": 0}}
+          - {attribute: FanMode, from: state, enum: {"off": FanModeOff}}
+          - {attribute: RockSetting, from: state.oscillating, enum: {"on": RockRockLeftRight, "off": 0}, when: *osc}
+          - {attribute: AirflowDirection, from: state.direction, enum: {forward: AirflowDirectionForward, reverse: AirflowDirectionReverse}, when: *dir}
+        commands:
+          - write: [PercentSetting]
+            if: {field: PercentSetting, in: ["0"]}
+            raw: {from: extra.payload_off, catalog: true}
+          - write: [PercentSetting]
+            if: {field: PercentSetting, not_in: ["0"]}
+            method: percentage
+            raw: {field: PercentSetting}
+          - change: [PercentSetting]
+            if: {field: PercentSetting, not_in: ["0"]}
+            method: percentage
+            raw: {field: PercentSetting}
+          - write: [FanMode]
+            if: {field: FanMode, in: [FanModeOff]}
+            raw: {from: extra.payload_off, catalog: true}
+          - write: [FanMode]
+            if: {field: FanMode, in: [FanModeOn]}
+            raw: {from: extra.payload_on, catalog: true}
+          - write: [FanMode]
+            if: {field: FanMode, in: [FanModeLow, FanModeMedium, FanModeHigh, FanModeAuto]}
+            when: {extra: {preset_modes: {present: true}}}
+            method: preset_mode
+            raw: {field: FanMode, enum: {FanModeLow: low, FanModeMedium: medium, FanModeHigh: high, FanModeAuto: auto}}
+          - write: [RockSetting]
+            if: {field: RockSetting, in: ["0"]}
+            method: oscillation
+            raw: {from: extra.payload_oscillation_off, catalog: true}
+          - write: [RockSetting]
+            if: {field: RockSetting, not_in: ["0"]}
+            method: oscillation
+            raw: {from: extra.payload_oscillation_on, catalog: true}
+          - write: [AirflowDirection]
+            method: direction
+            raw: {field: AirflowDirection, enum: {AirflowDirectionForward: forward, AirflowDirectionReverse: reverse}}

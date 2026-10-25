@@ -1,0 +1,28 @@
+# Home Assistant's lock.
+platform: lock
+cites:
+  - go-ha-catalog data/mqtt.json:4445-4649 (lock schema; payload_lock at 4558, payload_unlock at 4578, state_locked/unlocked/jammed at 4593-4627)
+  - go-ha-catalog data/features.json:58-60 (lock feature OPEN)
+  - go-ha-catalog gen_vocab.go:1005-1015 (LockState vocabulary)
+rows:
+  - id: door_lock
+    when: {}
+    type: DoorLock
+    verdict: mappable
+    caveats:
+      - when: {features: {any: [OPEN]}}
+        reason: "the lock's open (unlatch) is not mapped in H1: DoorLock's Unbolting feature is H2"
+      - when: {extra: {payload_open: {present: true}}}
+        reason: "the lock's open (unlatch) is not mapped in H1: DoorLock's Unbolting feature is H2"
+    cites:
+      - matter.js packages/model/src/standard/elements/door-lock-device.element.ts:30 @862ad75f (DoorLock mandatory)
+      - matter.js packages/model/src/standard/resources/door-lock-cluster.resource.ts:151 @862ad75f (LockState)
+    clusters:
+      - cluster: DoorLock
+        attributes:
+          - {attribute: LockState, from: state, enum: {locked: LockStateLocked, unlocked: LockStateUnlocked, jammed: LockStateNotFullyLocked, open: LockStateUnlatched}}
+        commands:
+          - handle: LockDoor
+            raw: {from: extra.payload_lock, catalog: true}
+          - handle: UnlockDoor
+            raw: {from: extra.payload_unlock, catalog: true}

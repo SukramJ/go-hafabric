@@ -1,0 +1,5 @@
+platform: text
+rows:
+  - id: unmapped
+    when: {}
+    verdict: "unmappable: no Matter counterpart for a text entity"

@@ -1,0 +1,177 @@
+# Home Assistant's MQTT light, JSON schema (state and command are one JSON
+# object: state, brightness, color_temp, color, color_mode). The rows are
+# tried in order; the first whose predicate holds decides.
+platform: light
+cites:
+  - go-ha-catalog data/mqtt.json:4008-4227 (light, JSON schema variant; brightness_scale default 255 at 4040, color_temp_kelvin default false at 4045, supported_color_modes at 4201)
+  - go-ha-catalog gen_vocab.go:909-922 (ColorMode vocabulary)
+rows:
+  - id: extended_color
+    when:
+      extra:
+        supported_color_modes: {any: [hs, xy]}
+    type: ExtendedColorLight
+    verdict: mappable
+    cites:
+      - matter.js packages/model/src/standard/elements/extended-color-light.element.ts:28-53 @862ad75f (OnOff LT, LevelControl OO+LT, ColorControl XY+CT mandatory, HS optional)
+      - matter.js packages/model/src/standard/resources/color-control.resource.ts:41-47,58-64,97-104,139-154 @862ad75f (CurrentHue, CurrentSaturation, CurrentX, ColorTemperatureMireds)
+      - go-fabric cluster/spec/levelcontrol/values.go:28-44 @v0.11.0 (LevelFromUnit, UnitFromLevel)
+    clusters: &light_color
+      - cluster: OnOff
+        attributes: &light_onoff_attrs
+          - {attribute: OnOff, from: state, enum: {"on": true, "off": false}}
+        commands: &light_onoff_cmds
+          - change: [OnOff]
+            json:
+              state: {field: OnOff, enum: {"true": "ON", "false": "OFF"}}
+      - cluster: LevelControl
+        attributes: &light_level_attrs
+          - {attribute: CurrentLevel, from: state.brightness, per: extra.brightness_scale, scale: 254, min: 1, max: 254}
+        commands: &light_level_cmds
+          - change: [CurrentLevel]
+            json:
+              state: {const: "ON"}
+              brightness: {field: CurrentLevel, scale: 0.003937007874015748, times: extra.brightness_scale}
+      - cluster: ColorControl
+        features:
+          - Xy
+          - ColorTemperature
+          - {name: HueSaturation, when: {extra: {supported_color_modes: {any: [hs]}}}}
+        initial: &light_ct_initial
+          - {attribute: ColorTempPhysicalMinMireds, from: extra.max_kelvin, func: reciprocal, scale: 1000000}
+          - {attribute: ColorTempPhysicalMaxMireds, from: extra.min_kelvin, func: reciprocal, scale: 1000000}
+          - {attribute: ColorTempPhysicalMinMireds, from: extra.min_mireds}
+          - {attribute: ColorTempPhysicalMaxMireds, from: extra.max_mireds}
+        attributes:
+          - {attribute: ColorTemperatureMireds, from: state.color_temp, min: 1, max: 65279, when: {extra: {color_temp_kelvin: {true: false}}}}
+          - {attribute: ColorTemperatureMireds, from: state.color_temp, func: reciprocal, scale: 1000000, min: 1, max: 65279, when: {extra: {color_temp_kelvin: {true: true}}}}
+          - {attribute: CurrentHue, from: state.color.h, scale: 0.7055555555555556, max: 254}
+          - {attribute: CurrentSaturation, from: state.color.s, scale: 2.54, max: 254}
+          - {attribute: CurrentX, from: state.color.x, scale: 65536, min: 0, max: 65279}
+          - {attribute: CurrentY, from: state.color.y, scale: 65536, min: 0, max: 65279}
+          - attribute: ColorMode
+            from: state.color_mode
+            enum: {color_temp: ColorModeColorTemperatureMireds, hs: ColorModeCurrentHueAndCurrentSaturation, xy: ColorModeCurrentXAndCurrentY, rgb: ColorModeCurrentXAndCurrentY, rgbw: ColorModeCurrentXAndCurrentY, rgbww: ColorModeCurrentXAndCurrentY}
+          - attribute: EnhancedColorMode
+            from: state.color_mode
+            enum: {color_temp: EnhancedColorModeColorTemperatureMireds, hs: EnhancedColorModeCurrentHueAndCurrentSaturation, xy: EnhancedColorModeCurrentXAndCurrentY, rgb: EnhancedColorModeCurrentXAndCurrentY, rgbw: EnhancedColorModeCurrentXAndCurrentY, rgbww: EnhancedColorModeCurrentXAndCurrentY}
+        commands:
+          - change: [ColorTemperatureMireds]
+            when: {extra: {color_temp_kelvin: {true: false}}}
+            json:
+              state: {const: "ON"}
+              color_temp: {field: ColorTemperatureMireds}
+          - change: [ColorTemperatureMireds]
+            when: {extra: {color_temp_kelvin: {true: true}}}
+            json:
+              state: {const: "ON"}
+              color_temp: {field: ColorTemperatureMireds, func: reciprocal, scale: 1000000}
+          - change: [CurrentHue, CurrentSaturation]
+            when: {extra: {supported_color_modes: {any: [hs]}}}
+            json:
+              state: {const: "ON"}
+              color.h: {field: CurrentHue, scale: 1.4173228346456692, digits: 1}
+              color.s: {field: CurrentSaturation, scale: 0.39370078740157477, digits: 1}
+          - change: [CurrentX, CurrentY]
+            when: {extra: {supported_color_modes: {any: [xy]}}}
+            json:
+              state: {const: "ON"}
+              color.x: {field: CurrentX, scale: 0.0000152587890625, digits: 4}
+              color.y: {field: CurrentY, scale: 0.0000152587890625, digits: 4}
+          - change: [CurrentX, CurrentY]
+            when: {extra: {supported_color_modes: {none: [xy]}}}
+            json: {state: {const: "ON"}}
+            derive: hs_from_xy
+  - id: rgb
+    when:
+      extra:
+        supported_color_modes: {any: [rgb, rgbw, rgbww]}
+    type: ExtendedColorLight
+    verdict: "partial: an RGB light without hs or xy: a controller's CIE x/y or hue and saturation reach it as color r, g, b at full brightness (go-fabric's XYToRGB, HSVToRGB), so colours outside the sRGB gamut are clipped and the w and ww channels are not driven"
+    cites:
+      - matter.js packages/model/src/standard/elements/extended-color-light.element.ts:28-53 @862ad75f (ColorControl XY+CT mandatory, HS optional)
+      - go-fabric cluster/spec/colorcontrol/colorconversion.go:108-150 @v0.11.0 (RGBToXY, XYToRGB, matter.js ColorConversionUtils.ts)
+    clusters:
+      - cluster: OnOff
+        attributes: *light_onoff_attrs
+        commands: *light_onoff_cmds
+      - cluster: LevelControl
+        attributes: *light_level_attrs
+        commands: *light_level_cmds
+      - cluster: ColorControl
+        features: [Xy, ColorTemperature, HueSaturation]
+        initial: *light_ct_initial
+        attributes:
+          - {attribute: CurrentHue, from: state.color.h, scale: 0.7055555555555556, max: 254}
+          - {attribute: CurrentSaturation, from: state.color.s, scale: 2.54, max: 254}
+          - {attribute: CurrentX, from: state.color.x, scale: 65536, min: 0, max: 65279}
+          - {attribute: CurrentY, from: state.color.y, scale: 65536, min: 0, max: 65279}
+          - attribute: ColorMode
+            from: state.color_mode
+            enum: {rgb: ColorModeCurrentXAndCurrentY, rgbw: ColorModeCurrentXAndCurrentY, rgbww: ColorModeCurrentXAndCurrentY}
+        commands:
+          - change: [CurrentX, CurrentY]
+            json: {state: {const: "ON"}}
+            derive: rgb_from_xy
+          - change: [CurrentHue, CurrentSaturation]
+            json: {state: {const: "ON"}}
+            derive: rgb_from_hs
+  - id: color_temperature
+    when:
+      extra:
+        supported_color_modes: {any: [color_temp]}
+    type: ColorTemperatureLight
+    verdict: mappable
+    cites:
+      - matter.js packages/model/src/standard/elements/color-temperature-light.element.ts:28-48 @862ad75f (OnOff LT, LevelControl OO+LT, ColorControl CT)
+      - matter.js packages/model/src/standard/resources/color-control.resource.ts:139-154 @862ad75f (ColorTemperatureMireds, mireds = 1,000,000 / K)
+    clusters:
+      - cluster: OnOff
+        attributes: *light_onoff_attrs
+        commands: *light_onoff_cmds
+      - cluster: LevelControl
+        attributes: *light_level_attrs
+        commands: *light_level_cmds
+      - cluster: ColorControl
+        features: [ColorTemperature]
+        initial: *light_ct_initial
+        attributes:
+          - {attribute: ColorTemperatureMireds, from: state.color_temp, min: 1, max: 65279, when: {extra: {color_temp_kelvin: {true: false}}}}
+          - {attribute: ColorTemperatureMireds, from: state.color_temp, func: reciprocal, scale: 1000000, min: 1, max: 65279, when: {extra: {color_temp_kelvin: {true: true}}}}
+        commands:
+          - change: [ColorTemperatureMireds]
+            when: {extra: {color_temp_kelvin: {true: false}}}
+            json:
+              state: {const: "ON"}
+              color_temp: {field: ColorTemperatureMireds}
+          - change: [ColorTemperatureMireds]
+            when: {extra: {color_temp_kelvin: {true: true}}}
+            json:
+              state: {const: "ON"}
+              color_temp: {field: ColorTemperatureMireds, func: reciprocal, scale: 1000000}
+  - id: dimmable
+    when:
+      extra:
+        supported_color_modes: {any: [brightness, white]}
+    type: DimmableLight
+    verdict: mappable
+    cites:
+      - matter.js packages/model/src/standard/elements/dimmable-light.element.ts:28-39 @862ad75f (OnOff LT, LevelControl LT+OO, CurrentLevel 1 to 254)
+      - go-fabric cluster/spec/levelcontrol/values.go:28-44 @v0.11.0 (LevelFromUnit, UnitFromLevel)
+    clusters:
+      - cluster: OnOff
+        attributes: *light_onoff_attrs
+        commands: *light_onoff_cmds
+      - cluster: LevelControl
+        attributes: *light_level_attrs
+        commands: *light_level_cmds
+  - id: onoff
+    when: {}
+    type: OnOffLight
+    verdict: mappable
+    cites:
+      - matter.js packages/model/src/standard/elements/on-off-light.element.ts:28-30 @862ad75f (OnOff mandatory, feature LT)
+    clusters:
+      - cluster: OnOff
+        attributes: *light_onoff_attrs
+        commands: *light_onoff_cmds

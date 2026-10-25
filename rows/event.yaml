@@ -1,0 +1,5 @@
+platform: event
+rows:
+  - id: unmapped
+    when: {}
+    verdict: "unmappable: no generic Matter counterpart for an event entity in H1 (GenericSwitch is H2)"

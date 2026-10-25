@@ -1,0 +1,5 @@
+platform: select
+rows:
+  - id: unmapped
+    when: {}
+    verdict: "unmappable: no generic Matter counterpart for a select entity in H1 (ModeSelect from its options is H2)"

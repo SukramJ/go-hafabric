@@ -1,0 +1,5 @@
+platform: button
+rows:
+  - id: unmapped
+    when: {}
+    verdict: "unmappable: no generic Matter counterpart for a button entity in H1"
