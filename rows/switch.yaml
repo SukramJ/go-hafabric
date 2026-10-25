@@ -1,0 +1,25 @@
+platform: switch
+cites:
+  - go-ha-catalog data/mqtt.json:5592-5761 (switch schema; payload_on/payload_off defaults ON/OFF at 5710-5719)
+  - go-ha-catalog data/device_classes.json:193-196 (switch device classes outlet, switch)
+rows:
+  - id: plug
+    when:
+      device_class: [none, outlet, switch]
+    type: OnOffPlugInUnit
+    verdict: mappable
+    cites:
+      - matter.js packages/model/src/standard/elements/on-off-plug-in-unit.element.ts:27-31 @862ad75f (OnOff mandatory, feature LT)
+    clusters:
+      - cluster: OnOff
+        attributes:
+          - attribute: OnOff
+            from: state
+            enum: {"on": true, "off": false}
+        commands:
+          - change: [OnOff]
+            if: {field: OnOff, in: ["true"]}
+            raw: {from: extra.payload_on, catalog: true}
+          - change: [OnOff]
+            if: {field: OnOff, in: ["false"]}
+            raw: {from: extra.payload_off, catalog: true}

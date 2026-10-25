@@ -1,0 +1,96 @@
+# Home Assistant's climate. State is the hvac mode; current_temperature,
+# temperature, target_temp_low and target_temp_high are keys of the state.
+# A command on a mode or a temperature goes to the entity's named method
+# (mode, temperature, temperature_low, temperature_high: the MQTT
+# <name>_command_topic keys of the catalog).
+platform: climate
+cites:
+  - go-ha-catalog data/mqtt.json:1200-1647 (climate schema; modes at 1385 with its default, mode_command_topic at 1370, temperature_command_topic at 1572, temperature_low/high_command_topic at 1582/1602)
+  - go-ha-catalog gen_vocab.go:837-847 (HVACMode vocabulary)
+rows:
+  - id: thermostat
+    when:
+      extra:
+        modes: {any: [heat, cool, heat_cool]}
+    type: Thermostat
+    verdict: mappable
+    caveats:
+      - when: {extra: {modes: {any: [auto]}}}
+        reason: "the hvac mode auto (the device's own schedule) has no SystemMode: it is not mapped in H1"
+      - when: {extra: {fan_modes: {present: true}}}
+        reason: "fan modes are not mapped in H1"
+      - when: {extra: {preset_modes: {present: true}}}
+        reason: "preset modes are not mapped in H1 (Thermostat Presets is H2)"
+      - when: {extra: {swing_modes: {present: true}}}
+        reason: "swing modes are not mapped in H1"
+    cites:
+      - matter.js packages/model/src/standard/elements/thermostat-device.element.ts:25 @862ad75f (Thermostat mandatory)
+      - matter.js packages/model/src/standard/resources/thermostat-cluster.resource.ts:50,163,322 @862ad75f (LocalTemperature, OccupiedHeatingSetpoint, SystemMode)
+      - matter.js packages/model/src/standard/elements/temperature.element.ts:12 @862ad75f (the temperature datatype, int16 in 0.01 degC)
+    clusters:
+      - cluster: Thermostat
+        features:
+          - {name: Heating, when: &heat {extra: {modes: {any: [heat, heat_cool]}}}}
+          - {name: Cooling, when: &cool {extra: {modes: {any: [cool, heat_cool]}}}}
+          - {name: AutoMode, when: &auto {extra: {modes: {any: [heat_cool]}}}}
+        initial:
+          - {attribute: ControlSequenceOfOperation, const: ControlSequenceOfOperationHeatingOnly, when: {extra: {modes: {any: [heat, heat_cool], none: [cool, heat_cool]}}}}
+          - {attribute: ControlSequenceOfOperation, const: ControlSequenceOfOperationCoolingOnly, when: {extra: {modes: {any: [cool, heat_cool], none: [heat, heat_cool]}}}}
+          - {attribute: ControlSequenceOfOperation, const: ControlSequenceOfOperationCoolingAndHeating, when: {extra: {modes: {any: [heat_cool]}}}}
+          - {attribute: ControlSequenceOfOperation, const: ControlSequenceOfOperationCoolingAndHeating, when: {extra: {modes: {all: [heat, cool]}}}}
+          - {attribute: AbsMinHeatSetpointLimit, from: extra.min_temp, when: *heat, default_unit: "°C", units: &centi {"°C": {scale: 100}, "°F": {offset: -32, scale: 55.55555555555556}}}
+          - {attribute: MinHeatSetpointLimit, from: extra.min_temp, when: *heat, default_unit: "°C", units: *centi}
+          - {attribute: AbsMaxHeatSetpointLimit, from: extra.max_temp, when: *heat, default_unit: "°C", units: *centi}
+          - {attribute: MaxHeatSetpointLimit, from: extra.max_temp, when: *heat, default_unit: "°C", units: *centi}
+          - {attribute: AbsMinCoolSetpointLimit, from: extra.min_temp, when: *cool, default_unit: "°C", units: *centi}
+          - {attribute: MinCoolSetpointLimit, from: extra.min_temp, when: *cool, default_unit: "°C", units: *centi}
+          - {attribute: AbsMaxCoolSetpointLimit, from: extra.max_temp, when: *cool, default_unit: "°C", units: *centi}
+          - {attribute: MaxCoolSetpointLimit, from: extra.max_temp, when: *cool, default_unit: "°C", units: *centi}
+        attributes:
+          - {attribute: LocalTemperature, from: state.current_temperature, default_unit: "°C", units: *centi}
+          - {attribute: OccupiedHeatingSetpoint, from: state.temperature, state_in: [heat], when: *heat, default_unit: "°C", units: *centi}
+          - {attribute: OccupiedHeatingSetpoint, from: state.target_temp_low, when: *heat, default_unit: "°C", units: *centi}
+          - {attribute: OccupiedCoolingSetpoint, from: state.temperature, state_in: [cool], when: *cool, default_unit: "°C", units: *centi}
+          - {attribute: OccupiedCoolingSetpoint, from: state.target_temp_high, when: *cool, default_unit: "°C", units: *centi}
+          - attribute: SystemMode
+            from: state
+            enum: {"off": SystemModeOff, heat: SystemModeHeat, cool: SystemModeCool, heat_cool: SystemModeAuto, dry: SystemModeDry, fan_only: SystemModeFanOnly}
+        commands:
+          - write: [SystemMode]
+            method: mode
+            raw: {field: SystemMode, enum: {SystemModeOff: "off", SystemModeHeat: heat, SystemModeCool: cool, SystemModeAuto: heat_cool, SystemModeDry: dry, SystemModeFanOnly: fan_only}}
+          - write: [OccupiedHeatingSetpoint]
+            if: {field: SystemMode, not_in: [SystemModeAuto]}
+            method: temperature
+            raw: &setpoint {field: OccupiedHeatingSetpoint, digits: 1, default_unit: "°C", units: &decenti {"°C": {scale: 0.01}, "°F": {scale: 0.018, add: 32}}}
+          - write: [OccupiedHeatingSetpoint]
+            if: {field: SystemMode, in: [SystemModeAuto]}
+            method: temperature_low
+            raw: *setpoint
+          - write: [OccupiedCoolingSetpoint]
+            if: {field: SystemMode, not_in: [SystemModeAuto]}
+            method: temperature
+            raw: &coolpoint {field: OccupiedCoolingSetpoint, digits: 1, default_unit: "°C", units: *decenti}
+          - write: [OccupiedCoolingSetpoint]
+            if: {field: SystemMode, in: [SystemModeAuto]}
+            method: temperature_high
+            raw: *coolpoint
+          - change: [OccupiedHeatingSetpoint]
+            if: {field: SystemMode, not_in: [SystemModeAuto, SystemModeCool]}
+            method: temperature
+            raw: *setpoint
+          - change: [OccupiedCoolingSetpoint]
+            if: {field: SystemMode, in: [SystemModeCool]}
+            method: temperature
+            raw: *coolpoint
+          - change: [OccupiedHeatingSetpoint]
+            if: {field: SystemMode, in: [SystemModeAuto]}
+            method: temperature_low
+            raw: *setpoint
+          - change: [OccupiedCoolingSetpoint]
+            if: {field: SystemMode, in: [SystemModeAuto]}
+            method: temperature_high
+            raw: *coolpoint
+  - id: no_heating_or_cooling
+    when: {}
+    verdict: "unmappable: a climate entity without the hvac modes heat, cool or heat_cool has no Thermostat feature (Heating or Cooling)"

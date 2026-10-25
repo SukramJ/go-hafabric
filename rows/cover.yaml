@@ -1,0 +1,51 @@
+# Home Assistant's cover. HA's position is 0 (closed) to 100 (open); Matter's
+# is the closed share in hundredths of a percent, 10000 fully closed.
+platform: cover
+cites:
+  - go-ha-catalog data/mqtt.json:1648-1912 (cover schema; payload_open/close/stop at 1756-1775, set_position_topic at 1816, tilt_command_topic at 1861)
+  - go-ha-catalog data/features.json:25-35 (cover feature flags)
+  - go-ha-catalog data/device_classes.json:38-49 (cover device classes)
+rows:
+  - id: window_covering
+    when: {}
+    type: WindowCovering
+    verdict: mappable
+    caveats:
+      - when: {device_class: [garage, gate, door, damper, window]}
+        reason: "WindowCovering has no type for a {device_class}: Type and EndProductType are Unknown"
+    cites:
+      - matter.js packages/model/src/standard/elements/window-covering-device.element.ts:24 @862ad75f (WindowCovering mandatory)
+      - matter.js packages/model/src/standard/resources/window-covering-cluster.resource.ts:39,98,116-118,180-199 @862ad75f (Type, EndProductType, CurrentPositionLiftPercent100ths; DownOrClose ends at 100.00%)
+    clusters:
+      - cluster: WindowCovering
+        features:
+          - Lift
+          - {name: PositionAwareLift, when: {features: {any: [SET_POSITION]}}}
+          - {name: Tilt, when: {features: {any: [OPEN_TILT, CLOSE_TILT, SET_TILT_POSITION]}}}
+          - {name: PositionAwareTilt, when: {features: {any: [SET_TILT_POSITION]}}}
+        initial:
+          - attribute: Type
+            from: device_class
+            enum: {shutter: TypeShutter, blind: TypeRollershade, shade: TypeRollershade, curtain: TypeDrapery, awning: TypeAwning, garage: TypeUnknown, gate: TypeUnknown, door: TypeUnknown, damper: TypeUnknown, window: TypeUnknown, "": TypeRollershade}
+          - attribute: EndProductType
+            from: device_class
+            enum: {shutter: EndProductTypeRollerShutter, blind: EndProductTypeRollerShade, shade: EndProductTypeRollerShade, curtain: EndProductTypeCentralCurtain, awning: EndProductTypeAwningTerracePatio, garage: EndProductTypeUnknown, gate: EndProductTypeUnknown, door: EndProductTypeUnknown, damper: EndProductTypeUnknown, window: EndProductTypeUnknown, "": EndProductTypeRollerShade}
+        attributes:
+          - {attribute: CurrentPositionLiftPercent100ths, from: state.current_position, offset: -100, scale: -100, min: 0, max: 10000, when: {features: {any: [SET_POSITION]}}}
+          - {attribute: TargetPositionLiftPercent100ths, from: state.current_position, offset: -100, scale: -100, min: 0, max: 10000, when: {features: {any: [SET_POSITION]}}}
+          - {attribute: CurrentPositionTiltPercent100ths, from: state.current_tilt_position, offset: -100, scale: -100, min: 0, max: 10000, when: {features: {any: [SET_TILT_POSITION]}}}
+          - {attribute: TargetPositionTiltPercent100ths, from: state.current_tilt_position, offset: -100, scale: -100, min: 0, max: 10000, when: {features: {any: [SET_TILT_POSITION]}}}
+        commands:
+          - handle: UpOrOpen
+            raw: {from: extra.payload_open, catalog: true}
+          - handle: DownOrClose
+            raw: {from: extra.payload_close, catalog: true}
+          - handle: StopMotion
+            raw: {from: extra.payload_stop, catalog: true}
+          - handle: GoToLiftPercentage
+            method: set_position
+            raw: {field: LiftPercent100thsValue, scale: -0.01, add: 100}
+          - handle: GoToTiltPercentage
+            when: {features: {any: [OPEN_TILT, CLOSE_TILT, SET_TILT_POSITION]}}
+            method: tilt
+            raw: {field: TiltPercent100thsValue, scale: -0.01, add: 100}

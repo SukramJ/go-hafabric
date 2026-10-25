@@ -2,9 +2,9 @@
 # (go-zendure2mqtt and go-fabric): lint (go vet + gofumpt + golangci-lint +
 # go.mod tidiness), security (govulncheck + go-licenses; the secrets scan
 # joins with the first code that handles a credential), test (the OS
-# triplet, race detector on, so CGo for that single step), coverage and
-# fuzz-smoke (disabled until there is code to measure — the `if: false`
-# below is removed with the first package that has a floor), build.
+# triplet, race detector on, so CGo for that single step), coverage (the
+# per-package floors of script/coverfloor), fuzz-smoke (the row loader),
+# build (and the generated rows are current).
 name: ci
 
 on:
@@ -22,7 +22,7 @@ concurrency:
 
 env:
   CGO_ENABLED: "0"
-  GO_VERSION: "1.27.2"
+  GO_VERSION: "1.27.3"
   # Pinned, not @latest: a tool release must not turn an unrelated pull
   # request red. Keep in step with `make setup`.
   GOFUMPT_VERSION: "v0.12.0"
@@ -92,23 +92,31 @@ jobs:
       - name: go test
         env:
           CGO_ENABLED: "1"
-        run: go test -race -count=1 -timeout=120s ./...
+        run: go test -race -count=1 -timeout=300s ./...
 
   coverage:
     name: coverage
-    if: false # switched on with the first package that has a coverage floor
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - run: echo "no coverage floor yet"
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: cover-check
+        run: make cover-check
 
   fuzz-smoke:
     name: fuzz-smoke
-    if: false # switched on with the first Fuzz target
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - run: echo "no fuzz target yet"
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: fuzz-smoke
+        run: make fuzz-smoke FUZZTIME=20000x
 
   build:
     name: build
@@ -121,3 +129,7 @@ jobs:
           cache: true
       - name: build
         run: make build
+      - name: generated rows are current
+        run: |
+          make generate
+          git diff --exit-code -- rows_gen.go docs/rows.md

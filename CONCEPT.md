@@ -1,6 +1,9 @@
 # go-hamapping: concept
 
-Status: concept, not started. Written 2026-10-24 from go-fabric's concept
+Status: H1 delivered (v0.1.0, 2026-10-25): the row format, the generated
+Go form, the guards and the rows of Sequence step 2 with their round
+trips; see [`docs/rows.md`](docs/rows.md) and
+[`docs/reports/H1.md`](docs/reports/H1.md). Written 2026-10-24 from go-fabric's concept
 v6 part C (2026-10-20) and the owner's decisions of 2026-10-24 (go-fabric
 concept v8: `go-fabric-server`). Changes to this document follow those
 decisions; the go-fabric roadmap names the milestone in which work starts.
@@ -66,11 +69,18 @@ validator of go-fabric judges every generated declaration.
 
 ## Open decisions
 
-- The row format (YAML in this repository, generated Go) and the guard
-  that holds them equal.
-- How a daemon states what its entity does not support (a `cover`
-  without position, a `light` without colour) so the declaration leaves
-  the cluster or feature out.
+- Decided in H1: the row format is YAML in `rows/`, the Go form is
+  generated (`internal/gen`), and `TestGeneratedRowsAreCurrent` holds the
+  two equal.
+- Decided in H1: a daemon states what its entity supports in
+  `Description.Extra` under the catalog's key names
+  (`supported_color_modes`, `supported_features` as the catalog's flag bits
+  or names, `modes`, `preset_modes`); a row's predicate and its feature
+  conditions read them, so a cover without position declares no
+  PositionAwareLift and a light without colour is a DimmableLight.
+- Open: the import boundary. H1 imports `device`, `contract`, `schema`,
+  `eligibility` and the `<cluster>def` packages, not `node` (brief H1 hard
+  rule 1); a daemon adds the built devices to its own node.
 
 ## References
 
