@@ -111,3 +111,17 @@ func TestTableAndSplice(t *testing.T) {
 		t.Fatal("spliced without markers")
 	}
 }
+
+func TestMethodConst(t *testing.T) {
+	for in, want := range map[string]string{"tilt": "MethodTilt", "preset_mode": "MethodPresetMode", "temperature_high": "MethodTemperatureHigh", "a__b": "MethodAB"} {
+		if got := MethodConst(in); got != want {
+			t.Errorf("MethodConst(%q) = %q; want %q", in, got, want)
+		}
+	}
+	if methodsSource(nil) != "" {
+		t.Error("no rows: want no constant block")
+	}
+	if _, err := SpliceBetween([]byte("no markers"), KeysBegin, KeysEnd, ""); err == nil {
+		t.Error("a page without the key markers spliced")
+	}
+}

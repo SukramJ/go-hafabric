@@ -12,8 +12,8 @@ import (
 	"github.com/SukramJ/go-hamapping/internal/rowfile"
 )
 
-// TestGeneratedRowsAreCurrent fails when rows_gen.go or the row table of
-// docs/rows.md differs from what internal/gen writes from rows/*.yaml —
+// TestGeneratedRowsAreCurrent fails when rows_gen.go (the rows and the
+// method constants) or the row and key tables of docs/rows.md differ from what internal/gen writes from rows/*.yaml —
 // a row changed without `make generate`, a hand edit of the Go form, or a
 // go-fabric bump that moves a generated name.
 func TestGeneratedRowsAreCurrent(t *testing.T) {
@@ -37,11 +37,11 @@ func TestGeneratedRowsAreCurrent(t *testing.T) {
 		t.Fatal(err)
 	}
 	page = bytes.ReplaceAll(page, []byte("\r\n"), []byte("\n"))
-	spliced, err := gen.Splice(page, gen.Table(files))
+	spliced, err := gen.Page(page, files)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !bytes.Equal(page, spliced) {
-		t.Errorf("%s: the row table is stale: run make generate and commit the output", gen.Docs)
+		t.Errorf("%s: the row table or the key table is stale: run make generate and commit the output", gen.Docs)
 	}
 }

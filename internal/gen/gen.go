@@ -120,12 +120,28 @@ func describeSet(s *rowfile.Set) string {
 
 // Splice returns page with its row table replaced by table.
 func Splice(page []byte, table string) ([]byte, error) {
+	return SpliceBetween(page, TableBegin, TableEnd, table)
+}
+
+// SpliceBetween returns page with the text between begin and end
+// replaced by table.
+func SpliceBetween(page []byte, begin, end, table string) ([]byte, error) {
 	s := string(page)
-	i, j := strings.Index(s, TableBegin), strings.Index(s, TableEnd)
+	i, j := strings.Index(s, begin), strings.Index(s, end)
 	if i < 0 || j < i {
-		return nil, fmt.Errorf("gen: %s has no %q ... %q", Docs, TableBegin, TableEnd)
+		return nil, fmt.Errorf("gen: %s has no %q ... %q", Docs, begin, end)
 	}
-	return []byte(s[:i+len(TableBegin)] + "\n\n" + table + "\n" + s[j:]), nil
+	return []byte(s[:i+len(begin)] + "\n\n" + table + "\n" + s[j:]), nil
+}
+
+// Page returns the page with both generated tables (the rows and the
+// keys a source fills) replaced from files.
+func Page(page []byte, files []rowfile.File) ([]byte, error) {
+	page, err := Splice(page, Table(files))
+	if err != nil {
+		return nil, err
+	}
+	return SpliceBetween(page, KeysBegin, KeysEnd, KeysTable(files))
 }
 
 // Generate returns rows_gen.go for the row files of dir.
@@ -177,7 +193,9 @@ func GenerateFiles(files []rowfile.File) ([]byte, error) {
 		}
 		fmt.Fprintf(&out, "\t%q\n", p)
 	}
-	out.WriteString(")\n\n// rows is the table, in the order [Map] tries it.\n")
+	out.WriteString(")\n\n")
+	out.WriteString(methodsSource(files))
+	out.WriteString("// rows is the table, in the order [Map] tries it.\n")
 	out.Write(body.Bytes())
 	src, err := format.Source(out.Bytes())
 	if err != nil {
