@@ -30,6 +30,10 @@ The follow-ups of go-ha2fabric's H2 report (Q3–Q5), brief H3.
   predicate or value, and whether the catalog states a default — generated
   from the rows and held current by `TestGeneratedRowsAreCurrent`.
 
+### Changed
+
+- go-fabric `v0.12.0` (was `v0.11.0`); the generated rows are unchanged.
+
 ### Note for consumers
 
 - A consumer that starts passing `Options.StableKey` changes the stable
