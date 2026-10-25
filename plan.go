@@ -80,6 +80,7 @@ type Plan struct {
 	Device    *model.Device
 	Endpoints []Endpoint
 
+	opts     Options
 	bindings map[string]*binding
 	devices  map[string]*device.Device
 
@@ -89,13 +90,35 @@ type Plan struct {
 	built bool
 }
 
+// Options adjust [Map]. The zero value is the default.
+type Options struct {
+	// StableKey returns the identity of an entity that survives a change
+	// of its [model.Entity.Key]: a registry id the source keeps across a
+	// rename. An endpoint's stable key (device.Options.StableKey, which
+	// go-fabric turns into the endpoint number) is the device's UID, "/"
+	// and this identity. Nil, or an empty result, is the entity's Key.
+	// Key stays the address of everything else: the verdict, the
+	// endpoint's Key and ChannelAddress, [Plan.Apply] and
+	// [Plan.DeviceFor].
+	//
+	// go-hamqtt's model has no entity identity besides Key (model.Entity,
+	// model/entity.go:27-40 at v0.38.0), so the source supplies it here.
+	StableKey func(model.Entity) string
+}
+
 // Map plans dev's entities: every entity gets a verdict, every mapped one
 // an endpoint — but a row that rides ([RideOnPrimary]) puts its clusters
 // on the device's primary endpoint when there is one. The entities are
 // taken in order; the primary endpoint is the first mapped entity whose
-// row does not ride.
-func Map(dev *model.Device, entities []model.Entity) (*Plan, []Verdict) {
+// row does not ride. opts is at most one [Options]; a later one's
+// non-nil fields override an earlier one's.
+func Map(dev *model.Device, entities []model.Entity, opts ...Options) (*Plan, []Verdict) {
 	p := &Plan{Device: dev, bindings: map[string]*binding{}, devices: map[string]*device.Device{}}
+	for _, o := range opts {
+		if o.StableKey != nil {
+			p.opts.StableKey = o.StableKey
+		}
+	}
 	verdicts := make([]Verdict, 0, len(entities))
 	type pending struct {
 		b *binding
@@ -241,8 +264,13 @@ func (p *Plan) options(e model.Entity) device.Options {
 	}
 	key := e.Key()
 	stable := key
+	if p.opts.StableKey != nil {
+		if id := p.opts.StableKey(e); id != "" {
+			stable = id
+		}
+	}
 	if uid != "" {
-		stable = uid + "/" + key
+		stable = uid + "/" + stable
 	}
 	name := e.Desc().Name.Default
 	switch {
