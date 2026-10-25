@@ -43,9 +43,27 @@ tidy-check: ## verify go.mod/go.sum are tidy and the module checksums verify
 vuln: ## govulncheck ./...
 	govulncheck ./...
 
-licenses: ## fail on a forbidden or restricted dependency licence (go-licenses)
-	go-licenses check ./... --disallowed_types=forbidden,restricted
+# GOROOT explicit: go-licenses tells the standard library by its GOROOT,
+# and a toolchain installed elsewhere than go-licenses was built for leaves
+# every std package "without module info". modernc.org/mathutil's LICENSE
+# (BSD-3-Clause, in go-fabric's graph) is not classified by its wording and
+# is logged, without failing the check.
+licenses: ## fail on a forbidden, restricted or reciprocal dependency licence (go-licenses)
+	GOROOT=$$($(GO) env GOROOT) go-licenses check ./... --disallowed_types=forbidden,restricted,reciprocal
+
+generate: ## regenerate rows_gen.go and the row table of docs/rows.md from rows/*.yaml
+	$(GO) run ./internal/gen/cmd
+
+cover: ## coverage profile of every package, as the floors count it
+	CGO_ENABLED=0 $(GO) test -count=1 -timeout 300s -coverpkg=./... -coverprofile=coverage.out ./...
+
+cover-check: cover ## fail when a package is below its floor (script/coverfloor/floors.txt)
+	$(GO) run ./script/coverfloor coverage.out
+
+FUZZTIME ?= 10s
+fuzz-smoke: ## the fuzz target of the row loader, $(FUZZTIME)
+	$(GO) test -run '^$$' -fuzz '^FuzzParse$$' -fuzztime $(FUZZTIME) ./internal/rowfile/
 
 ci: build vet test lint ## everything the pipeline runs
 
-.PHONY: help setup build vet test race fmt fmt-check lint tidy-check vuln licenses ci
+.PHONY: help setup build vet test race fmt fmt-check lint tidy-check vuln licenses generate cover cover-check fuzz-smoke ci

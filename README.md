@@ -18,11 +18,10 @@ Twin of [`go-ha2fabric`](https://github.com/SukramJ/go-ha2fabric); both are buil
 setup (pure Go, `CGO_ENABLED=0`, Apache-2.0 with a contributor licence
 agreement, the same guards in CI).
 
-> **Status: concept, not started.** The design is in [`CONCEPT.md`](CONCEPT.md).
-> Work begins after go-fabric closes its milestone 4 and writes the concept
-> of `go-fabric-server`; the go-fabric
-> [roadmap](https://github.com/SukramJ/go-fabric/blob/main/docs/roadmap.md)
-> names the milestone. Nothing in this repository runs yet.
+> **Status: v0.1.0, the first release (brief H1).** The row format, its
+> generated Go form, the guards and the first rows, each with a round trip
+> through go-fabric's in-process controller. The design is in
+> [`CONCEPT.md`](CONCEPT.md), the rows in [`docs/rows.md`](docs/rows.md).
 
 ## Why "Matter" is not in the name
 
@@ -44,15 +43,61 @@ See go-fabric's README, section "Not certified".
 
 ## Features
 
-Planned; see [`CONCEPT.md`](CONCEPT.md). Nothing is implemented.
+One row per Home Assistant capability ([`docs/rows.md`](docs/rows.md) lists
+each with its predicate, clusters, verdict and citations):
+
+- **light**: `onoff` → OnOffLight, `brightness`/`white` → DimmableLight,
+  `color_temp` → ColorTemperatureLight (mireds or Kelvin), `hs`/`xy` →
+  ExtendedColorLight; an RGB-only light → ExtendedColorLight, Partial.
+  On/Off/Toggle, MoveToLevel, MoveToColorTemperature, MoveToHueAndSaturation
+  and MoveToColor become the light's JSON command.
+- **switch** → OnOffPlugInUnit.
+- **sensor**: temperature, humidity, pressure, illuminance, power, voltage,
+  current and energy, each in every unit the catalog allows; a battery rides
+  on the device's primary endpoint (PowerSource); every other device class
+  is Unmappable with its reason.
+- **binary_sensor**: door, window, opening, garage door → ContactSensor;
+  motion, occupancy, presence → OccupancySensor; moisture →
+  WaterLeakDetector; smoke and carbon monoxide → SmokeCoAlarm; no class →
+  OnOffSensor (Partial).
+- **cover** → WindowCovering (lift, tilt, position-aware by the entity's
+  feature flags; the device class sets Type and EndProductType).
+- **climate** → Thermostat (heating, cooling, auto from the hvac modes).
+- **lock** → DoorLock. **fan** → Fan (percentage, presets, oscillation,
+  direction).
+- **number, select, button, event, text**: Unmappable in v0.1.0, with the
+  reason.
 
 ## Quickstart
 
-There is nothing to run yet.
+A daemon that holds go-hamqtt entities maps them, builds the devices and
+adds them to its go-fabric node; the node, its configuration and its
+lifecycle are go-fabric's
+([embed in a daemon](https://github.com/SukramJ/go-fabric/blob/main/docs/guides/embed-in-a-daemon.md)):
+
+```go
+plan, verdicts := hamapping.Map(dev, []model.Entity{lamp}) // lamp: a go-hamqtt light entity
+devices, err := plan.Build(ctx)
+if err != nil {
+	return err
+}
+for _, d := range devices {
+	if err := n.Aggregator().Add(ctx, d); err != nil { // n: the daemon's *node.Node
+		return err
+	}
+}
+plan.OnChange(func(c model.Command) { commands <- c }) // to the daemon's model.Commander
+plan.Apply(ctx, lamp.Key(), state)                    // each state the daemon reads
+```
+
+`verdicts` says for each entity what Matter makes of it, with a reason an
+operator can read for a Partial or Unmappable one.
 
 ## Configuration
 
-Defined with the first release.
+None: the table is the module's. A daemon states what its entities
+support in `model.Description.Extra` under the catalog's key names
+([`docs/rows.md`](docs/rows.md#the-format)).
 
 ## Development
 
@@ -61,12 +106,13 @@ make build     # go build ./...
 make test      # go test -count=1 ./...
 make race      # go test -race (CGO_ENABLED=1 for this run only)
 make lint      # gofumpt + golangci-lint + go mod tidy -diff
+make generate  # rows/*.yaml -> rows_gen.go and the table of docs/rows.md
+make cover-check fuzz-smoke   # coverage floors, the row loader's fuzz target
 make ci        # build vet test lint
 ```
 
 The guards, the tool versions and the workflow files follow the sibling
-repositories; what a concept repository cannot run yet is disabled in the
-workflow with a comment that says when it is switched on.
+repositories.
 
 ## Acknowledgements
 

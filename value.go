@@ -192,8 +192,9 @@ func toFloat(v any) (float64, bool) {
 			return 1, true
 		}
 		return 0, true
+	default:
+		return 0, false
 	}
-	return 0, false
 }
 
 // toInt reads an enum constant or a bool as its integer.
@@ -313,27 +314,20 @@ type integer interface {
 func conv[T integer](v float64) T {
 	var zero T
 	bits := unsafe.Sizeof(zero) * 8
-	signed := ^zero < 0
-	var lo, hi float64
-	if signed {
-		lo, hi = -math.Ldexp(1, int(bits)-1), math.Ldexp(1, int(bits)-1)-1
-	} else {
-		lo, hi = 0, math.Ldexp(1, int(bits))-1
+	hi := ^zero
+	lo := zero
+	if ^zero < 0 {
+		hi = T(1)<<(bits-1) - 1
+		lo = -hi - 1
 	}
 	r := math.Round(v)
 	switch {
-	case r <= lo:
-		if signed {
-			return T(int64(lo))
-		}
-		return 0
-	case r >= hi:
-		if signed {
-			return T(int64(hi))
-		}
-		return ^zero
+	case r <= float64(lo):
+		return lo
+	case r >= float64(hi):
+		return hi
 	}
-	if signed {
+	if lo < 0 {
 		return T(int64(r))
 	}
 	return T(uint64(r))

@@ -580,7 +580,7 @@ var rows = []Row{
 					return p, thermostatdef.Wrap(b.server(thermostatdef.ClusterID)).Set(p)
 				},
 				watch: func(b *binding, ci int) func() {
-					return b.target.OnChangedAsync(thermostatdef.ClusterID, func(c contract.Change) {
+					return b.target.OnChanged(thermostatdef.ClusterID, func(c contract.Change) {
 						st := thermostatdef.Wrap(b.server(thermostatdef.ClusterID)).Get()
 						f := func(name string) (any, bool) {
 							switch name {
@@ -982,7 +982,7 @@ var rows = []Row{
 					return p, fancontroldef.Wrap(b.server(fancontroldef.ClusterID)).Set(p)
 				},
 				watch: func(b *binding, ci int) func() {
-					return b.target.OnChangedAsync(fancontroldef.ClusterID, func(c contract.Change) {
+					return b.target.OnChanged(fancontroldef.ClusterID, func(c contract.Change) {
 						st := fancontroldef.Wrap(b.server(fancontroldef.ClusterID)).Get()
 						f := func(name string) (any, bool) {
 							switch name {
@@ -1035,7 +1035,7 @@ var rows = []Row{
 					return p, onoffdef.Wrap(b.server(onoffdef.ClusterID)).Set(p)
 				},
 				watch: func(b *binding, ci int) func() {
-					return b.target.OnChangedAsync(onoffdef.ClusterID, func(c contract.Change) {
+					return b.target.OnChanged(onoffdef.ClusterID, func(c contract.Change) {
 						st := onoffdef.Wrap(b.server(onoffdef.ClusterID)).Get()
 						f := func(name string) (any, bool) {
 							switch name {
@@ -1078,7 +1078,7 @@ var rows = []Row{
 					return p, levelcontroldef.Wrap(b.server(levelcontroldef.ClusterID)).Set(p)
 				},
 				watch: func(b *binding, ci int) func() {
-					return b.target.OnChangedAsync(levelcontroldef.ClusterID, func(c contract.Change) {
+					return b.target.OnChanged(levelcontroldef.ClusterID, func(c contract.Change) {
 						st := levelcontroldef.Wrap(b.server(levelcontroldef.ClusterID)).Get()
 						f := func(name string) (any, bool) {
 							switch name {
@@ -1217,7 +1217,7 @@ var rows = []Row{
 					return p, colorcontroldef.Wrap(b.server(colorcontroldef.ClusterID)).Set(p)
 				},
 				watch: func(b *binding, ci int) func() {
-					return b.target.OnChangedAsync(colorcontroldef.ClusterID, func(c contract.Change) {
+					return b.target.OnChanged(colorcontroldef.ClusterID, func(c contract.Change) {
 						st := colorcontroldef.Wrap(b.server(colorcontroldef.ClusterID)).Get()
 						f := func(name string) (any, bool) {
 							switch name {
@@ -1234,19 +1234,19 @@ var rows = []Row{
 							}
 							return nil, false
 						}
-						if changed(c, colorcontroldef.AttrColorTemperatureMireds) && true {
+						if changed(c, colorcontroldef.AttrColorTemperatureMireds) && slices.Contains([]colorcontroldef.ColorModeEnum{colorcontroldef.ColorModeColorTemperatureMireds}, st.ColorMode) && !slices.Contains(c.Attributes, colorcontroldef.AttrColorMode) {
 							b.emit(ci, 0, f)
 						}
-						if changed(c, colorcontroldef.AttrColorTemperatureMireds) && true {
+						if changed(c, colorcontroldef.AttrColorTemperatureMireds) && slices.Contains([]colorcontroldef.ColorModeEnum{colorcontroldef.ColorModeColorTemperatureMireds}, st.ColorMode) && !slices.Contains(c.Attributes, colorcontroldef.AttrColorMode) {
 							b.emit(ci, 1, f)
 						}
-						if changed(c, colorcontroldef.AttrCurrentHue, colorcontroldef.AttrCurrentSaturation) && true {
+						if changed(c, colorcontroldef.AttrCurrentHue, colorcontroldef.AttrCurrentSaturation) && slices.Contains([]colorcontroldef.ColorModeEnum{colorcontroldef.ColorModeCurrentHueAndCurrentSaturation}, st.ColorMode) && !slices.Contains(c.Attributes, colorcontroldef.AttrColorMode) {
 							b.emit(ci, 2, f)
 						}
-						if changed(c, colorcontroldef.AttrCurrentX, colorcontroldef.AttrCurrentY) && true {
+						if changed(c, colorcontroldef.AttrCurrentX, colorcontroldef.AttrCurrentY) && slices.Contains([]colorcontroldef.ColorModeEnum{colorcontroldef.ColorModeCurrentXAndCurrentY}, st.ColorMode) && !slices.Contains(c.Attributes, colorcontroldef.AttrColorMode) {
 							b.emit(ci, 3, f)
 						}
-						if changed(c, colorcontroldef.AttrCurrentX, colorcontroldef.AttrCurrentY) && true {
+						if changed(c, colorcontroldef.AttrCurrentX, colorcontroldef.AttrCurrentY) && slices.Contains([]colorcontroldef.ColorModeEnum{colorcontroldef.ColorModeCurrentXAndCurrentY}, st.ColorMode) && !slices.Contains(c.Attributes, colorcontroldef.AttrColorMode) {
 							b.emit(ci, 4, f)
 						}
 					})
@@ -1291,7 +1291,7 @@ var rows = []Row{
 					return p, onoffdef.Wrap(b.server(onoffdef.ClusterID)).Set(p)
 				},
 				watch: func(b *binding, ci int) func() {
-					return b.target.OnChangedAsync(onoffdef.ClusterID, func(c contract.Change) {
+					return b.target.OnChanged(onoffdef.ClusterID, func(c contract.Change) {
 						st := onoffdef.Wrap(b.server(onoffdef.ClusterID)).Get()
 						f := func(name string) (any, bool) {
 							switch name {
@@ -1334,7 +1334,7 @@ var rows = []Row{
 					return p, levelcontroldef.Wrap(b.server(levelcontroldef.ClusterID)).Set(p)
 				},
 				watch: func(b *binding, ci int) func() {
-					return b.target.OnChangedAsync(levelcontroldef.ClusterID, func(c contract.Change) {
+					return b.target.OnChanged(levelcontroldef.ClusterID, func(c contract.Change) {
 						st := levelcontroldef.Wrap(b.server(levelcontroldef.ClusterID)).Get()
 						f := func(name string) (any, bool) {
 							switch name {
@@ -1424,7 +1424,7 @@ var rows = []Row{
 					return p, colorcontroldef.Wrap(b.server(colorcontroldef.ClusterID)).Set(p)
 				},
 				watch: func(b *binding, ci int) func() {
-					return b.target.OnChangedAsync(colorcontroldef.ClusterID, func(c contract.Change) {
+					return b.target.OnChanged(colorcontroldef.ClusterID, func(c contract.Change) {
 						st := colorcontroldef.Wrap(b.server(colorcontroldef.ClusterID)).Get()
 						f := func(name string) (any, bool) {
 							switch name {
@@ -1439,10 +1439,10 @@ var rows = []Row{
 							}
 							return nil, false
 						}
-						if changed(c, colorcontroldef.AttrCurrentX, colorcontroldef.AttrCurrentY) && true {
+						if changed(c, colorcontroldef.AttrCurrentX, colorcontroldef.AttrCurrentY) && slices.Contains([]colorcontroldef.ColorModeEnum{colorcontroldef.ColorModeCurrentXAndCurrentY}, st.ColorMode) && !slices.Contains(c.Attributes, colorcontroldef.AttrColorMode) {
 							b.emit(ci, 0, f)
 						}
-						if changed(c, colorcontroldef.AttrCurrentHue, colorcontroldef.AttrCurrentSaturation) && true {
+						if changed(c, colorcontroldef.AttrCurrentHue, colorcontroldef.AttrCurrentSaturation) && slices.Contains([]colorcontroldef.ColorModeEnum{colorcontroldef.ColorModeCurrentHueAndCurrentSaturation}, st.ColorMode) && !slices.Contains(c.Attributes, colorcontroldef.AttrColorMode) {
 							b.emit(ci, 1, f)
 						}
 					})
@@ -1486,7 +1486,7 @@ var rows = []Row{
 					return p, onoffdef.Wrap(b.server(onoffdef.ClusterID)).Set(p)
 				},
 				watch: func(b *binding, ci int) func() {
-					return b.target.OnChangedAsync(onoffdef.ClusterID, func(c contract.Change) {
+					return b.target.OnChanged(onoffdef.ClusterID, func(c contract.Change) {
 						st := onoffdef.Wrap(b.server(onoffdef.ClusterID)).Get()
 						f := func(name string) (any, bool) {
 							switch name {
@@ -1529,7 +1529,7 @@ var rows = []Row{
 					return p, levelcontroldef.Wrap(b.server(levelcontroldef.ClusterID)).Set(p)
 				},
 				watch: func(b *binding, ci int) func() {
-					return b.target.OnChangedAsync(levelcontroldef.ClusterID, func(c contract.Change) {
+					return b.target.OnChanged(levelcontroldef.ClusterID, func(c contract.Change) {
 						st := levelcontroldef.Wrap(b.server(levelcontroldef.ClusterID)).Get()
 						f := func(name string) (any, bool) {
 							switch name {
@@ -1599,7 +1599,7 @@ var rows = []Row{
 					return p, colorcontroldef.Wrap(b.server(colorcontroldef.ClusterID)).Set(p)
 				},
 				watch: func(b *binding, ci int) func() {
-					return b.target.OnChangedAsync(colorcontroldef.ClusterID, func(c contract.Change) {
+					return b.target.OnChanged(colorcontroldef.ClusterID, func(c contract.Change) {
 						st := colorcontroldef.Wrap(b.server(colorcontroldef.ClusterID)).Get()
 						f := func(name string) (any, bool) {
 							switch name {
@@ -1608,10 +1608,10 @@ var rows = []Row{
 							}
 							return nil, false
 						}
-						if changed(c, colorcontroldef.AttrColorTemperatureMireds) && true {
+						if changed(c, colorcontroldef.AttrColorTemperatureMireds) && slices.Contains([]colorcontroldef.ColorModeEnum{colorcontroldef.ColorModeColorTemperatureMireds}, st.ColorMode) && !slices.Contains(c.Attributes, colorcontroldef.AttrColorMode) {
 							b.emit(ci, 0, f)
 						}
-						if changed(c, colorcontroldef.AttrColorTemperatureMireds) && true {
+						if changed(c, colorcontroldef.AttrColorTemperatureMireds) && slices.Contains([]colorcontroldef.ColorModeEnum{colorcontroldef.ColorModeColorTemperatureMireds}, st.ColorMode) && !slices.Contains(c.Attributes, colorcontroldef.AttrColorMode) {
 							b.emit(ci, 1, f)
 						}
 					})
@@ -1655,7 +1655,7 @@ var rows = []Row{
 					return p, onoffdef.Wrap(b.server(onoffdef.ClusterID)).Set(p)
 				},
 				watch: func(b *binding, ci int) func() {
-					return b.target.OnChangedAsync(onoffdef.ClusterID, func(c contract.Change) {
+					return b.target.OnChanged(onoffdef.ClusterID, func(c contract.Change) {
 						st := onoffdef.Wrap(b.server(onoffdef.ClusterID)).Get()
 						f := func(name string) (any, bool) {
 							switch name {
@@ -1698,7 +1698,7 @@ var rows = []Row{
 					return p, levelcontroldef.Wrap(b.server(levelcontroldef.ClusterID)).Set(p)
 				},
 				watch: func(b *binding, ci int) func() {
-					return b.target.OnChangedAsync(levelcontroldef.ClusterID, func(c contract.Change) {
+					return b.target.OnChanged(levelcontroldef.ClusterID, func(c contract.Change) {
 						st := levelcontroldef.Wrap(b.server(levelcontroldef.ClusterID)).Get()
 						f := func(name string) (any, bool) {
 							switch name {
@@ -1751,7 +1751,7 @@ var rows = []Row{
 					return p, onoffdef.Wrap(b.server(onoffdef.ClusterID)).Set(p)
 				},
 				watch: func(b *binding, ci int) func() {
-					return b.target.OnChangedAsync(onoffdef.ClusterID, func(c contract.Change) {
+					return b.target.OnChanged(onoffdef.ClusterID, func(c contract.Change) {
 						st := onoffdef.Wrap(b.server(onoffdef.ClusterID)).Get()
 						f := func(name string) (any, bool) {
 							switch name {
@@ -2303,7 +2303,7 @@ var rows = []Row{
 					return p, onoffdef.Wrap(b.server(onoffdef.ClusterID)).Set(p)
 				},
 				watch: func(b *binding, ci int) func() {
-					return b.target.OnChangedAsync(onoffdef.ClusterID, func(c contract.Change) {
+					return b.target.OnChanged(onoffdef.ClusterID, func(c contract.Change) {
 						st := onoffdef.Wrap(b.server(onoffdef.ClusterID)).Get()
 						f := func(string) (any, bool) { return nil, false }
 						if changed(c, onoffdef.AttrOnOff) && slices.Contains([]bool{true}, st.OnOff) {

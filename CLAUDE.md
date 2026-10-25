@@ -6,20 +6,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Home Assistant component to Matter cluster mapping for go-fabric bridges. Twin of `go-ha2fabric`; both are built on
 [go-fabric](https://github.com/SukramJ/go-fabric) and share its project
-setup. **State: concept, not started.** `CONCEPT.md` is the design; the
-go-fabric roadmap names the milestone in which work starts. Nothing runs
-yet: `go build ./...` compiles a `doc.go`.
+setup. **State: v0.1.0 (brief H1).** `CONCEPT.md` is the design,
+`docs/rows.md` the row format. The table is `rows/*.yaml`; `rows_gen.go`
+is generated from it (`make generate`) and never hand-edited.
 
 ## Commands
 
 ```sh
 make ci        # build vet test lint — what the pipeline runs
+make generate  # rows/*.yaml -> rows_gen.go and the table of docs/rows.md
+make cover-check fuzz-smoke   # the coverage floors and the row loader's fuzz target
 make race      # go test -race (CGO_ENABLED=1 for this run only)
 make fmt       # gofumpt -w .
 ```
 
-Go 1.27.2, `CGO_ENABLED=0`, no dependencies yet. Every further dependency
-is a decision: Apache-2.0 / MIT / BSD only, and it updates the notices.
+Go 1.27.3, `CGO_ENABLED=0`. Dependencies: go-fabric, go-hamqtt,
+go-ha-catalog, gopkg.in/yaml.v3 (`THIRD-PARTY-NOTICES.md`). Every further
+dependency is a decision: Apache-2.0 / MIT / BSD only, and it updates the
+notices.
 
 ## Rules
 
@@ -29,7 +33,11 @@ is a decision: Apache-2.0 / MIT / BSD only, and it updates the notices.
 - **go-fabric is the gold standard** for everything on the Matter side:
   device types, clusters, the facade (`node`, `device`, `contract`, the
   `<cluster>def` packages). This repository never reimplements a
-  cluster or reaches below go-fabric's facade.
+  cluster or reaches below go-fabric's facade: non-test code imports
+  `device`, `contract`, `schema`, `eligibility` and the `<cluster>def`
+  packages only (`internal/arch`). No Matter or Home Assistant fact of
+  its own: device types and clusters from go-fabric's generated packages,
+  Home Assistant from go-ha-catalog's tables, each row citing its lines.
 - **Which model does which work** (as go-fabric's CLAUDE.md): analysis,
   planning, anything that becomes a fact about Matter or Home Assistant
   in the repository is the strongest model's; implementation of a

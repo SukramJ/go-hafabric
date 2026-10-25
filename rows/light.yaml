@@ -55,30 +55,44 @@ rows:
           - attribute: EnhancedColorMode
             from: state.color_mode
             enum: {color_temp: EnhancedColorModeColorTemperatureMireds, hs: EnhancedColorModeCurrentHueAndCurrentSaturation, xy: EnhancedColorModeCurrentXAndCurrentY, rgb: EnhancedColorModeCurrentXAndCurrentY, rgbw: EnhancedColorModeCurrentXAndCurrentY, rgbww: EnhancedColorModeCurrentXAndCurrentY}
+        # A command reaches the entity in the colour mode it set. A command
+        # that switches the mode first converts the current colour into the
+        # new mode (the change that carries ColorMode); that change is the
+        # kit's, not the controller's target, and is not handed out.
         commands:
           - change: [ColorTemperatureMireds]
+            if: {field: ColorMode, in: [ColorModeColorTemperatureMireds]}
+            unless: [ColorMode]
             when: {extra: {color_temp_kelvin: {true: false}}}
             json:
               state: {const: "ON"}
               color_temp: {field: ColorTemperatureMireds}
           - change: [ColorTemperatureMireds]
+            if: {field: ColorMode, in: [ColorModeColorTemperatureMireds]}
+            unless: [ColorMode]
             when: {extra: {color_temp_kelvin: {true: true}}}
             json:
               state: {const: "ON"}
               color_temp: {field: ColorTemperatureMireds, func: reciprocal, scale: 1000000}
           - change: [CurrentHue, CurrentSaturation]
+            if: {field: ColorMode, in: [ColorModeCurrentHueAndCurrentSaturation]}
+            unless: [ColorMode]
             when: {extra: {supported_color_modes: {any: [hs]}}}
             json:
               state: {const: "ON"}
               color.h: {field: CurrentHue, scale: 1.4173228346456692, digits: 1}
               color.s: {field: CurrentSaturation, scale: 0.39370078740157477, digits: 1}
           - change: [CurrentX, CurrentY]
+            if: {field: ColorMode, in: [ColorModeCurrentXAndCurrentY]}
+            unless: [ColorMode]
             when: {extra: {supported_color_modes: {any: [xy]}}}
             json:
               state: {const: "ON"}
               color.x: {field: CurrentX, scale: 0.0000152587890625, digits: 4}
               color.y: {field: CurrentY, scale: 0.0000152587890625, digits: 4}
           - change: [CurrentX, CurrentY]
+            if: {field: ColorMode, in: [ColorModeCurrentXAndCurrentY]}
+            unless: [ColorMode]
             when: {extra: {supported_color_modes: {none: [xy]}}}
             json: {state: {const: "ON"}}
             derive: hs_from_xy
@@ -111,9 +125,13 @@ rows:
             enum: {rgb: ColorModeCurrentXAndCurrentY, rgbw: ColorModeCurrentXAndCurrentY, rgbww: ColorModeCurrentXAndCurrentY}
         commands:
           - change: [CurrentX, CurrentY]
+            if: {field: ColorMode, in: [ColorModeCurrentXAndCurrentY]}
+            unless: [ColorMode]
             json: {state: {const: "ON"}}
             derive: rgb_from_xy
           - change: [CurrentHue, CurrentSaturation]
+            if: {field: ColorMode, in: [ColorModeCurrentHueAndCurrentSaturation]}
+            unless: [ColorMode]
             json: {state: {const: "ON"}}
             derive: rgb_from_hs
   - id: color_temperature
@@ -140,11 +158,15 @@ rows:
           - {attribute: ColorTemperatureMireds, from: state.color_temp, func: reciprocal, scale: 1000000, min: 1, max: 65279, when: {extra: {color_temp_kelvin: {true: true}}}}
         commands:
           - change: [ColorTemperatureMireds]
+            if: {field: ColorMode, in: [ColorModeColorTemperatureMireds]}
+            unless: [ColorMode]
             when: {extra: {color_temp_kelvin: {true: false}}}
             json:
               state: {const: "ON"}
               color_temp: {field: ColorTemperatureMireds}
           - change: [ColorTemperatureMireds]
+            if: {field: ColorMode, in: [ColorModeColorTemperatureMireds]}
+            unless: [ColorMode]
             when: {extra: {color_temp_kelvin: {true: true}}}
             json:
               state: {const: "ON"}

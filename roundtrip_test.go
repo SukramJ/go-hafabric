@@ -4,6 +4,7 @@
 package hamapping_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"reflect"
@@ -131,6 +132,20 @@ func (r *rig) command() model.Command {
 	return got
 }
 
+// noMore fails when the plan hands out another command once the site is
+// quiet: one controller command is one model.Command.
+func (r *rig) noMore() {
+	r.t.Helper()
+	if err := r.site.Settle(r.ctx); err != nil {
+		r.t.Fatal(err)
+	}
+	select {
+	case c := <-r.cmds:
+		r.t.Fatalf("an extra command: %s %s", c.Method, c.Payload)
+	default:
+	}
+}
+
 // expect checks a command's method, role and payload.
 func expect(t *testing.T, got model.Command, method, payload string) {
 	t.Helper()
@@ -153,7 +168,7 @@ func samePayload(a, b []byte) bool {
 	if json.Unmarshal(a, &x) == nil && json.Unmarshal(b, &y) == nil {
 		return reflect.DeepEqual(x, y)
 	}
-	return string(a) == string(b)
+	return bytes.Equal(a, b)
 }
 
 // reachable reads the endpoint's Reachable.

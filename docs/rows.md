@@ -1,0 +1,148 @@
+# The rows
+
+The table maps a Home Assistant entity, in go-hamqtt's vocabulary
+(`model.Entity`, its `model.Description`, its `model.State`), onto a device
+type of go-fabric's device kit with its cluster declarations, and a
+controller's command or write back onto a `model.Command`. It is data:
+one file per platform under [`rows/`](../rows), read by
+[`internal/rowfile`](../internal/rowfile) and generated into
+[`rows_gen.go`](../rows_gen.go) by [`internal/gen`](../internal/gen)
+(`make generate`). `TestGeneratedRowsAreCurrent` fails when the YAML and
+the Go form differ, and when the table at the end of this page is stale.
+
+## How a row is chosen
+
+`hamapping.Map(dev, entities)` tries the rows of an entity's platform in
+file order; the first whose `when` holds decides. A platform without a row
+file, or an entity no row matches, is Unmappable with a reason that names
+the platform and device class. A row's verdict is `mappable`,
+`partial: <reason>` or `unmappable: <reason>`; a mappable row's `caveats`
+turn it Partial for the entities they match. `{device_class}` in a reason
+is the entity's device class. A unit the row cannot convert makes the
+entity Unmappable, naming the unit.
+
+A row with `ride: primary` does not get an endpoint of its own when the
+device has a primary endpoint (the first mapped entity whose row does not
+ride): its `ride_measurement` (H1: the battery) is declared on the primary
+as go-fabric's measurement source (`device.Measurement`). Without a primary
+it is an endpoint of its own type.
+
+## The format
+
+```yaml
+platform: sensor                 # the Home Assistant platform
+cites: [...]                     # sources every row of the file reads
+rows:
+  - id: temperature              # the row id is <platform>/<id>
+    when:                        # every key set must hold
+      device_class: [temperature]   # "none": an entity without one
+      unit: [...]
+      state_class: [...]
+      features: {any: [SET_POSITION]}   # the catalog's feature flags (features.json),
+                                        # from Extra["supported_features"]: a bit mask or names
+      extra:                     # Description.Extra under the catalog's key names
+        supported_color_modes: {any: [hs, xy], none: [...], all: [...]}
+        color_temp_kelvin: {true: true}     # a boolean key
+        preset_modes: {present: true}       # the entity states the key
+      options: true              # the entity carries options
+    type: TemperatureSensor      # go-fabric's device.<Type>Type
+    verdict: mappable            # | "partial: <reason>" | "unmappable: <reason>"
+    caveats: [{when: {...}, reason: "..."}]
+    cites: [...]                 # the matter.js element lines, the catalog lines
+    parts:                       # component devices the type requires
+      - type: PowerSource
+        clusters: [...]          # features and constant initial values only
+    clusters:
+      - cluster: TemperatureMeasurement   # go-fabric's <cluster>def name
+        features: [Name, {name: Name, when: {...}}]   # <cluster>def.Feature<Name>
+        initial:                 # Declare.Initial: a const, a literal or a value
+          - {attribute: Order, const: 0}  # of the description (device_class, extra.<key>)
+        start_null: [MeasuredValue]       # attributes that start null (unknown)
+        attributes:              # the state mapping Plan.Apply sets
+          - attribute: MeasuredValue      # or Attribute.Field of a structure
+            from: state                   # the value (below)
+            units: {"°C": {scale: 100}}   # the conversion (below)
+        commands:                # the command mapping Plan.OnChange hands out
+          - handle: LockDoor     # | write: [Attr, ...] | change: [Attr, ...]
+            if: {field: SystemMode, in: [SystemModeAuto]}   # or not_in
+            when: {...}          # entities the command applies to
+            method: set_position # the entity's named method; empty: its command binding
+            raw: {...}           # the payload as one value, or
+            json: {state: {...}, color.h: {...}}   # a JSON object by dotted key
+            derive: rgb_from_xy  # keys computed from several fields
+```
+
+**Values.** `from` reads the entity: `state` (the primary state value; for a
+map state its `state` key), `state.<key>` (a key of a map state, dotted for
+nested keys, else of `State.Extra`), `extra.<key>` (a key of
+`Description.Extra`; with `catalog: true`, or in a predicate, the catalog's
+default for the key when the entity states none), `device_class`, `unit`,
+`desc.min`, `desc.max`, `desc.step`. A command value reads `field` (the
+handled request's field, or the cluster's state field for `write` and
+`change`) or a `const`. A number converts as
+`y = func(x / per + offset) * scale + add`, times `times`, clamped to
+`[min, max]`; `func` is `log10`, `pow10` or `reciprocal`; `units` replaces
+offset, scale and add by the entity's unit (`default_unit` for an entity
+without one); `digits` rounds a payload number. `enum` maps the entity's
+string (lower case; a boolean state reads `on`/`off`) to a constant of the
+cluster package, a bool or an integer for an attribute, and a constant (or
+`true`/`false`) to the entity's string for a command value. An attribute
+whose value is no number (`unknown`, `unavailable`, null) is set null where
+it is nullable.
+
+**Commands.** `handle` installs the cluster's typed command handler
+(`Declare.Handle<Command>`): the kit's server does not run the command, the
+entity does, and its state comes back through `Apply`. `write` installs the
+write veto (`Declare.OnWrite`), which accepts the write and hands it out.
+`change` hands out a change the kit's server made running a command (the
+light's On, MoveToLevel, MoveToColor), from the server's state at the
+change; `unless: [Attr]` skips a change that also touches one of these
+attributes (the light's colour-mode switch, which converts the current
+colour before the controller's target is set). Every command reaches
+`Plan.OnChange`'s function inline, in the controller's request. A command with an empty `method` goes to the entity's command
+binding (`model.Command.Role` `command`, its `Slot`); one with a method to
+the named method (the MQTT `<method>_command_topic` of the platform).
+
+## The rows
+
+<!-- rows:begin (generated by internal/gen; do not edit) -->
+
+| Row | Predicate | Device type | Clusters | Verdict | Cites |
+| --- | --- | --- | --- | --- | --- |
+| `binary_sensor/contact` | device_class door, window, opening, garage_door | ContactSensor | BooleanState | mappable | matter.js packages/model/src/standard/elements/contact-sensor.element.ts:19 @862ad75f (BooleanState mandatory); matter.js packages/model/src/standard/resources/boolean-state.resource.ts:26-30 @862ad75f (Contact Sensor - FALSE=open or no contact, TRUE=closed or contact) |
+| `binary_sensor/motion` | device_class motion | OccupancySensor | OccupancySensing (PassiveInfrared) | mappable | matter.js packages/model/src/standard/elements/occupancy-sensor.element.ts:20 @862ad75f (OccupancySensing mandatory); matter.js packages/model/src/standard/resources/occupancy-sensing.resource.ts:45 @862ad75f (Occupancy, bit Occupied); matter.js packages/node/src/behaviors/occupancy-sensing/OccupancySensingServer.ts:27-66 @862ad75f (OccupancySensorType and its bitmap follow the PIR, ultrasonic and physical-contact features) |
+| `binary_sensor/occupancy` | device_class occupancy, presence | OccupancySensor | OccupancySensing (Other) | mappable | matter.js packages/model/src/standard/elements/occupancy-sensor.element.ts:20 @862ad75f (OccupancySensing mandatory); matter.js packages/model/src/standard/resources/occupancy-sensing.resource.ts:45 @862ad75f (Occupancy, bit Occupied); matter.js packages/node/src/behaviors/occupancy-sensing/OccupancySensingServer.ts:27-66 @862ad75f (OccupancySensorType and its bitmap follow the PIR, ultrasonic and physical-contact features) |
+| `binary_sensor/water_leak` | device_class moisture | WaterLeakDetector | BooleanState | mappable | matter.js packages/model/src/standard/elements/water-leak-detector.element.ts:20-22 @862ad75f (BooleanState mandatory, CHGEVENT) |
+| `binary_sensor/smoke` | device_class smoke | SmokeCoAlarm | SmokeCoAlarm (SmokeAlarm); part PowerSource | mappable | matter.js packages/model/src/standard/elements/smoke-co-alarm-device.element.ts:24,28 @862ad75f (SmokeCoAlarm mandatory, PowerSource device min 1); matter.js packages/model/src/standard/resources/smoke-co-alarm-cluster.resource.ts:42 @862ad75f (SmokeState) |
+| `binary_sensor/carbon_monoxide` | device_class carbon_monoxide | SmokeCoAlarm | SmokeCoAlarm (CoAlarm); part PowerSource | mappable | matter.js packages/model/src/standard/elements/smoke-co-alarm-device.element.ts:24,28 @862ad75f (SmokeCoAlarm mandatory, PowerSource device min 1) |
+| `binary_sensor/generic` | device_class none | OnOffSensor |  | partial: OnOffSensor serves no attribute that carries the state (its OnOff is a client cluster); a controller sees the endpoint and its reachability, not on and off | matter.js packages/model/src/standard/elements/on-off-sensor.element.ts:25 @862ad75f (OnOff is a client cluster) |
+| `binary_sensor/no_device_type` | device_class battery, battery_charging, cold, connectivity, gas, glass_break, heat, light, lock, moving, plug, power, problem, running, safety, sound, tamper, update, vibration |  |  | unmappable: no Matter device type for a binary_sensor of device_class {device_class} in H1 |  |
+| `button/unmapped` | any |  |  | unmappable: no generic Matter counterpart for a button entity in H1 |  |
+| `climate/thermostat` | modes any of heat, cool, heat_cool | Thermostat | Thermostat (Heating, Cooling, AutoMode) | mappable | matter.js packages/model/src/standard/elements/thermostat-device.element.ts:25 @862ad75f (Thermostat mandatory); matter.js packages/model/src/standard/resources/thermostat-cluster.resource.ts:50,163,322 @862ad75f (LocalTemperature, OccupiedHeatingSetpoint, SystemMode); matter.js packages/model/src/standard/elements/temperature.element.ts:12 @862ad75f (the temperature datatype, int16 in 0.01 degC) |
+| `climate/no_heating_or_cooling` | any |  |  | unmappable: a climate entity without the hvac modes heat, cool or heat_cool has no Thermostat feature (Heating or Cooling) |  |
+| `cover/window_covering` | any | WindowCovering | WindowCovering (Lift, PositionAwareLift, Tilt, PositionAwareTilt) | mappable | matter.js packages/model/src/standard/elements/window-covering-device.element.ts:24 @862ad75f (WindowCovering mandatory); matter.js packages/model/src/standard/resources/window-covering-cluster.resource.ts:39,98,116-118,180-199 @862ad75f (Type, EndProductType, CurrentPositionLiftPercent100ths; DownOrClose ends at 100.00%) |
+| `event/unmapped` | any |  |  | unmappable: no generic Matter counterpart for an event entity in H1 (GenericSwitch is H2) |  |
+| `fan/fan` | any | Fan | FanControl (Rocking, AirflowDirection, Auto) | mappable | matter.js packages/model/src/standard/elements/fan.element.ts:25 @862ad75f (FanControl mandatory); matter.js packages/model/src/standard/resources/fan-control.resource.ts:44,80,95 @862ad75f (FanMode, PercentSetting, PercentCurrent) |
+| `light/extended_color` | supported_color_modes any of hs, xy | ExtendedColorLight | OnOff; LevelControl; ColorControl (Xy, ColorTemperature, HueSaturation) | mappable | matter.js packages/model/src/standard/elements/extended-color-light.element.ts:28-53 @862ad75f (OnOff LT, LevelControl OO+LT, ColorControl XY+CT mandatory, HS optional); matter.js packages/model/src/standard/resources/color-control.resource.ts:41-47,58-64,97-104,139-154 @862ad75f (CurrentHue, CurrentSaturation, CurrentX, ColorTemperatureMireds); go-fabric cluster/spec/levelcontrol/values.go:28-44 @v0.11.0 (LevelFromUnit, UnitFromLevel) |
+| `light/rgb` | supported_color_modes any of rgb, rgbw, rgbww | ExtendedColorLight | OnOff; LevelControl; ColorControl (Xy, ColorTemperature, HueSaturation) | partial: an RGB light without hs or xy: a controller's CIE x/y or hue and saturation reach it as color r, g, b at full brightness (go-fabric's XYToRGB, HSVToRGB), so colours outside the sRGB gamut are clipped and the w and ww channels are not driven | matter.js packages/model/src/standard/elements/extended-color-light.element.ts:28-53 @862ad75f (ColorControl XY+CT mandatory, HS optional); go-fabric cluster/spec/colorcontrol/colorconversion.go:108-150 @v0.11.0 (RGBToXY, XYToRGB, matter.js ColorConversionUtils.ts) |
+| `light/color_temperature` | supported_color_modes any of color_temp | ColorTemperatureLight | OnOff; LevelControl; ColorControl (ColorTemperature) | mappable | matter.js packages/model/src/standard/elements/color-temperature-light.element.ts:28-48 @862ad75f (OnOff LT, LevelControl OO+LT, ColorControl CT); matter.js packages/model/src/standard/resources/color-control.resource.ts:139-154 @862ad75f (ColorTemperatureMireds, mireds = 1,000,000 / K) |
+| `light/dimmable` | supported_color_modes any of brightness, white | DimmableLight | OnOff; LevelControl | mappable | matter.js packages/model/src/standard/elements/dimmable-light.element.ts:28-39 @862ad75f (OnOff LT, LevelControl LT+OO, CurrentLevel 1 to 254); go-fabric cluster/spec/levelcontrol/values.go:28-44 @v0.11.0 (LevelFromUnit, UnitFromLevel) |
+| `light/onoff` | any | OnOffLight | OnOff | mappable | matter.js packages/model/src/standard/elements/on-off-light.element.ts:28-30 @862ad75f (OnOff mandatory, feature LT) |
+| `lock/door_lock` | any | DoorLock | DoorLock | mappable | matter.js packages/model/src/standard/elements/door-lock-device.element.ts:30 @862ad75f (DoorLock mandatory); matter.js packages/model/src/standard/resources/door-lock-cluster.resource.ts:151 @862ad75f (LockState) |
+| `number/unmapped` | any |  |  | unmappable: no generic Matter counterpart for a number entity in H1 |  |
+| `select/unmapped` | any |  |  | unmappable: no generic Matter counterpart for a select entity in H1 (ModeSelect from its options is H2) |  |
+| `sensor/temperature` | device_class temperature | TemperatureSensor | TemperatureMeasurement | mappable | matter.js packages/model/src/standard/elements/temperature-sensor.element.ts:18 @862ad75f (TemperatureMeasurement mandatory); matter.js packages/model/src/standard/elements/temperature.element.ts:12 @862ad75f (MeasuredValue is the temperature datatype, int16 in 0.01 degC); go-ha-catalog data/sensor.json:633-637 (temperature units K, degC, degF) |
+| `sensor/humidity` | device_class humidity | HumiditySensor | RelativeHumidityMeasurement | mappable | matter.js packages/model/src/standard/elements/humidity-sensor.element.ts:19 @862ad75f (RelativeHumidityMeasurement mandatory); matter.js packages/model/src/standard/resources/relative-humidity-measurement.resource.ts:20-26 @862ad75f (MeasuredValue = 100 x water content); go-ha-catalog data/sensor.json:511-513 (humidity unit %) |
+| `sensor/pressure` | device_class pressure, atmospheric_pressure | PressureSensor | PressureMeasurement | mappable | matter.js packages/model/src/standard/elements/pressure-sensor.element.ts:19 @862ad75f (PressureMeasurement mandatory); matter.js packages/model/src/standard/resources/pressure-measurement.resource.ts:24-27 @862ad75f (MeasuredValue = 10 x Pressure [kPa]); go-ha-catalog data/sensor.json:362-375,579-592 (atmospheric_pressure and pressure units) |
+| `sensor/illuminance` | device_class illuminance | LightSensor | IlluminanceMeasurement | mappable | matter.js packages/model/src/standard/elements/light-sensor.element.ts:19 @862ad75f (IlluminanceMeasurement mandatory); matter.js packages/model/src/standard/resources/illuminance-measurement.resource.ts:19-30 @862ad75f (MeasuredValue = 10,000 x log10(illuminance) + 1, 1 to 0xFFFE; 0 too low to measure); go-ha-catalog data/sensor.json:514-516 (illuminance unit lx) |
+| `sensor/power` | device_class power | ElectricalSensor | PowerTopology (NodeTopology); ElectricalPowerMeasurement (AlternatingCurrent) | mappable | matter.js packages/model/src/standard/elements/electrical-sensor.element.ts:18-20 @862ad75f (PowerTopology mandatory, ElectricalPowerMeasurement and ElectricalEnergyMeasurement O.a+); matter.js packages/model/src/standard/resources/electrical-power-measurement.resource.ts:80,97,158,385-389 @862ad75f (Voltage mV, ActiveCurrent mA, ActivePower mW); go-fabric docs/guides/embed-in-a-daemon.md section 3 @v0.11.0 (the ElectricalSensor declaration of the cookbook); go-ha-catalog data/sensor.json:397-401,457-473,556-563,651-657 (current, energy, power, voltage units) |
+| `sensor/voltage` | device_class voltage | ElectricalSensor | PowerTopology (NodeTopology); ElectricalPowerMeasurement (AlternatingCurrent) | mappable | matter.js packages/model/src/standard/elements/electrical-sensor.element.ts:18-20 @862ad75f (PowerTopology mandatory, ElectricalPowerMeasurement and ElectricalEnergyMeasurement O.a+); matter.js packages/model/src/standard/resources/electrical-power-measurement.resource.ts:80,97,158,385-389 @862ad75f (Voltage mV, ActiveCurrent mA, ActivePower mW); go-fabric docs/guides/embed-in-a-daemon.md section 3 @v0.11.0 (the ElectricalSensor declaration of the cookbook); go-ha-catalog data/sensor.json:397-401,457-473,556-563,651-657 (current, energy, power, voltage units) |
+| `sensor/current` | device_class current | ElectricalSensor | PowerTopology (NodeTopology); ElectricalPowerMeasurement (AlternatingCurrent) | mappable | matter.js packages/model/src/standard/elements/electrical-sensor.element.ts:18-20 @862ad75f (PowerTopology mandatory, ElectricalPowerMeasurement and ElectricalEnergyMeasurement O.a+); matter.js packages/model/src/standard/resources/electrical-power-measurement.resource.ts:80,97,158,385-389 @862ad75f (Voltage mV, ActiveCurrent mA, ActivePower mW); go-fabric docs/guides/embed-in-a-daemon.md section 3 @v0.11.0 (the ElectricalSensor declaration of the cookbook); go-ha-catalog data/sensor.json:397-401,457-473,556-563,651-657 (current, energy, power, voltage units) |
+| `sensor/energy` | device_class energy | ElectricalSensor | PowerTopology (NodeTopology); ElectricalEnergyMeasurement (ImportedEnergy, CumulativeEnergy) | mappable | matter.js packages/model/src/standard/elements/electrical-sensor.element.ts:18-20 @862ad75f (PowerTopology mandatory, ElectricalPowerMeasurement and ElectricalEnergyMeasurement O.a+); matter.js packages/model/src/standard/resources/electrical-power-measurement.resource.ts:80,97,158,385-389 @862ad75f (Voltage mV, ActiveCurrent mA, ActivePower mW); go-fabric docs/guides/embed-in-a-daemon.md section 3 @v0.11.0 (the ElectricalSensor declaration of the cookbook); go-ha-catalog data/sensor.json:397-401,457-473,556-563,651-657 (current, energy, power, voltage units) |
+| `sensor/battery` | device_class battery | PowerSource (rides on the primary) | PowerSource (Battery); rides as the battery measurement | partial: the battery rides on the device's primary endpoint as go-fabric's battery measurement (PowerSource, BatPercentRemaining), not as a declared PowerSource, until the kit carries PowerSourceConfiguration for a bridged PowerSource | matter.js packages/model/src/standard/elements/power-source-device.element.ts:18 @862ad75f (PowerSource mandatory); matter.js packages/model/src/standard/elements/bridged-node.element.ts:23 @862ad75f (PowerSource under BridgedPowerSourceInfo on a bridged node); matter.js packages/model/src/standard/resources/power-source-cluster.resource.ts:120-125 @862ad75f (BatPercentRemaining in half percent, 0 to 200); go-fabric docs/guides/embed-in-a-daemon.md section 3 @v0.11.0 (powersourcedef.Declare on the primary endpoint); go-ha-catalog data/sensor.json:376-378 (battery unit %) |
+| `sensor/no_device_type` | device_class absolute_humidity, apparent_power, aqi, area, blood_glucose_concentration, carbon_dioxide, carbon_monoxide, conductivity, data_rate, data_size, date, distance, duration, energy_distance, energy_storage, enum, frequency, gas, irradiance, moisture, monetary, nitrogen_dioxide, nitrogen_monoxide, nitrous_oxide, ozone, ph, pm1, pm10, pm25, pm4, power_factor, precipitation, precipitation_intensity, radon, reactive_energy, reactive_power, signal_strength, sound_pressure, speed, sulphur_dioxide, temperature_delta, timestamp, uptime, volatile_organic_compounds, volatile_organic_compounds_parts, volume, volume_flow_rate, volume_storage, water, weight, wind_direction, wind_speed |  |  | unmappable: no Matter device type for a sensor of device_class {device_class} in H1 |  |
+| `sensor/no_device_class` | device_class none |  |  | unmappable: a sensor without device_class has no Matter device type |  |
+| `switch/plug` | device_class none, outlet, switch | OnOffPlugInUnit | OnOff | mappable | matter.js packages/model/src/standard/elements/on-off-plug-in-unit.element.ts:27-31 @862ad75f (OnOff mandatory, feature LT) |
+| `text/unmapped` | any |  |  | unmappable: no Matter counterpart for a text entity |  |
+
+<!-- rows:end -->

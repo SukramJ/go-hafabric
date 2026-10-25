@@ -1,0 +1,6 @@
+# Statement coverage floors per package (script/coverfloor). A ratchet:
+# raise a floor with the change that raises the coverage.
+.                 75
+internal/gen      88
+internal/gen/cmd  55
+internal/rowfile  85

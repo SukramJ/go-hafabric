@@ -153,7 +153,7 @@ func (b *binding) attr(st *model.State, a *Attr) (any, bool) {
 	return describe(b.entity, a.Value.From)
 }
 
-func (b *binding) pick(st *model.State, ci, ai int, initial bool) *Attr {
+func (b *binding) pick(ci, ai int, initial bool) *Attr {
 	if ci < 0 {
 		return &Attr{Name: "measurement", Value: b.row.RideMeasurement.Value}
 	}
@@ -166,7 +166,7 @@ func (b *binding) pick(st *model.State, ci, ai int, initial bool) *Attr {
 
 // number is the converted value of attribute mapping ai of cluster ci.
 func (b *binding) number(st *model.State, ci, ai int) (float64, bool) {
-	a := b.pick(st, ci, ai, st == nil)
+	a := b.pick(ci, ai, st == nil)
 	raw, ok := b.attr(st, a)
 	if !ok {
 		return 0, false
@@ -181,7 +181,7 @@ func (b *binding) number(st *model.State, ci, ai int) (float64, bool) {
 // null reports whether attribute mapping ai reads a value that is there
 // but no number: null, "unknown", "unavailable".
 func (b *binding) null(st *model.State, ci, ai int) bool {
-	a := b.pick(st, ci, ai, st == nil)
+	a := b.pick(ci, ai, st == nil)
 	raw, ok := b.attr(st, a)
 	if !ok {
 		return false
@@ -193,7 +193,7 @@ func (b *binding) null(st *model.State, ci, ai int) bool {
 // text is the mapped string of attribute mapping ai, the key the
 // generated switch matches.
 func (b *binding) text(st *model.State, ci, ai int) string {
-	a := b.pick(st, ci, ai, st == nil)
+	a := b.pick(ci, ai, st == nil)
 	raw, ok := b.attr(st, a)
 	if !ok {
 		return ""

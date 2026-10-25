@@ -186,8 +186,8 @@ func verdict(e model.Entity, row *Row) Verdict {
 		v.State, v.Reason = eligibility.StatePartial, strings.Join(caveats, "; ")
 	}
 	v.DeviceType = uint16(row.Type.ID)
-	for _, c := range row.Clusters {
-		v.Clusters = append(v.Clusters, c.ID)
+	for i := range row.Clusters {
+		v.Clusters = append(v.Clusters, row.Clusters[i].ID)
 	}
 	return v
 }
@@ -195,8 +195,9 @@ func verdict(e model.Entity, row *Row) Verdict {
 // unconvertible names a unit the row cannot convert for the entity, or
 // returns "".
 func unconvertible(e model.Entity, row *Row) string {
-	for _, c := range row.Clusters {
-		for _, a := range c.Attributes {
+	for i := range row.Clusters {
+		for j := range row.Clusters[i].Attributes {
+			a := &row.Clusters[i].Attributes[j]
 			if a.Value.Units == nil || (a.When != nil && !matches(e, a.When)) {
 				continue
 			}
@@ -267,7 +268,8 @@ func (p *Plan) Build(_ context.Context) ([]*device.Device, error) {
 		return nil, errors.New("hamapping: plan built twice")
 	}
 	out := make([]*device.Device, 0, len(p.Endpoints))
-	for _, ep := range p.Endpoints {
+	for i := range p.Endpoints {
+		ep := &p.Endpoints[i]
 		d, err := device.New(ep.Type, ep.Options, ep.Declarations...)
 		if err != nil {
 			return nil, fmt.Errorf("hamapping: entity %s (row %s): %w", ep.Key, ep.Row, err)
@@ -295,11 +297,11 @@ func (p *Plan) Build(_ context.Context) ([]*device.Device, error) {
 
 // parts builds the component devices the endpoint's row requires and
 // adds them to d.
-func (p *Plan) parts(d *device.Device, ep Endpoint) error {
+func (p *Plan) parts(d *device.Device, ep *Endpoint) error {
 	b := p.bindings[ep.Key]
 	for i := range b.row.Parts {
 		part := &b.row.Parts[i]
-		var decls []device.Declaration
+		decls := make([]device.Declaration, 0, len(part.Clusters))
 		for ci := range part.Clusters {
 			decls = append(decls, part.Clusters[ci].declare(b, ci))
 		}
@@ -321,7 +323,8 @@ func (p *Plan) parts(d *device.Device, ep Endpoint) error {
 // primary.
 func (p *Plan) order() []string {
 	var out []string
-	for _, ep := range p.Endpoints {
+	for i := range p.Endpoints {
+		ep := &p.Endpoints[i]
 		out = append(out, ep.Key)
 		out = append(out, ep.Riders...)
 	}
@@ -391,8 +394,10 @@ func (p *Plan) Apply(ctx context.Context, key string, st model.State) []Patch {
 // OnChange sets the function a controller's command or write reaches the
 // daemon through, as the model.Command its Commander takes: the entity,
 // the command role and slot (or the named method) and the payload in the
-// entity's command form. fn runs on the device's goroutine for a command
-// and inline for a write; it must not block. nil drops the commands.
+// entity's command form. fn runs inline, in the controller's request (the
+// command handler, the write veto, the change a command made), so it must
+// not block: hand the command to the daemon's own queue. nil drops the
+// commands.
 func (p *Plan) OnChange(fn func(model.Command)) {
 	p.mu.Lock()
 	p.fn = fn

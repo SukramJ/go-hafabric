@@ -169,9 +169,11 @@ func TestLightExtendedColor(t *testing.T) {
 	r.invoke("light", colorcontroldef.ClusterID, colorcontroldef.CmdMoveToHueAndSaturation,
 		colorcontroldef.MoveToHueAndSaturationRequest{Hue: 127, Saturation: 254})
 	expect(t, r.command(), "", `{"state":"ON","color":{"h":180,"s":100}}`)
+	r.noMore()
 	r.invoke("light", colorcontroldef.ClusterID, colorcontroldef.CmdMoveToColor,
 		colorcontroldef.MoveToColorRequest{ColorX: 32768, ColorY: 21845})
 	expect(t, r.command(), "", `{"state":"ON","color":{"x":0.5,"y":0.3333}}`)
+	r.noMore()
 }
 
 func TestLightHSWithoutXY(t *testing.T) {
@@ -376,6 +378,7 @@ func TestCover(t *testing.T) {
 	r.invoke("cover", windowcoveringdef.ClusterID, windowcoveringdef.CmdGoToLiftPercentage,
 		windowcoveringdef.GoToLiftPercentageRequest{LiftPercent100thsValue: 2500})
 	expect(t, r.command(), "set_position", "75")
+	r.noMore()
 }
 
 func TestClimate(t *testing.T) {
@@ -397,6 +400,7 @@ func TestClimate(t *testing.T) {
 	expect(t, r.command(), "temperature", "23.5")
 	r.write("hvac", thermostatdef.ClusterID, thermostatdef.AttrSystemMode, spec.Uint8(uint8(thermostatdef.SystemModeCool)))
 	expect(t, r.command(), "mode", "cool")
+	r.noMore()
 }
 
 func TestClimateWithoutHeatingOrCooling(t *testing.T) {
@@ -452,6 +456,7 @@ func TestFan(t *testing.T) {
 	expect(t, r.command(), "oscillation", "oscillate_off")
 	r.write("fan", fancontroldef.ClusterID, fancontroldef.AttrAirflowDirection, spec.Uint8(uint8(fancontroldef.AirflowDirectionForward)))
 	expect(t, r.command(), "direction", "forward")
+	r.noMore()
 }
 
 func TestUnmappablePlatforms(t *testing.T) {

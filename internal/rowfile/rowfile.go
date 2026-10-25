@@ -98,9 +98,9 @@ type Set struct {
 
 // Cluster is one cluster of a row.
 type Cluster struct {
-	Cluster    string    `yaml:"cluster"`
-	Features   []Feature `yaml:"features"`
-	Initial    []Attr    `yaml:"initial"`
+	Cluster  string    `yaml:"cluster"`
+	Features []Feature `yaml:"features"`
+	Initial  []Attr    `yaml:"initial"`
 	// StartNull are the attributes that start null (unknown).
 	StartNull  []string  `yaml:"start_null"`
 	Attributes []Attr    `yaml:"attributes"`
@@ -173,6 +173,8 @@ type Command struct {
 	Handle string   `yaml:"handle"`
 	Write  []string `yaml:"write"`
 	Change []string `yaml:"change"`
+	// Unless skips a change that also touches one of these attributes.
+	Unless []string `yaml:"unless"`
 	// If restricts the command to a field value.
 	If     *Cond            `yaml:"if"`
 	When   *When            `yaml:"when"`
@@ -249,7 +251,10 @@ func Parse(data []byte) (File, error) {
 		}
 		return File{}, fmt.Errorf("rowfile: %w", err)
 	}
-	return f, f.Check()
+	if err := f.Check(); err != nil {
+		return File{}, err
+	}
+	return f, nil
 }
 
 // Check reports the first defect of the file's form.
@@ -328,7 +333,7 @@ func (r *Row) check() error {
 		if _, ok := MeasurementClasses[m.Class]; !ok {
 			return fmt.Errorf("ride_measurement class %q", m.Class)
 		}
-		if err := m.Value.check(false); err != nil {
+		if err := m.check(false); err != nil {
 			return fmt.Errorf("ride_measurement: %w", err)
 		}
 	}
@@ -336,12 +341,13 @@ func (r *Row) check() error {
 		if p.Type == "" {
 			return fmt.Errorf("part %d: no type", i)
 		}
-		for _, c := range p.Clusters {
+		for j := range p.Clusters {
+			c := &p.Clusters[j]
 			if len(c.Attributes) > 0 || len(c.Commands) > 0 {
 				return fmt.Errorf("part %s: cluster %s: a part declares no attributes or commands", p.Type, c.Cluster)
 			}
-			for _, a := range c.Initial {
-				if a.From != "" {
+			for k := range c.Initial {
+				if a := &c.Initial[k]; a.From != "" {
 					return fmt.Errorf("part %s: initial %s: a part's initial values are constants", p.Type, a.Attribute)
 				}
 			}
@@ -370,7 +376,8 @@ func (c *Cluster) check() error {
 			return fmt.Errorf("feature %q", f.Name)
 		}
 	}
-	for _, a := range c.Initial {
+	for i := range c.Initial {
+		a := &c.Initial[i]
 		if !attrName(a.Attribute) {
 			return fmt.Errorf("initial %q", a.Attribute)
 		}
@@ -390,7 +397,7 @@ func (c *Cluster) check() error {
 		if strings.HasPrefix(a.From, "state") || a.Field != "" {
 			return fmt.Errorf("initial %s: reads no state or field", a.Attribute)
 		}
-		if err := a.Value.check(false); err != nil {
+		if err := a.check(false); err != nil {
 			return fmt.Errorf("initial %s: %w", a.Attribute, err)
 		}
 	}
@@ -399,14 +406,15 @@ func (c *Cluster) check() error {
 			return fmt.Errorf("null %q", n)
 		}
 	}
-	for _, a := range c.Attributes {
+	for i := range c.Attributes {
+		a := &c.Attributes[i]
 		if !attrName(a.Attribute) || a.Literal != nil || a.Field != "" {
 			return fmt.Errorf("attribute %q", a.Attribute)
 		}
 		if a.From == "" && a.Const == nil {
 			return fmt.Errorf("attribute %s: no from", a.Attribute)
 		}
-		if err := a.Value.check(false); err != nil {
+		if err := a.check(false); err != nil {
 			return fmt.Errorf("attribute %s: %w", a.Attribute, err)
 		}
 	}
@@ -435,7 +443,10 @@ func (cmd *Command) check() error {
 	if kinds != 1 {
 		return errors.New("one of handle, write and change")
 	}
-	for _, n := range slices.Concat(cmd.Write, cmd.Change) {
+	if len(cmd.Unless) > 0 && len(cmd.Change) == 0 {
+		return errors.New("unless is a change's")
+	}
+	for _, n := range slices.Concat(cmd.Write, cmd.Change, cmd.Unless) {
 		if !ident(n) {
 			return fmt.Errorf("attribute %q", n)
 		}
@@ -461,10 +472,11 @@ func (cmd *Command) check() error {
 	if cmd.Raw != nil {
 		return cmd.Raw.check(true)
 	}
-	for k, v := range cmd.JSON {
+	for k := range cmd.JSON {
 		if k == "" || strings.Contains(k, "..") {
 			return fmt.Errorf("json key %q", k)
 		}
+		v := cmd.JSON[k]
 		if err := v.check(true); err != nil {
 			return fmt.Errorf("json %s: %w", k, err)
 		}
