@@ -1,6 +1,6 @@
 # go-hamapping: concept
 
-Status: H3 delivered (v0.2.0, 2026-10-25): `Options.StableKey`, the method
+Status: F1 delivered (v0.2.1, 2026-10-26): `Options.Name`; H3 delivered (v0.2.0, 2026-10-25): `Options.StableKey`, the method
 constants and the generated key table; H1 (v0.1.0, 2026-10-25): the row
 format, the generated Go form, the guards and the rows of Sequence step 2 with their round
 trips; see [`docs/rows.md`](docs/rows.md) and
