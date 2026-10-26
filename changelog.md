@@ -6,6 +6,25 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-26
+
+The verbatim name of go-ha2fabric's H3 report (Q3), brief F1.
+
+### Added
+
+- `Options.Name func(model.Entity) (name string, verbatim bool)`: when it
+  returns a non-empty name with `verbatim` true, that name is the
+  endpoint's NodeLabel as given — without the device name in front, cut to
+  32 bytes the way `device.ComposeNodeLabel` cuts — because a name a user
+  typed in a UI is final. Nil, an empty name or `verbatim` false keeps the
+  composed label (device name and entity name).
+
+### Changed
+
+- go-fabric `v0.13.3` (was `v0.12.0`); the generated rows are unchanged.
+  None of go-fabric's 0.13 breaks reaches this module: it calls no
+  `MarkComplete` and implements no `thermo.Sink`.
+
 ## [0.2.0] - 2026-10-25
 
 The follow-ups of go-ha2fabric's H2 report (Q3–Q5), brief H3.
