@@ -104,6 +104,15 @@ type Options struct {
 	// go-hamqtt's model has no entity identity besides Key (model.Entity,
 	// model/entity.go:27-40 at v0.38.0), so the source supplies it here.
 	StableKey func(model.Entity) string
+
+	// Name returns an entity's name as the source holds it. When verbatim
+	// is true and name is not empty, name is the endpoint's NodeLabel as
+	// given — without the device name in front, cut to go-fabric's 32-byte
+	// limit the way device.ComposeNodeLabel cuts — because a name a user
+	// typed in a UI is final. When verbatim is false, or name is empty, or
+	// Name is nil, the label is composed as without the option: the
+	// device name and the entity name (device.ComposeNodeLabel).
+	Name func(model.Entity) (name string, verbatim bool)
 }
 
 // Map plans dev's entities: every entity gets a verdict, every mapped one
@@ -117,6 +126,9 @@ func Map(dev *model.Device, entities []model.Entity, opts ...Options) (*Plan, []
 	for _, o := range opts {
 		if o.StableKey != nil {
 			p.opts.StableKey = o.StableKey
+		}
+		if o.Name != nil {
+			p.opts.Name = o.Name
 		}
 	}
 	verdicts := make([]Verdict, 0, len(entities))
@@ -273,7 +285,14 @@ func (p *Plan) options(e model.Entity) device.Options {
 		stable = uid + "/" + stable
 	}
 	name := e.Desc().Name.Default
+	verbatim := false
+	if p.opts.Name != nil {
+		if n, v := p.opts.Name(e); v && n != "" {
+			name, verbatim = n, true
+		}
+	}
 	switch {
+	case verbatim: // final as given; only the 32-byte cut below applies
 	case name == "" && devName == "":
 		name = key
 	case name == "":
