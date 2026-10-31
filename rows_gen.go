@@ -42,6 +42,7 @@ import (
 	temperaturemeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/temperaturemeasurement"
 	thermostatdef "github.com/SukramJ/go-fabric/cluster/spec/thermostat"
 	totalvolatileorganiccompoundsconcentrationmeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/totalvolatileorganiccompoundsconcentrationmeasurement"
+	valveconfigurationandcontroldef "github.com/SukramJ/go-fabric/cluster/spec/valveconfigurationandcontrol"
 	windowcoveringdef "github.com/SukramJ/go-fabric/cluster/spec/windowcovering"
 	"github.com/SukramJ/go-fabric/contract"
 	"github.com/SukramJ/go-fabric/device"
@@ -52,10 +53,13 @@ import (
 // The methods the rows' commands deliver as model.Command.Method: a
 // consumer's command handler compares against these, not against literals.
 const (
+	MethodCloseValve      = "close_valve"
 	MethodDirection       = "direction"
 	MethodFanMode         = "fan_mode"
 	MethodGoHome          = "go_home"
 	MethodMode            = "mode"
+	MethodOpenValve       = "open_valve"
+	MethodOperationMode   = "operation_mode"
 	MethodOscillation     = "oscillation"
 	MethodPause           = "pause"
 	MethodPercentage      = "percentage"
@@ -74,7 +78,7 @@ const (
 )
 
 // methods are the method constants, sorted.
-var methods = []string{MethodDirection, MethodFanMode, MethodGoHome, MethodMode, MethodOscillation, MethodPause, MethodPercentage, MethodPresetMode, MethodPress, MethodResume, MethodRunMode, MethodSelectOption, MethodSetPosition, MethodTemperature, MethodTemperatureHigh, MethodTemperatureLow, MethodTilt, MethodTurnOff, MethodTurnOn}
+var methods = []string{MethodCloseValve, MethodDirection, MethodFanMode, MethodGoHome, MethodMode, MethodOpenValve, MethodOperationMode, MethodOscillation, MethodPause, MethodPercentage, MethodPresetMode, MethodPress, MethodResume, MethodRunMode, MethodSelectOption, MethodSetPosition, MethodTemperature, MethodTemperatureHigh, MethodTemperatureLow, MethodTilt, MethodTurnOff, MethodTurnOn}
 
 // rows is the table, in the order [Map] tries it.
 var rows = []Row{
@@ -3932,5 +3936,215 @@ var rows = []Row{
 		State:  eligibility.StateUnmappable,
 		Reason: "a vacuum without the START feature cannot be started from a run mode",
 		Cites:  []string{"go-ha-catalog data/mqtt.json:6284-6479 (vacuum schema)", "go-ha-catalog data/features.json:102-116 (vacuum feature flags)"},
+	},
+	{
+		ID: "valve/water_valve", Platform: "valve",
+		When:  When{},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/water-valve.element.ts:19 @862ad75f (ValveConfigurationAndControl mandatory)", "go-fabric cluster/spec/valveconfigurationandcontrol/definition_gen.go:30-46,117-119 @v0.15.4 (OpenDuration, RemainingDuration, CurrentState, TargetState; Open, Close; ValveStateEnum)", "go-fabric device/defaults_declared.go:137-149 @v0.15.4 (the kit's valve server needs a StateSource and serves no feature; without it the generated server)", "home-assistant/core homeassistant/components/valve/const.py:36-51 @2026.10.3 (OPEN, CLOSE, SET_POSITION; the states)", "home-assistant/core homeassistant/components/valve/services.py:22-31 @2026.10.3 (open_valve, close_valve)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/valve/index.ts:11-31 @664575a (WaterValve; opening and closing are Transitioning)", "go-ha-catalog data/mqtt.json:6480-6679 (valve schema)", "go-ha-catalog data/features.json:118-123 (valve feature flags)"},
+		Type:  &device.WaterValveType,
+		Caveats: []Caveat{
+			{When: When{Features: &Set{Any: []string{"SET_POSITION"}}}, Reason: "the valve's position is not mapped: go-fabric's valve server serves no Level feature"},
+		},
+		Clusters: []Cluster{
+			{
+				Name: "ValveConfigurationAndControl", ID: valveconfigurationandcontroldef.ClusterID,
+				Attributes: []Attr{
+					{Name: "CurrentState", Value: Value{From: "state"}},
+					{Name: "TargetState", Value: Value{From: "state"}},
+				},
+				Commands: []Command{
+					{Kind: "handle", On: []string{"Open"}, Method: "open_valve", Raw: &Value{Const: "OPEN", HasConst: true}},
+					{Kind: "handle", On: []string{"Close"}, Method: "close_valve", Raw: &Value{Const: "CLOSE", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d valveconfigurationandcontroldef.Declare
+					d.Initial.Null = append(d.Initial.Null, valveconfigurationandcontroldef.AttrOpenDuration)
+					d.Initial.Null = append(d.Initial.Null, valveconfigurationandcontroldef.AttrRemainingDuration)
+					d.Initial.Null = append(d.Initial.Null, valveconfigurationandcontroldef.AttrCurrentState)
+					d.Initial.Null = append(d.Initial.Null, valveconfigurationandcontroldef.AttrTargetState)
+					d.HandleOpen = func(_ context.Context, req valveconfigurationandcontroldef.OpenRequest) (resp struct{}, err error) {
+						f := func(string) (any, bool) { return nil, false }
+						if true {
+							b.emit(ci, 0, f)
+						}
+						return resp, err
+					}
+					d.HandleClose = func(_ context.Context, req valveconfigurationandcontroldef.CloseRequest) (resp struct{}, err error) {
+						f := func(string) (any, bool) { return nil, false }
+						if true {
+							b.emit(ci, 1, f)
+						}
+						return resp, err
+					}
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p valveconfigurationandcontroldef.Patch
+					n := 0
+					switch b.text(&st, ci, 0) {
+					case "closed":
+						p.CurrentState = new(valveconfigurationandcontroldef.ValveStateClosed)
+						n++
+					case "closing":
+						p.CurrentState = new(valveconfigurationandcontroldef.ValveStateTransitioning)
+						n++
+					case "open":
+						p.CurrentState = new(valveconfigurationandcontroldef.ValveStateOpen)
+						n++
+					case "opening":
+						p.CurrentState = new(valveconfigurationandcontroldef.ValveStateTransitioning)
+						n++
+					}
+					switch b.text(&st, ci, 1) {
+					case "closed":
+						p.TargetState = new(valveconfigurationandcontroldef.ValveStateClosed)
+						n++
+					case "closing":
+						p.TargetState = new(valveconfigurationandcontroldef.ValveStateClosed)
+						n++
+					case "open":
+						p.TargetState = new(valveconfigurationandcontroldef.ValveStateOpen)
+						n++
+					case "opening":
+						p.TargetState = new(valveconfigurationandcontroldef.ValveStateOpen)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, valveconfigurationandcontroldef.Wrap(b.server(valveconfigurationandcontroldef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
+		ID: "water_heater/thermostat", Platform: "water_heater",
+		When:  When{},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/thermostat-device.element.ts:25 @862ad75f (Thermostat mandatory)", "matter.js packages/model/src/standard/elements/temperature.element.ts:12 @862ad75f (the temperature datatype, int16 in 0.01 degC)", "home-assistant/core homeassistant/components/water_heater/__init__.py:146-151,164-182,187-219 @2026.10.3 (the state is the operation mode; min_temp, max_temp; current_temperature, temperature)", "home-assistant/core homeassistant/components/water_heater/const.py:53-58 @2026.10.3 (the operation states eco, electric, performance, high_demand, heat_pump, gas)", "home-assistant/core homeassistant/const.py:299-300 @2026.10.3 (on, off)", "home-assistant/core homeassistant/components/water_heater/services.py:78-100 @2026.10.3 (turn_on, turn_off, set_temperature, set_operation_mode)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/water-heater/index.ts:14-20,34-45 @664575a (a heating-only Thermostat with the entity's limits)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/water-heater/behaviors/water-heater-thermostat-server.ts:46-81 @664575a (off is Off, else Heat; off to set_operation_mode, else turn_on; the setpoint to set_temperature)", "go-ha-catalog data/mqtt.json:6680-6900 (water_heater schema; min_temp, max_temp at 6770-6789)", "go-ha-catalog data/features.json:124-129 (water_heater feature flags)"},
+		Type:  &device.ThermostatType,
+		Caveats: []Caveat{
+			{When: When{}, Reason: "operation modes other than off are all SystemMode Heat; the WaterHeater device type (modes, boost) is not mapped yet"},
+		},
+		Clusters: []Cluster{
+			{
+				Name: "Thermostat", ID: thermostatdef.ClusterID,
+				Features: []Feature{{Name: "Heating", When: nil}},
+				Attributes: []Attr{
+					{Name: "LocalTemperature", Value: Value{From: "state.current_temperature", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}},
+					{Name: "OccupiedHeatingSetpoint", Value: Value{From: "state.temperature", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}},
+					{Name: "SystemMode", Value: Value{From: "state"}},
+				},
+				Initial: []Attr{
+					{Name: "ControlSequenceOfOperation", Value: Value{Const: "ControlSequenceOfOperationHeatingOnly", HasConst: true}},
+					{Name: "AbsMinHeatSetpointLimit", Value: Value{From: "extra.min_temp", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}},
+					{Name: "MinHeatSetpointLimit", Value: Value{From: "extra.min_temp", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}},
+					{Name: "AbsMaxHeatSetpointLimit", Value: Value{From: "extra.max_temp", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}},
+					{Name: "MaxHeatSetpointLimit", Value: Value{From: "extra.max_temp", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}},
+				},
+				Commands: []Command{
+					{Kind: "write", On: []string{"SystemMode"}, Method: "operation_mode", Raw: &Value{Field: "SystemMode", Enum: map[int64]string{int64(thermostatdef.SystemModeHeat): "on", int64(thermostatdef.SystemModeOff): "off"}}},
+					{Kind: "write", On: []string{"OccupiedHeatingSetpoint"}, Method: "temperature", Raw: &Value{Field: "OccupiedHeatingSetpoint", Units: map[string]Linear{"°C": {Offset: 0, Scale: 0.01, Add: 0}, "°F": {Offset: 0, Scale: 0.018, Add: 32}}, DefaultUnit: "°C", Digits: 1}},
+					{Kind: "change", On: []string{"OccupiedHeatingSetpoint"}, Method: "temperature", Raw: &Value{Field: "OccupiedHeatingSetpoint", Units: map[string]Linear{"°C": {Offset: 0, Scale: 0.01, Add: 0}, "°F": {Offset: 0, Scale: 0.018, Add: 32}}, DefaultUnit: "°C", Digits: 1}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d thermostatdef.Declare
+					d.Features |= thermostatdef.FeatureHeating
+					d.Initial.ControlSequenceOfOperation = new(thermostatdef.ControlSequenceOfOperationHeatingOnly)
+					if v, ok := b.number(nil, ci, 1); ok {
+						d.Initial.AbsMinHeatSetpointLimit = new(conv[int16](v))
+					}
+					if v, ok := b.number(nil, ci, 2); ok {
+						d.Initial.MinHeatSetpointLimit = new(conv[int16](v))
+					}
+					if v, ok := b.number(nil, ci, 3); ok {
+						d.Initial.AbsMaxHeatSetpointLimit = new(conv[int16](v))
+					}
+					if v, ok := b.number(nil, ci, 4); ok {
+						d.Initial.MaxHeatSetpointLimit = new(conv[int16](v))
+					}
+					d.OnWrite = func(_ context.Context, next thermostatdef.State, attrID uint32) error {
+						f := func(name string) (any, bool) {
+							switch name {
+							case "OccupiedHeatingSetpoint":
+								return next.OccupiedHeatingSetpoint, true
+							case "SystemMode":
+								return next.SystemMode, true
+							}
+							return nil, false
+						}
+						if slices.Contains([]uint32{thermostatdef.AttrSystemMode}, attrID) && slices.Contains([]thermostatdef.SystemModeEnum{thermostatdef.SystemModeOff, thermostatdef.SystemModeHeat}, next.SystemMode) {
+							b.emit(ci, 0, f)
+						}
+						if slices.Contains([]uint32{thermostatdef.AttrOccupiedHeatingSetpoint}, attrID) && true {
+							b.emit(ci, 1, f)
+						}
+						return nil
+					}
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p thermostatdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.LocalTemperature = new(conv[int16](v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, thermostatdef.AttrLocalTemperature)
+						n++
+					}
+					if v, ok := b.number(&st, ci, 1); ok {
+						p.OccupiedHeatingSetpoint = new(conv[int16](v))
+						n++
+					}
+					switch b.text(&st, ci, 2) {
+					case "eco":
+						p.SystemMode = new(thermostatdef.SystemModeHeat)
+						n++
+					case "electric":
+						p.SystemMode = new(thermostatdef.SystemModeHeat)
+						n++
+					case "gas":
+						p.SystemMode = new(thermostatdef.SystemModeHeat)
+						n++
+					case "heat_pump":
+						p.SystemMode = new(thermostatdef.SystemModeHeat)
+						n++
+					case "high_demand":
+						p.SystemMode = new(thermostatdef.SystemModeHeat)
+						n++
+					case "off":
+						p.SystemMode = new(thermostatdef.SystemModeOff)
+						n++
+					case "on":
+						p.SystemMode = new(thermostatdef.SystemModeHeat)
+						n++
+					case "performance":
+						p.SystemMode = new(thermostatdef.SystemModeHeat)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, thermostatdef.Wrap(b.server(thermostatdef.ClusterID)).Set(p)
+				},
+				watch: func(b *binding, ci int) func() {
+					return b.target.OnChanged(thermostatdef.ClusterID, func(c contract.Change) {
+						st := thermostatdef.Wrap(b.server(thermostatdef.ClusterID)).Get()
+						f := func(name string) (any, bool) {
+							switch name {
+							case "OccupiedHeatingSetpoint":
+								return st.OccupiedHeatingSetpoint, true
+							}
+							return nil, false
+						}
+						if changed(c, thermostatdef.AttrOccupiedHeatingSetpoint) && true {
+							b.emit(ci, 2, f)
+						}
+					})
+				},
+			},
+		},
 	},
 }

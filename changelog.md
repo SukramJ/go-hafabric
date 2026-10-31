@@ -39,6 +39,13 @@ All notable changes to this project are documented here. The format follows
 - vacuum: a RoboticVacuumCleaner for an entity with START — RvcRunMode
   Idle/Cleaning (`run_mode`), RvcOperationalState from the activity
   (`pause`, `resume`, `go_home`), on the clusters' generated servers.
+- valve: a WaterValve — CurrentState and TargetState from the state,
+  Open and Close to `open_valve` and `close_valve`, on the generated
+  server; a position is a caveat.
+- water_heater: a heating-only Thermostat — SystemMode Off for `off`, Heat
+  for every other operation mode (writes to `operation_mode` with `off` or
+  `on`), the setpoint to `temperature`, the limits from min_temp and
+  max_temp.
 - The row format's `otherwise` on a handled command: the handler's
   response when none of its commands' `if` holds (RvcRunMode's
   UnsupportedMode).
