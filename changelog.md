@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-31
+
+The roadmap rows R1–R5 (go-ha2fabric `docs/roadmap.md`), brief R1–R5:
+sensors, buttons, events, selects, climate, vacuum, valve, water heater,
+media player, and the row format's `events`, `options` and `otherwise`.
+
 ### Added
 
 - The row format's `events` on a cluster: events emitted through the
@@ -53,16 +59,37 @@ All notable changes to this project are documented here. The format follows
   LevelControl from `volume_level` (writes to `volume_level`, 0 to 254).
 - The row format's `otherwise` on a handled command: the handler's
   response when none of its commands' `if` holds (RvcRunMode's
-  UnsupportedMode).
+  UnsupportedMode, KeypadInput's UnsupportedKey).
+- Method constants for the new methods: `MethodPress`, `MethodSelectOption`,
+  `MethodTurnOn`, `MethodTurnOff`, `MethodFanMode`, `MethodRunMode`,
+  `MethodPause`, `MethodResume`, `MethodGoHome`, `MethodOpenValve`,
+  `MethodCloseValve`, `MethodOperationMode`, `MethodVolumeMute`,
+  `MethodVolumeLevel`, `MethodMediaPlay`, `MethodMediaPause`,
+  `MethodMediaStop`, `MethodKey`.
+- `docs/by_design.md`: a switch is a plug-in unit, a moisture sensor a
+  SoilSensor, a button a plug-in unit, a select's mode its option's index.
 
 ### Changed
 
+- go-fabric v0.15.4, go-hamqtt v0.39.0.
 - The unmappable verdicts of `sensor/no_device_type` and
   `binary_sensor/no_device_type` no longer say "in H1" and list only the
   classes no row maps; `number/unmapped` no longer says "in H1".
 - `climate/thermostat`'s caveats no longer say "in H1"; the preset caveat
   names go-fabric's setpoint requirement, the fan caveat the missing
   turn_on and turn_off.
+- `TestSensorUnitsAreTheCatalogs` holds the catalog's null unit as the
+  units key "" instead of dropping it.
+
+### Note for consumers
+
+- go-ha2fabric translates the new methods into Home Assistant service
+  calls: `press`, `select_option` (the option), `turn_on`/`turn_off`,
+  `fan_mode` (the fan mode's name), `run_mode` (`0` idle, `1` cleaning),
+  `pause`, `resume`, `go_home`, `open_valve`, `close_valve`,
+  `operation_mode` (`off` or `on`), `volume_mute` (`true`/`false`),
+  `volume_level` (0 to 254), `media_play`, `media_pause`, `media_stop`,
+  `key` (the CEC key code: 64 power, 65 volume up, 66 volume down, 67 mute).
 
 ## [0.2.1] - 2026-10-26
 
