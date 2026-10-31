@@ -46,6 +46,11 @@ All notable changes to this project are documented here. The format follows
   for every other operation mode (writes to `operation_mode` with `off` or
   `on`), the setpoint to `temperature`, the limits from min_temp and
   max_temp.
+- media_player: a tv is a BasicVideoPlayer (OnOff, MediaPlayback with
+  `media_play`, `media_pause`, `media_stop`, KeypadInput's Power and volume
+  keys to `key`); every other player a Speaker — OnOff from the power
+  (`turn_on`, `turn_off`) or, without it, from the mute (`volume_mute`),
+  LevelControl from `volume_level` (writes to `volume_level`, 0 to 254).
 - The row format's `otherwise` on a handled command: the handler's
   response when none of its commands' `if` holds (RvcRunMode's
   UnsupportedMode).

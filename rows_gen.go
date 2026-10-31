@@ -20,7 +20,9 @@ import (
 	fancontroldef "github.com/SukramJ/go-fabric/cluster/spec/fancontrol"
 	flowmeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/flowmeasurement"
 	illuminancemeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/illuminancemeasurement"
+	keypadinputdef "github.com/SukramJ/go-fabric/cluster/spec/keypadinput"
 	levelcontroldef "github.com/SukramJ/go-fabric/cluster/spec/levelcontrol"
+	mediaplaybackdef "github.com/SukramJ/go-fabric/cluster/spec/mediaplayback"
 	modeselectdef "github.com/SukramJ/go-fabric/cluster/spec/modeselect"
 	nitrogendioxideconcentrationmeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/nitrogendioxideconcentrationmeasurement"
 	occupancysensingdef "github.com/SukramJ/go-fabric/cluster/spec/occupancysensing"
@@ -57,6 +59,10 @@ const (
 	MethodDirection       = "direction"
 	MethodFanMode         = "fan_mode"
 	MethodGoHome          = "go_home"
+	MethodKey             = "key"
+	MethodMediaPause      = "media_pause"
+	MethodMediaPlay       = "media_play"
+	MethodMediaStop       = "media_stop"
 	MethodMode            = "mode"
 	MethodOpenValve       = "open_valve"
 	MethodOperationMode   = "operation_mode"
@@ -75,10 +81,12 @@ const (
 	MethodTilt            = "tilt"
 	MethodTurnOff         = "turn_off"
 	MethodTurnOn          = "turn_on"
+	MethodVolumeLevel     = "volume_level"
+	MethodVolumeMute      = "volume_mute"
 )
 
 // methods are the method constants, sorted.
-var methods = []string{MethodCloseValve, MethodDirection, MethodFanMode, MethodGoHome, MethodMode, MethodOpenValve, MethodOperationMode, MethodOscillation, MethodPause, MethodPercentage, MethodPresetMode, MethodPress, MethodResume, MethodRunMode, MethodSelectOption, MethodSetPosition, MethodTemperature, MethodTemperatureHigh, MethodTemperatureLow, MethodTilt, MethodTurnOff, MethodTurnOn}
+var methods = []string{MethodCloseValve, MethodDirection, MethodFanMode, MethodGoHome, MethodKey, MethodMediaPause, MethodMediaPlay, MethodMediaStop, MethodMode, MethodOpenValve, MethodOperationMode, MethodOscillation, MethodPause, MethodPercentage, MethodPresetMode, MethodPress, MethodResume, MethodRunMode, MethodSelectOption, MethodSetPosition, MethodTemperature, MethodTemperatureHigh, MethodTemperatureLow, MethodTilt, MethodTurnOff, MethodTurnOn, MethodVolumeLevel, MethodVolumeMute}
 
 // rows is the table, in the order [Map] tries it.
 var rows = []Row{
@@ -2411,6 +2419,493 @@ var rows = []Row{
 				},
 			},
 		},
+	},
+	{
+		ID: "media_player/video_player", Platform: "media_player",
+		When:  When{DeviceClass: []string{"tv"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/basic-video-player.element.ts:22,27,30 @862ad75f (OnOff, MediaPlayback and KeypadInput mandatory)", "go-fabric cluster/spec/mediaplayback/definition_gen.go:45-48,169-172,192-197,425-428 @v0.15.4 (Play, Pause, Stop; PlaybackStateEnum; StatusEnum; PlaybackResponse)", "go-fabric cluster/spec/keypadinput/definition_gen.go:95-98,238-240,253-255,272-274 @v0.15.4 (Power, VolumeUp, VolumeDown, Mute; StatusEnum; SendKey)", "go-fabric device/defaults_media.go:63-72 @v0.15.4 (the kit's media servers need their ports; without them the generated servers)", "home-assistant/core homeassistant/components/media_player/services.py:125-163 @2026.10.3 (turn_on, turn_off, toggle, volume_up, volume_down, media_play, media_pause, media_stop)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/media-player/index.ts:24-39 @664575a (device_class tv is a video player)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/media-player/behaviors/media-player-media-playback-server.ts:17-63 @664575a (the playback states and commands)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/media-player/behaviors/media-player-keypad-input-server.ts:42-130 @664575a (keys onto services)", "go-ha-catalog data/features.json:61-83 (media_player feature flags)", "home-assistant/core homeassistant/components/media_player/const.py:69-84,196-230 @2026.10.3 (the states, the feature flags, the device classes)"},
+		Type:  &device.BasicVideoPlayerType,
+		Caveats: []Caveat{
+			{When: When{}, Reason: "the volume is reached through KeypadInput's VolumeUp, VolumeDown and Mute keys only; sources and tracks are not mapped"},
+		},
+		Clusters: []Cluster{
+			{
+				Name: "OnOff", ID: onoffdef.ClusterID,
+				Attributes: []Attr{
+					{Name: "OnOff", Value: Value{From: "state"}},
+				},
+				Commands: []Command{
+					{Kind: "handle", On: []string{"On"}, Method: "turn_on", Raw: &Value{Const: "ON", HasConst: true}, When: &When{Features: &Set{All: []string{"TURN_ON", "TURN_OFF"}}}},
+					{Kind: "handle", On: []string{"Off"}, Method: "turn_off", Raw: &Value{Const: "OFF", HasConst: true}, When: &When{Features: &Set{All: []string{"TURN_ON", "TURN_OFF"}}}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d onoffdef.Declare
+					if b.match(&When{Features: &Set{All: []string{"TURN_ON", "TURN_OFF"}}}) {
+						d.HandleOn = func(_ context.Context, req onoffdef.OnRequest) (resp struct{}, err error) {
+							f := func(string) (any, bool) { return nil, false }
+							if true {
+								b.emit(ci, 0, f)
+							}
+							return resp, err
+						}
+					}
+					if b.match(&When{Features: &Set{All: []string{"TURN_ON", "TURN_OFF"}}}) {
+						d.HandleOff = func(_ context.Context, req onoffdef.OffRequest) (resp struct{}, err error) {
+							f := func(string) (any, bool) { return nil, false }
+							if true {
+								b.emit(ci, 1, f)
+							}
+							return resp, err
+						}
+					}
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p onoffdef.Patch
+					n := 0
+					switch b.text(&st, ci, 0) {
+					case "buffering":
+						p.OnOff = new(true)
+						n++
+					case "idle":
+						p.OnOff = new(true)
+						n++
+					case "off":
+						p.OnOff = new(false)
+						n++
+					case "on":
+						p.OnOff = new(true)
+						n++
+					case "paused":
+						p.OnOff = new(true)
+						n++
+					case "playing":
+						p.OnOff = new(true)
+						n++
+					case "standby":
+						p.OnOff = new(false)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, onoffdef.Wrap(b.server(onoffdef.ClusterID)).Set(p)
+				},
+			},
+			{
+				Name: "MediaPlayback", ID: mediaplaybackdef.ClusterID,
+				Attributes: []Attr{
+					{Name: "CurrentState", Value: Value{From: "state"}},
+				},
+				Initial: []Attr{
+					{Name: "CurrentState", Value: Value{Const: "PlaybackStateNotPlaying", HasConst: true}},
+				},
+				Commands: []Command{
+					{Kind: "handle", On: []string{"Play"}, Method: "media_play", Raw: &Value{Const: "PLAY", HasConst: true}},
+					{Kind: "handle", On: []string{"Pause"}, Method: "media_pause", Raw: &Value{Const: "PAUSE", HasConst: true}},
+					{Kind: "handle", On: []string{"Stop"}, Method: "media_stop", Raw: &Value{Const: "STOP", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d mediaplaybackdef.Declare
+					d.Initial.CurrentState = new(mediaplaybackdef.PlaybackStateNotPlaying)
+					d.HandlePlay = func(_ context.Context, req mediaplaybackdef.PlayRequest) (resp mediaplaybackdef.PlaybackResponse, err error) {
+						f := func(string) (any, bool) { return nil, false }
+						if true {
+							b.emit(ci, 0, f)
+						}
+						return resp, err
+					}
+					d.HandlePause = func(_ context.Context, req mediaplaybackdef.PauseRequest) (resp mediaplaybackdef.PlaybackResponse, err error) {
+						f := func(string) (any, bool) { return nil, false }
+						if true {
+							b.emit(ci, 1, f)
+						}
+						return resp, err
+					}
+					d.HandleStop = func(_ context.Context, req mediaplaybackdef.StopRequest) (resp mediaplaybackdef.PlaybackResponse, err error) {
+						f := func(string) (any, bool) { return nil, false }
+						if true {
+							b.emit(ci, 2, f)
+						}
+						return resp, err
+					}
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p mediaplaybackdef.Patch
+					n := 0
+					switch b.text(&st, ci, 0) {
+					case "buffering":
+						p.CurrentState = new(mediaplaybackdef.PlaybackStateBuffering)
+						n++
+					case "idle":
+						p.CurrentState = new(mediaplaybackdef.PlaybackStateNotPlaying)
+						n++
+					case "off":
+						p.CurrentState = new(mediaplaybackdef.PlaybackStateNotPlaying)
+						n++
+					case "on":
+						p.CurrentState = new(mediaplaybackdef.PlaybackStateNotPlaying)
+						n++
+					case "paused":
+						p.CurrentState = new(mediaplaybackdef.PlaybackStatePaused)
+						n++
+					case "playing":
+						p.CurrentState = new(mediaplaybackdef.PlaybackStatePlaying)
+						n++
+					case "standby":
+						p.CurrentState = new(mediaplaybackdef.PlaybackStateNotPlaying)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, mediaplaybackdef.Wrap(b.server(mediaplaybackdef.ClusterID)).Set(p)
+				},
+			},
+			{
+				Name: "KeypadInput", ID: keypadinputdef.ClusterID,
+				Commands: []Command{
+					{Kind: "handle", On: []string{"SendKey"}, Method: "key", Raw: &Value{Field: "KeyCode"}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d keypadinputdef.Declare
+					d.HandleSendKey = func(_ context.Context, req keypadinputdef.SendKeyRequest) (resp keypadinputdef.SendKeyResponse, err error) {
+						f := func(name string) (any, bool) {
+							switch name {
+							case "KeyCode":
+								return req.KeyCode, true
+							}
+							return nil, false
+						}
+						handled := false
+						if slices.Contains([]keypadinputdef.CecKeyCodeEnum{keypadinputdef.CecKeyCodePower, keypadinputdef.CecKeyCodeVolumeUp, keypadinputdef.CecKeyCodeVolumeDown, keypadinputdef.CecKeyCodeMute}, req.KeyCode) {
+							b.emit(ci, 0, f)
+							handled = true
+						}
+						if !handled {
+							resp = keypadinputdef.SendKeyResponse{Status: keypadinputdef.StatusUnsupportedKey}
+						}
+						return resp, err
+					}
+					return d
+				},
+			},
+		},
+	},
+	{
+		ID: "media_player/speaker", Platform: "media_player",
+		When:  When{Features: &Set{All: []string{"TURN_ON", "TURN_OFF"}}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/speaker.element.ts:18-19 @862ad75f (OnOff and LevelControl mandatory)", "go-fabric cluster/spec/levelcontrol/values.go:19-44 @v0.15.4 (levels 0 to 254, a unit value times 254)", "home-assistant/core homeassistant/components/media_player/__init__.py:334,362-364,379-381 @2026.10.3 (volume_level 0 to 1, is_volume_muted)", "home-assistant/core homeassistant/components/media_player/services.py:125-130,182-203 @2026.10.3 (turn_on, turn_off, volume_set, volume_mute)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/media-player/index.ts:41-91 @664575a (a Speaker; power with TURN_ON and TURN_OFF, else mute as OnOff; VolumeSet as LevelControl)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/media-player/behaviors/media-player-power-on-off-server.ts:8-16 @664575a (off and standby are off)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/media-player/behaviors/media-player-on-off-server.ts:8-17 @664575a (OnOff is not muted)", "go-ha-catalog data/features.json:61-83 (media_player feature flags)", "home-assistant/core homeassistant/components/media_player/const.py:69-84,196-230 @2026.10.3 (the states, the feature flags, the device classes)"},
+		Type:  &device.SpeakerType,
+		Clusters: []Cluster{
+			{
+				Name: "OnOff", ID: onoffdef.ClusterID,
+				Attributes: []Attr{
+					{Name: "OnOff", Value: Value{From: "state"}},
+				},
+				Commands: []Command{
+					{Kind: "handle", On: []string{"On"}, Method: "turn_on", Raw: &Value{Const: "ON", HasConst: true}},
+					{Kind: "handle", On: []string{"Off"}, Method: "turn_off", Raw: &Value{Const: "OFF", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d onoffdef.Declare
+					d.HandleOn = func(_ context.Context, req onoffdef.OnRequest) (resp struct{}, err error) {
+						f := func(string) (any, bool) { return nil, false }
+						if true {
+							b.emit(ci, 0, f)
+						}
+						return resp, err
+					}
+					d.HandleOff = func(_ context.Context, req onoffdef.OffRequest) (resp struct{}, err error) {
+						f := func(string) (any, bool) { return nil, false }
+						if true {
+							b.emit(ci, 1, f)
+						}
+						return resp, err
+					}
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p onoffdef.Patch
+					n := 0
+					switch b.text(&st, ci, 0) {
+					case "buffering":
+						p.OnOff = new(true)
+						n++
+					case "idle":
+						p.OnOff = new(true)
+						n++
+					case "off":
+						p.OnOff = new(false)
+						n++
+					case "on":
+						p.OnOff = new(true)
+						n++
+					case "paused":
+						p.OnOff = new(true)
+						n++
+					case "playing":
+						p.OnOff = new(true)
+						n++
+					case "standby":
+						p.OnOff = new(false)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, onoffdef.Wrap(b.server(onoffdef.ClusterID)).Set(p)
+				},
+			},
+			{
+				Name: "LevelControl", ID: levelcontroldef.ClusterID,
+				Attributes: []Attr{
+					{Name: "CurrentLevel", Value: Value{From: "state.volume_level", Linear: Linear{Offset: 0, Scale: 254, Add: 0}, Min: new(float64(0)), Max: new(float64(254))}},
+				},
+				Commands: []Command{
+					{Kind: "change", On: []string{"CurrentLevel"}, Method: "volume_level", Raw: &Value{Field: "CurrentLevel"}, When: &When{Features: &Set{Any: []string{"VOLUME_SET"}}}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d levelcontroldef.Declare
+					d.Initial.Null = append(d.Initial.Null, levelcontroldef.AttrCurrentLevel)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p levelcontroldef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.CurrentLevel = new(conv[uint8](v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, levelcontroldef.AttrCurrentLevel)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, levelcontroldef.Wrap(b.server(levelcontroldef.ClusterID)).Set(p)
+				},
+				watch: func(b *binding, ci int) func() {
+					return b.target.OnChanged(levelcontroldef.ClusterID, func(c contract.Change) {
+						st := levelcontroldef.Wrap(b.server(levelcontroldef.ClusterID)).Get()
+						f := func(name string) (any, bool) {
+							switch name {
+							case "CurrentLevel":
+								return st.CurrentLevel, true
+							}
+							return nil, false
+						}
+						if changed(c, levelcontroldef.AttrCurrentLevel) && true {
+							b.emit(ci, 0, f)
+						}
+					})
+				},
+			},
+		},
+	},
+	{
+		ID: "media_player/speaker_mute", Platform: "media_player",
+		When:  When{Features: &Set{Any: []string{"VOLUME_MUTE"}}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/speaker.element.ts:18-19 @862ad75f (OnOff and LevelControl mandatory)", "go-fabric cluster/spec/levelcontrol/values.go:19-44 @v0.15.4 (levels 0 to 254, a unit value times 254)", "home-assistant/core homeassistant/components/media_player/__init__.py:334,362-364,379-381 @2026.10.3 (volume_level 0 to 1, is_volume_muted)", "home-assistant/core homeassistant/components/media_player/services.py:125-130,182-203 @2026.10.3 (turn_on, turn_off, volume_set, volume_mute)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/media-player/index.ts:41-91 @664575a (a Speaker; power with TURN_ON and TURN_OFF, else mute as OnOff; VolumeSet as LevelControl)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/media-player/behaviors/media-player-power-on-off-server.ts:8-16 @664575a (off and standby are off)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/media-player/behaviors/media-player-on-off-server.ts:8-17 @664575a (OnOff is not muted)", "go-ha-catalog data/features.json:61-83 (media_player feature flags)", "home-assistant/core homeassistant/components/media_player/const.py:69-84,196-230 @2026.10.3 (the states, the feature flags, the device classes)"},
+		Type:  &device.SpeakerType,
+		Clusters: []Cluster{
+			{
+				Name: "OnOff", ID: onoffdef.ClusterID,
+				Attributes: []Attr{
+					{Name: "OnOff", Value: Value{From: "state.is_volume_muted"}},
+				},
+				Commands: []Command{
+					{Kind: "handle", On: []string{"On"}, Method: "volume_mute", Raw: &Value{Const: false, HasConst: true}},
+					{Kind: "handle", On: []string{"Off"}, Method: "volume_mute", Raw: &Value{Const: true, HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d onoffdef.Declare
+					d.HandleOn = func(_ context.Context, req onoffdef.OnRequest) (resp struct{}, err error) {
+						f := func(string) (any, bool) { return nil, false }
+						if true {
+							b.emit(ci, 0, f)
+						}
+						return resp, err
+					}
+					d.HandleOff = func(_ context.Context, req onoffdef.OffRequest) (resp struct{}, err error) {
+						f := func(string) (any, bool) { return nil, false }
+						if true {
+							b.emit(ci, 1, f)
+						}
+						return resp, err
+					}
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p onoffdef.Patch
+					n := 0
+					switch b.text(&st, ci, 0) {
+					case "off":
+						p.OnOff = new(true)
+						n++
+					case "on":
+						p.OnOff = new(false)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, onoffdef.Wrap(b.server(onoffdef.ClusterID)).Set(p)
+				},
+			},
+			{
+				Name: "LevelControl", ID: levelcontroldef.ClusterID,
+				Attributes: []Attr{
+					{Name: "CurrentLevel", Value: Value{From: "state.volume_level", Linear: Linear{Offset: 0, Scale: 254, Add: 0}, Min: new(float64(0)), Max: new(float64(254))}},
+				},
+				Commands: []Command{
+					{Kind: "change", On: []string{"CurrentLevel"}, Method: "volume_level", Raw: &Value{Field: "CurrentLevel"}, When: &When{Features: &Set{Any: []string{"VOLUME_SET"}}}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d levelcontroldef.Declare
+					d.Initial.Null = append(d.Initial.Null, levelcontroldef.AttrCurrentLevel)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p levelcontroldef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.CurrentLevel = new(conv[uint8](v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, levelcontroldef.AttrCurrentLevel)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, levelcontroldef.Wrap(b.server(levelcontroldef.ClusterID)).Set(p)
+				},
+				watch: func(b *binding, ci int) func() {
+					return b.target.OnChanged(levelcontroldef.ClusterID, func(c contract.Change) {
+						st := levelcontroldef.Wrap(b.server(levelcontroldef.ClusterID)).Get()
+						f := func(name string) (any, bool) {
+							switch name {
+							case "CurrentLevel":
+								return st.CurrentLevel, true
+							}
+							return nil, false
+						}
+						if changed(c, levelcontroldef.AttrCurrentLevel) && true {
+							b.emit(ci, 0, f)
+						}
+					})
+				},
+			},
+		},
+	},
+	{
+		ID: "media_player/speaker_volume", Platform: "media_player",
+		When:  When{Features: &Set{Any: []string{"VOLUME_SET"}}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/speaker.element.ts:18-19 @862ad75f (OnOff and LevelControl mandatory)", "go-fabric cluster/spec/levelcontrol/values.go:19-44 @v0.15.4 (levels 0 to 254, a unit value times 254)", "home-assistant/core homeassistant/components/media_player/__init__.py:334,362-364,379-381 @2026.10.3 (volume_level 0 to 1, is_volume_muted)", "home-assistant/core homeassistant/components/media_player/services.py:125-130,182-203 @2026.10.3 (turn_on, turn_off, volume_set, volume_mute)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/media-player/index.ts:41-91 @664575a (a Speaker; power with TURN_ON and TURN_OFF, else mute as OnOff; VolumeSet as LevelControl)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/media-player/behaviors/media-player-power-on-off-server.ts:8-16 @664575a (off and standby are off)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/media-player/behaviors/media-player-on-off-server.ts:8-17 @664575a (OnOff is not muted)", "go-ha-catalog data/features.json:61-83 (media_player feature flags)", "home-assistant/core homeassistant/components/media_player/const.py:69-84,196-230 @2026.10.3 (the states, the feature flags, the device classes)"},
+		Type:  &device.SpeakerType,
+		Caveats: []Caveat{
+			{When: When{}, Reason: "without turn_on and turn_off or volume_mute the Speaker's OnOff only shows the state"},
+		},
+		Clusters: []Cluster{
+			{
+				Name: "OnOff", ID: onoffdef.ClusterID,
+				Attributes: []Attr{
+					{Name: "OnOff", Value: Value{From: "state"}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d onoffdef.Declare
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p onoffdef.Patch
+					n := 0
+					switch b.text(&st, ci, 0) {
+					case "buffering":
+						p.OnOff = new(true)
+						n++
+					case "idle":
+						p.OnOff = new(true)
+						n++
+					case "off":
+						p.OnOff = new(false)
+						n++
+					case "on":
+						p.OnOff = new(true)
+						n++
+					case "paused":
+						p.OnOff = new(true)
+						n++
+					case "playing":
+						p.OnOff = new(true)
+						n++
+					case "standby":
+						p.OnOff = new(false)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, onoffdef.Wrap(b.server(onoffdef.ClusterID)).Set(p)
+				},
+			},
+			{
+				Name: "LevelControl", ID: levelcontroldef.ClusterID,
+				Attributes: []Attr{
+					{Name: "CurrentLevel", Value: Value{From: "state.volume_level", Linear: Linear{Offset: 0, Scale: 254, Add: 0}, Min: new(float64(0)), Max: new(float64(254))}},
+				},
+				Commands: []Command{
+					{Kind: "change", On: []string{"CurrentLevel"}, Method: "volume_level", Raw: &Value{Field: "CurrentLevel"}, When: &When{Features: &Set{Any: []string{"VOLUME_SET"}}}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d levelcontroldef.Declare
+					d.Initial.Null = append(d.Initial.Null, levelcontroldef.AttrCurrentLevel)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p levelcontroldef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.CurrentLevel = new(conv[uint8](v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, levelcontroldef.AttrCurrentLevel)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, levelcontroldef.Wrap(b.server(levelcontroldef.ClusterID)).Set(p)
+				},
+				watch: func(b *binding, ci int) func() {
+					return b.target.OnChanged(levelcontroldef.ClusterID, func(c contract.Change) {
+						st := levelcontroldef.Wrap(b.server(levelcontroldef.ClusterID)).Get()
+						f := func(name string) (any, bool) {
+							switch name {
+							case "CurrentLevel":
+								return st.CurrentLevel, true
+							}
+							return nil, false
+						}
+						if changed(c, levelcontroldef.AttrCurrentLevel) && true {
+							b.emit(ci, 0, f)
+						}
+					})
+				},
+			},
+		},
+	},
+	{
+		ID: "media_player/unmapped", Platform: "media_player",
+		When:   When{},
+		State:  eligibility.StateUnmappable,
+		Reason: "a media player without turn_on and turn_off, volume_mute or volume_set has nothing a Speaker serves",
+		Cites:  []string{"go-ha-catalog data/features.json:61-83 (media_player feature flags)", "home-assistant/core homeassistant/components/media_player/const.py:69-84,196-230 @2026.10.3 (the states, the feature flags, the device classes)"},
 	},
 	{
 		ID: "number/unmapped", Platform: "number",
