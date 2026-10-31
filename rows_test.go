@@ -461,8 +461,7 @@ func TestFan(t *testing.T) {
 
 func TestUnmappablePlatforms(t *testing.T) {
 	for _, p := range []hacatalog.Platform{
-		hacatalog.PlatformNumber, hacatalog.PlatformSelect, hacatalog.PlatformButton,
-		hacatalog.PlatformEvent, hacatalog.PlatformText, hacatalog.PlatformVacuum,
+		hacatalog.PlatformNumber, hacatalog.PlatformSelect, hacatalog.PlatformText, hacatalog.PlatformVacuum,
 	} {
 		_, v := hamapping.Map(testDevice, []model.Entity{entity("x", p, model.Description{})})
 		if v[0].State != eligibility.StateUnmappable || v[0].Reason == "" {

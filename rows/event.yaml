@@ -1,5 +1,28 @@
+# Home Assistant's event entity: its state is the timestamp of its last
+# event. A new timestamp is a press of a momentary GenericSwitch.
 platform: event
 rows:
-  - id: unmapped
+  - id: generic_switch
     when: {}
-    verdict: "unmappable: no generic Matter counterpart for an event entity in H1 (GenericSwitch is H2)"
+    type: GenericSwitch
+    verdict: mappable
+    caveats:
+      - when: {}
+        reason: "every event is a short press (InitialPress, ShortRelease); long and multi presses from the event type are not mapped yet"
+    cites:
+      - matter.js packages/model/src/standard/elements/generic-switch.element.ts:19 @862ad75f (Switch mandatory)
+      - go-fabric cluster/spec/switchcluster/definition_gen.go:30-31,38,40,54-55 @v0.15.4 (NumberOfPositions, CurrentPosition; InitialPress (MS), ShortRelease (MSR))
+      - go-fabric cluster/spec/switchcluster/server_gen.go:156-171 @v0.15.4 (EmitInitialPress, EmitShortRelease)
+      - home-assistant/core homeassistant/components/event/__init__.py:187-194 @2026.10.3 (the state is the last event's timestamp)
+      - home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/event/index.ts:12-24,191-195 @664575a (GenericSwitch; a short press is InitialPress then ShortRelease at position 1)
+    clusters:
+      - cluster: Switch
+        features: [MomentarySwitch, MomentarySwitchRelease]
+        initial:
+          - {attribute: NumberOfPositions, const: 2}
+          - {attribute: CurrentPosition, const: 0}
+        events:
+          - on: state
+            emit:
+              - {event: InitialPress, literal: {NewPosition: 1}}
+              - {event: ShortRelease, literal: {PreviousPosition: 1}}

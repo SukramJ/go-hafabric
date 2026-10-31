@@ -26,12 +26,17 @@ All notable changes to this project are documented here. The format follows
   PowerFactor in 1/100 %; a power factor without a unit is a ratio).
 - sensor: volume_flow_rate as a FlowSensor (0.1 m³/h), moisture as a
   SoilSensor; binary_sensor: cold as a WaterFreezeDetector.
+- button: an OnOffPlugInUnit whose On presses the button (`press`), its
+  OnOff always off.
+- event: a GenericSwitch (MomentarySwitch, MomentarySwitchRelease) whose
+  every new event is a short press (InitialPress, ShortRelease); partial
+  until long and multi presses are read from the event type.
 
 ### Changed
 
 - The unmappable verdicts of `sensor/no_device_type` and
   `binary_sensor/no_device_type` no longer say "in H1" and list only the
-  classes no row maps.
+  classes no row maps; `number/unmapped` no longer says "in H1".
 
 ## [0.2.1] - 2026-10-26
 

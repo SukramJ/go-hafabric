@@ -2,4 +2,4 @@ platform: number
 rows:
   - id: unmapped
     when: {}
-    verdict: "unmappable: no generic Matter counterpart for a number entity in H1"
+    verdict: "unmappable: no generic Matter counterpart for a number entity"

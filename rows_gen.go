@@ -36,6 +36,7 @@ import (
 	relativehumiditymeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/relativehumiditymeasurement"
 	smokecoalarmdef "github.com/SukramJ/go-fabric/cluster/spec/smokecoalarm"
 	soilmeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/soilmeasurement"
+	switchclusterdef "github.com/SukramJ/go-fabric/cluster/spec/switchcluster"
 	temperaturemeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/temperaturemeasurement"
 	thermostatdef "github.com/SukramJ/go-fabric/cluster/spec/thermostat"
 	totalvolatileorganiccompoundsconcentrationmeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/totalvolatileorganiccompoundsconcentrationmeasurement"
@@ -54,6 +55,7 @@ const (
 	MethodOscillation     = "oscillation"
 	MethodPercentage      = "percentage"
 	MethodPresetMode      = "preset_mode"
+	MethodPress           = "press"
 	MethodSelectOption    = "select_option"
 	MethodSetPosition     = "set_position"
 	MethodTemperature     = "temperature"
@@ -63,7 +65,7 @@ const (
 )
 
 // methods are the method constants, sorted.
-var methods = []string{MethodDirection, MethodMode, MethodOscillation, MethodPercentage, MethodPresetMode, MethodSelectOption, MethodSetPosition, MethodTemperature, MethodTemperatureHigh, MethodTemperatureLow, MethodTilt}
+var methods = []string{MethodDirection, MethodMode, MethodOscillation, MethodPercentage, MethodPresetMode, MethodPress, MethodSelectOption, MethodSetPosition, MethodTemperature, MethodTemperatureHigh, MethodTemperatureLow, MethodTilt}
 
 // rows is the table, in the order [Map] tries it.
 var rows = []Row{
@@ -465,10 +467,43 @@ var rows = []Row{
 		Cites:  []string{"go-ha-catalog data/mqtt.json:780-934 (binary_sensor schema; payload_on/payload_off at 898-907)", "go-ha-catalog data/device_classes.json:2-32 (binary_sensor device classes)"},
 	},
 	{
-		ID: "button/unmapped", Platform: "button",
-		When:   When{},
-		State:  eligibility.StateUnmappable,
-		Reason: "no generic Matter counterpart for a button entity in H1",
+		ID: "button/plug", Platform: "button",
+		When:  When{},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/on-off-plug-in-unit.element.ts:27-31 @862ad75f (OnOff mandatory, feature LT)", "home-assistant/core homeassistant/components/button/__init__.py:101-106 @2026.10.3 (the state is the last press's timestamp)", "home-assistant/core homeassistant/components/button/services.py:11-15 @2026.10.3 (press, no fields)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/button/index.ts:22-49 @664575a (OnOffPlugInUnit; On presses, OnOff returns to off)"},
+		Type:  &device.OnOffPlugInUnitType,
+		Clusters: []Cluster{
+			{
+				Name: "OnOff", ID: onoffdef.ClusterID,
+				Attributes: []Attr{
+					{Name: "OnOff", Value: Value{Const: false, HasConst: true}},
+				},
+				Commands: []Command{
+					{Kind: "handle", On: []string{"On"}, Method: "press", Raw: &Value{Const: "PRESS", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d onoffdef.Declare
+					d.HandleOn = func(_ context.Context, req onoffdef.OnRequest) (resp struct{}, err error) {
+						f := func(string) (any, bool) { return nil, false }
+						if true {
+							b.emit(ci, 0, f)
+						}
+						return resp, err
+					}
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p onoffdef.Patch
+					n := 0
+					p.OnOff = new(false)
+					n++
+					if n == 0 {
+						return nil, nil
+					}
+					return p, onoffdef.Wrap(b.server(onoffdef.ClusterID)).Set(p)
+				},
+			},
+		},
 	},
 	{
 		ID: "climate/thermostat", Platform: "climate",
@@ -897,10 +932,48 @@ var rows = []Row{
 		},
 	},
 	{
-		ID: "event/unmapped", Platform: "event",
-		When:   When{},
-		State:  eligibility.StateUnmappable,
-		Reason: "no generic Matter counterpart for an event entity in H1 (GenericSwitch is H2)",
+		ID: "event/generic_switch", Platform: "event",
+		When:  When{},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/generic-switch.element.ts:19 @862ad75f (Switch mandatory)", "go-fabric cluster/spec/switchcluster/definition_gen.go:30-31,38,40,54-55 @v0.15.4 (NumberOfPositions, CurrentPosition; InitialPress (MS), ShortRelease (MSR))", "go-fabric cluster/spec/switchcluster/server_gen.go:156-171 @v0.15.4 (EmitInitialPress, EmitShortRelease)", "home-assistant/core homeassistant/components/event/__init__.py:187-194 @2026.10.3 (the state is the last event's timestamp)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/event/index.ts:12-24,191-195 @664575a (GenericSwitch; a short press is InitialPress then ShortRelease at position 1)"},
+		Type:  &device.GenericSwitchType,
+		Caveats: []Caveat{
+			{When: When{}, Reason: "every event is a short press (InitialPress, ShortRelease); long and multi presses from the event type are not mapped yet"},
+		},
+		Clusters: []Cluster{
+			{
+				Name: "Switch", ID: switchclusterdef.ClusterID,
+				Features: []Feature{{Name: "MomentarySwitch", When: nil}, {Name: "MomentarySwitchRelease", When: nil}},
+				Initial: []Attr{
+					{Name: "NumberOfPositions", Value: Value{Const: float64(2), HasConst: true}},
+					{Name: "CurrentPosition", Value: Value{Const: float64(0), HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d switchclusterdef.Declare
+					d.Features |= switchclusterdef.FeatureMomentarySwitch
+					d.Features |= switchclusterdef.FeatureMomentarySwitchRelease
+					d.Initial.NumberOfPositions = new(uint8(2))
+					d.Initial.CurrentPosition = new(uint8(0))
+					return d
+				},
+				Events: []Event{
+					{On: "state", Emit: []string{"InitialPress", "ShortRelease"}},
+				},
+				fire: func(b *binding, ei int, endpoint uint16) error {
+					s := switchclusterdef.Wrap(b.server(switchclusterdef.ClusterID))
+					switch ei {
+					case 0:
+						if err := s.EmitInitialPress(endpoint, switchclusterdef.InitialPressEvent{NewPosition: uint8(1)}); err != nil {
+							return err
+						}
+						if err := s.EmitShortRelease(endpoint, switchclusterdef.ShortReleaseEvent{PreviousPosition: uint8(1)}); err != nil {
+							return err
+						}
+					}
+					return nil
+				},
+			},
+		},
 	},
 	{
 		ID: "fan/fan", Platform: "fan",
@@ -1928,7 +2001,7 @@ var rows = []Row{
 		ID: "number/unmapped", Platform: "number",
 		When:   When{},
 		State:  eligibility.StateUnmappable,
-		Reason: "no generic Matter counterpart for a number entity in H1",
+		Reason: "no generic Matter counterpart for a number entity",
 	},
 	{
 		ID: "select/mode_select", Platform: "select",
