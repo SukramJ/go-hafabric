@@ -74,7 +74,7 @@ rows:
           - on: state            # state, state.<key> or extra.<key>
             emit:                # in order, through Server.Emit<Event>
               - {event: InitialPress, literal: {NewPosition: 1}}
-        options:                 # a list a materializer serves (ModeSelect, Thermostat)
+        options:                 # a list a materializer serves (ModeSelect)
           list: desc.options     # or extra.<key>: a list of strings
           current: state         # the value whose entry is the current one
           method: select_option  # a choice's method; the payload is the string
@@ -133,21 +133,14 @@ cluster without one. `list` is `desc.options` (`Description.Options`' codes,
 in order) or `extra.<key>` (a list of strings in `Description.Extra`);
 `current` is the value whose entry is the current one; a controller's
 choice is a `model.Command` of `method` with the chosen string as the
-payload. Two materializers: **ModeSelect** — one `ModeOptionStruct` per
-entry (the label the entry, the mode its 0-based index), `Description` the
-entity's name (`Select` without one), `StandardNamespace` null,
-`CurrentMode` the current entry's index (0 when the state names none);
-`ChangeToMode` for a known mode delivers the entry, for another answers
-INVALID_COMMAND; served on the generated server (`Declare.HandleChangeToMode`).
-A select without options is Unmappable. **Thermostat** (feature
-`Presets`) — one built-in preset per entry but `none`, its handle and name
-the entry, its scenario Unoccupied for `away`, Occupied for `home`, Sleep
-for `sleep`, else UserDefined, without setpoints; `PresetTypes` counts them
-per scenario; `ActivePresetHandle` is the current entry's handle, null for
-`none` or an entry the list does not have; `SetActivePresetRequest`
-delivers the entry (`none` for a null handle) in place of the kit's
-handling, and `AtomicRequest` answers UNSUPPORTED_WRITE. An entry longer than
-a handle's 16 bytes makes the entity Unmappable. The table names the
+payload. One materializer in this wave: **ModeSelect** — one
+`ModeOptionStruct` per entry (the label the entry, the mode its 0-based
+index), `Description` the entity's name (`Select` without one),
+`StandardNamespace` null, `CurrentMode` the current entry's index (0 when
+the state names none); `ChangeToMode` for a known mode delivers the entry,
+for another answers INVALID_COMMAND; served on the generated server
+(`Declare.HandleChangeToMode`). A select without options is Unmappable.
+The table names the
 options as `[options <list> at <current> to <method>]`.
 
 ## The rows
@@ -166,7 +159,8 @@ options as `[options <list> at <current> to <method>]`.
 | `binary_sensor/generic` | device_class none | ContactSensor | BooleanState | mappable | matter.js packages/model/src/standard/elements/contact-sensor.element.ts:19 @862ad75f (BooleanState mandatory); matter.js packages/model/src/standard/resources/boolean-state.resource.ts:26-30 @862ad75f (Contact Sensor - FALSE=open or no contact, TRUE=closed or contact); matter.js packages/model/src/standard/elements/on-off-sensor.element.ts:25 @862ad75f (OnOffSensor's OnOff is a client cluster) |
 | `binary_sensor/no_device_type` | device_class battery, battery_charging, connectivity, gas, glass_break, heat, light, lock, moving, plug, power, problem, running, safety, sound, tamper, update, vibration |  |  | unmappable: no Matter device type for a binary_sensor of device_class {device_class} |  |
 | `button/plug` | any | OnOffPlugInUnit | OnOff | mappable | matter.js packages/model/src/standard/elements/on-off-plug-in-unit.element.ts:27-31 @862ad75f (OnOff mandatory, feature LT); home-assistant/core homeassistant/components/button/__init__.py:101-106 @2026.10.3 (the state is the last press's timestamp); home-assistant/core homeassistant/components/button/services.py:11-15 @2026.10.3 (press, no fields); home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/button/index.ts:22-49 @664575a (OnOffPlugInUnit; On presses, OnOff returns to off) |
-| `climate/thermostat` | modes any of heat, cool, heat_cool | Thermostat | Thermostat (Heating, Cooling, AutoMode) | mappable | matter.js packages/model/src/standard/elements/thermostat-device.element.ts:25 @862ad75f (Thermostat mandatory); matter.js packages/model/src/standard/resources/thermostat-cluster.resource.ts:50,163,322 @862ad75f (LocalTemperature, OccupiedHeatingSetpoint, SystemMode); matter.js packages/model/src/standard/elements/temperature.element.ts:12 @862ad75f (the temperature datatype, int16 in 0.01 degC) |
+| `climate/air_conditioner` | features all of FAN_MODE, TURN_ON, TURN_OFF; modes any of heat, cool, heat_cool | RoomAirConditioner | OnOff (DeadFrontBehavior); Thermostat (Heating, Cooling, AutoMode); FanControl (Auto); RelativeHumidityMeasurement | mappable | go-fabric cluster/thermo/presets.go:246-257 @v0.15.4 (every preset needs the setpoints of the selected Heating and Cooling features); go-fabric device/room_air_conditioner_gen.go:39-86 @v0.15.4 (OnOff mandatory with DF, Thermostat mandatory, FanControl and RelativeHumidityMeasurement optional); matter.js packages/model/src/standard/resources/fan-control.resource.ts:44,80,95 @862ad75f (FanMode, PercentSetting, PercentCurrent); matter.js packages/model/src/standard/resources/relative-humidity-measurement.resource.ts:20-26 @862ad75f (MeasuredValue = 100 x water content); home-assistant/core homeassistant/components/climate/const.py:71-81,194-205 @2026.10.3 (fan modes; FAN_MODE, TURN_OFF, TURN_ON); home-assistant/core homeassistant/components/climate/__init__.py:318-325 @2026.10.3 (current_humidity and fan_mode state attributes); home-assistant/core homeassistant/components/climate/services.py:170-180,214-218 @2026.10.3 (turn_on, turn_off, set_fan_mode); home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/climate/index.ts:83-102,172-186 @664575a (FAN_MODE makes a RoomAirConditioner; OnOff with TURN_ON and TURN_OFF; humidity from current_humidity); go-ha-catalog data/features.json:14-24 (climate feature flags) |
+| `climate/thermostat` | modes any of heat, cool, heat_cool | Thermostat | Thermostat (Heating, Cooling, AutoMode) | mappable | matter.js packages/model/src/standard/elements/thermostat-device.element.ts:25 @862ad75f (Thermostat mandatory); matter.js packages/model/src/standard/resources/thermostat-cluster.resource.ts:50,163,322 @862ad75f (LocalTemperature, OccupiedHeatingSetpoint, SystemMode); matter.js packages/model/src/standard/elements/temperature.element.ts:12 @862ad75f (the temperature datatype, int16 in 0.01 degC); go-fabric cluster/thermo/presets.go:246-257 @v0.15.4 (every preset needs the setpoints of the selected Heating and Cooling features) |
 | `climate/no_heating_or_cooling` | any |  |  | unmappable: a climate entity without the hvac modes heat, cool or heat_cool has no Thermostat feature (Heating or Cooling) |  |
 | `cover/window_covering` | any | WindowCovering | WindowCovering (Lift, PositionAwareLift, Tilt, PositionAwareTilt) | mappable | matter.js packages/model/src/standard/elements/window-covering-device.element.ts:24 @862ad75f (WindowCovering mandatory); matter.js packages/model/src/standard/resources/window-covering-cluster.resource.ts:39,98,116-118,180-199 @862ad75f (Type, EndProductType, CurrentPositionLiftPercent100ths; DownOrClose ends at 100.00%) |
 | `event/generic_switch` | any | GenericSwitch | Switch (MomentarySwitch, MomentarySwitchRelease) [on state: InitialPress, ShortRelease] | mappable | matter.js packages/model/src/standard/elements/generic-switch.element.ts:19 @862ad75f (Switch mandatory); go-fabric cluster/spec/switchcluster/definition_gen.go:30-31,38,40,54-55 @v0.15.4 (NumberOfPositions, CurrentPosition; InitialPress (MS), ShortRelease (MSR)); go-fabric cluster/spec/switchcluster/server_gen.go:156-171 @v0.15.4 (EmitInitialPress, EmitShortRelease); home-assistant/core homeassistant/components/event/__init__.py:187-194 @2026.10.3 (the state is the last event's timestamp); home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/event/index.ts:12-24,191-195 @664575a (GenericSwitch; a short press is InitialPress then ShortRelease at position 1) |
@@ -229,17 +223,20 @@ is the catalog's flag bits or names. The table is generated from the rows.
 | Platform | Key | Read by | Read as | Catalog default |
 | --- | --- | --- | --- | --- |
 | `binary_sensor` | `state` | `binary_sensor/contact`, `binary_sensor/motion`, `binary_sensor/occupancy`, `binary_sensor/water_leak`, `binary_sensor/water_freeze`, `binary_sensor/smoke`, `binary_sensor/carbon_monoxide`, `binary_sensor/generic` | value | — |
-| `climate` | `extra.fan_modes` | `climate/thermostat` | predicate | yes |
-| `climate` | `extra.max_temp` | `climate/thermostat` | value | no |
-| `climate` | `extra.min_temp` | `climate/thermostat` | value | no |
-| `climate` | `extra.modes` | `climate/thermostat` | predicate | yes |
-| `climate` | `extra.preset_modes` | `climate/thermostat` | predicate | yes |
-| `climate` | `extra.swing_modes` | `climate/thermostat` | predicate | yes |
-| `climate` | `state` | `climate/thermostat` | value | — |
-| `climate` | `state.current_temperature` | `climate/thermostat` | value | — |
-| `climate` | `state.target_temp_high` | `climate/thermostat` | value | — |
-| `climate` | `state.target_temp_low` | `climate/thermostat` | value | — |
-| `climate` | `state.temperature` | `climate/thermostat` | value | — |
+| `climate` | `extra.fan_modes` | `climate/air_conditioner`, `climate/thermostat` | predicate | yes |
+| `climate` | `extra.max_temp` | `climate/air_conditioner`, `climate/thermostat` | value | no |
+| `climate` | `extra.min_temp` | `climate/air_conditioner`, `climate/thermostat` | value | no |
+| `climate` | `extra.modes` | `climate/air_conditioner`, `climate/thermostat` | predicate | yes |
+| `climate` | `extra.preset_modes` | `climate/air_conditioner`, `climate/thermostat` | predicate | yes |
+| `climate` | `extra.supported_features` | `climate/air_conditioner` | predicate | no |
+| `climate` | `extra.swing_modes` | `climate/air_conditioner`, `climate/thermostat` | predicate | yes |
+| `climate` | `state` | `climate/air_conditioner`, `climate/thermostat` | value | — |
+| `climate` | `state.current_humidity` | `climate/air_conditioner` | value | — |
+| `climate` | `state.current_temperature` | `climate/air_conditioner`, `climate/thermostat` | value | — |
+| `climate` | `state.fan_mode` | `climate/air_conditioner` | value | — |
+| `climate` | `state.target_temp_high` | `climate/air_conditioner`, `climate/thermostat` | value | — |
+| `climate` | `state.target_temp_low` | `climate/air_conditioner`, `climate/thermostat` | value | — |
+| `climate` | `state.temperature` | `climate/air_conditioner`, `climate/thermostat` | value | — |
 | `cover` | `extra.payload_close` | `cover/window_covering` | value | yes |
 | `cover` | `extra.payload_open` | `cover/window_covering` | value | yes |
 | `cover` | `extra.payload_stop` | `cover/window_covering` | value | yes |

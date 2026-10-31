@@ -13,7 +13,7 @@ All notable changes to this project are documented here. The format follows
   of the entity changes; `Patch.Events` reports them.
 - The row format's `options` on a cluster: a list of the entity
   (`desc.options` or `extra.<key>`) a materializer turns into the cluster's
-  attributes and command — ModeSelect's modes, Thermostat's presets.
+  attributes and command — ModeSelect's modes.
   `OptionList` is the runtime form, `Row.Clusters[].Options`.
 - select: a ModeSelect from the entity's options (`select/mode_select`).
 - sensor: carbon_dioxide, carbon_monoxide, pm1, pm25, pm10,
@@ -31,12 +31,20 @@ All notable changes to this project are documented here. The format follows
 - event: a GenericSwitch (MomentarySwitch, MomentarySwitchRelease) whose
   every new event is a short press (InitialPress, ShortRelease); partial
   until long and multi presses are read from the event type.
+- climate: a RoomAirConditioner for an entity with FAN_MODE, TURN_ON and
+  TURN_OFF — OnOff (`turn_on`, `turn_off`), the thermostat's Thermostat,
+  FanControl from `fan_mode` (writes of FanMode and of PercentSetting by
+  bands go to `fan_mode`) and RelativeHumidityMeasurement from
+  `current_humidity`.
 
 ### Changed
 
 - The unmappable verdicts of `sensor/no_device_type` and
   `binary_sensor/no_device_type` no longer say "in H1" and list only the
   classes no row maps; `number/unmapped` no longer says "in H1".
+- `climate/thermostat`'s caveats no longer say "in H1"; the preset caveat
+  names go-fabric's setpoint requirement, the fan caveat the missing
+  turn_on and turn_off.
 
 ## [0.2.1] - 2026-10-26
 

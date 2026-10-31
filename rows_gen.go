@@ -51,6 +51,7 @@ import (
 // consumer's command handler compares against these, not against literals.
 const (
 	MethodDirection       = "direction"
+	MethodFanMode         = "fan_mode"
 	MethodMode            = "mode"
 	MethodOscillation     = "oscillation"
 	MethodPercentage      = "percentage"
@@ -62,10 +63,12 @@ const (
 	MethodTemperatureHigh = "temperature_high"
 	MethodTemperatureLow  = "temperature_low"
 	MethodTilt            = "tilt"
+	MethodTurnOff         = "turn_off"
+	MethodTurnOn          = "turn_on"
 )
 
 // methods are the method constants, sorted.
-var methods = []string{MethodDirection, MethodMode, MethodOscillation, MethodPercentage, MethodPresetMode, MethodPress, MethodSelectOption, MethodSetPosition, MethodTemperature, MethodTemperatureHigh, MethodTemperatureLow, MethodTilt}
+var methods = []string{MethodDirection, MethodFanMode, MethodMode, MethodOscillation, MethodPercentage, MethodPresetMode, MethodPress, MethodSelectOption, MethodSetPosition, MethodTemperature, MethodTemperatureHigh, MethodTemperatureLow, MethodTilt, MethodTurnOff, MethodTurnOn}
 
 // rows is the table, in the order [Map] tries it.
 var rows = []Row{
@@ -506,16 +509,418 @@ var rows = []Row{
 		},
 	},
 	{
+		ID: "climate/air_conditioner", Platform: "climate",
+		When:  When{Features: &Set{All: []string{"FAN_MODE", "TURN_ON", "TURN_OFF"}}, Extra: map[string]Set{"modes": Set{Any: []string{"heat", "cool", "heat_cool"}}}},
+		State: eligibility.StateMappable,
+		Cites: []string{"go-fabric cluster/thermo/presets.go:246-257 @v0.15.4 (every preset needs the setpoints of the selected Heating and Cooling features)", "go-fabric device/room_air_conditioner_gen.go:39-86 @v0.15.4 (OnOff mandatory with DF, Thermostat mandatory, FanControl and RelativeHumidityMeasurement optional)", "matter.js packages/model/src/standard/resources/fan-control.resource.ts:44,80,95 @862ad75f (FanMode, PercentSetting, PercentCurrent)", "matter.js packages/model/src/standard/resources/relative-humidity-measurement.resource.ts:20-26 @862ad75f (MeasuredValue = 100 x water content)", "home-assistant/core homeassistant/components/climate/const.py:71-81,194-205 @2026.10.3 (fan modes; FAN_MODE, TURN_OFF, TURN_ON)", "home-assistant/core homeassistant/components/climate/__init__.py:318-325 @2026.10.3 (current_humidity and fan_mode state attributes)", "home-assistant/core homeassistant/components/climate/services.py:170-180,214-218 @2026.10.3 (turn_on, turn_off, set_fan_mode)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/climate/index.ts:83-102,172-186 @664575a (FAN_MODE makes a RoomAirConditioner; OnOff with TURN_ON and TURN_OFF; humidity from current_humidity)", "go-ha-catalog data/features.json:14-24 (climate feature flags)", "go-ha-catalog data/mqtt.json:1200-1647 (climate schema; modes at 1385 with its default, mode_command_topic at 1370, temperature_command_topic at 1572, temperature_low/high_command_topic at 1582/1602)", "go-ha-catalog gen_vocab.go:837-847 (HVACMode vocabulary)"},
+		Type:  &device.RoomAirConditionerType,
+		Caveats: []Caveat{
+			{When: When{Extra: map[string]Set{"modes": Set{Any: []string{"auto"}}}}, Reason: "the hvac mode auto (the device's own schedule) has no SystemMode: it is not mapped"},
+			{When: When{Extra: map[string]Set{"preset_modes": Set{Present: new(true)}}}, Reason: "preset modes are not mapped: go-fabric's Thermostat server requires a heating or cooling setpoint on every preset, and Home Assistant's preset modes carry none"},
+			{When: When{Extra: map[string]Set{"swing_modes": Set{Present: new(true)}}}, Reason: "swing modes are not mapped"},
+			{When: When{}, Reason: "fan modes map to FanMode only where the names are off, low, medium, high or auto"},
+		},
+		Clusters: []Cluster{
+			{
+				Name: "OnOff", ID: onoffdef.ClusterID,
+				Features: []Feature{{Name: "DeadFrontBehavior", When: nil}},
+				Attributes: []Attr{
+					{Name: "OnOff", Value: Value{From: "state"}},
+				},
+				Commands: []Command{
+					{Kind: "handle", On: []string{"On"}, Method: "turn_on", Raw: &Value{Const: "ON", HasConst: true}},
+					{Kind: "handle", On: []string{"Off"}, Method: "turn_off", Raw: &Value{Const: "OFF", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d onoffdef.Declare
+					d.Features |= onoffdef.FeatureDeadFrontBehavior
+					d.HandleOn = func(_ context.Context, req onoffdef.OnRequest) (resp struct{}, err error) {
+						f := func(string) (any, bool) { return nil, false }
+						if true {
+							b.emit(ci, 0, f)
+						}
+						return resp, err
+					}
+					d.HandleOff = func(_ context.Context, req onoffdef.OffRequest) (resp struct{}, err error) {
+						f := func(string) (any, bool) { return nil, false }
+						if true {
+							b.emit(ci, 1, f)
+						}
+						return resp, err
+					}
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p onoffdef.Patch
+					n := 0
+					switch b.text(&st, ci, 0) {
+					case "auto":
+						p.OnOff = new(true)
+						n++
+					case "cool":
+						p.OnOff = new(true)
+						n++
+					case "dry":
+						p.OnOff = new(true)
+						n++
+					case "fan_only":
+						p.OnOff = new(true)
+						n++
+					case "heat":
+						p.OnOff = new(true)
+						n++
+					case "heat_cool":
+						p.OnOff = new(true)
+						n++
+					case "off":
+						p.OnOff = new(false)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, onoffdef.Wrap(b.server(onoffdef.ClusterID)).Set(p)
+				},
+			},
+			{
+				Name: "Thermostat", ID: thermostatdef.ClusterID,
+				Features: []Feature{{Name: "Heating", When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"heat", "heat_cool"}}}}}, {Name: "Cooling", When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"cool", "heat_cool"}}}}}, {Name: "AutoMode", When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"heat_cool"}}}}}},
+				Attributes: []Attr{
+					{Name: "LocalTemperature", Value: Value{From: "state.current_temperature", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}},
+					{Name: "OccupiedHeatingSetpoint", Value: Value{From: "state.temperature", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}, When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"heat", "heat_cool"}}}}, StateIn: []string{"heat"}},
+					{Name: "OccupiedHeatingSetpoint", Value: Value{From: "state.target_temp_low", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}, When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"heat", "heat_cool"}}}}},
+					{Name: "OccupiedCoolingSetpoint", Value: Value{From: "state.temperature", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}, When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"cool", "heat_cool"}}}}, StateIn: []string{"cool"}},
+					{Name: "OccupiedCoolingSetpoint", Value: Value{From: "state.target_temp_high", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}, When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"cool", "heat_cool"}}}}},
+					{Name: "SystemMode", Value: Value{From: "state"}},
+				},
+				Initial: []Attr{
+					{Name: "ControlSequenceOfOperation", Value: Value{Const: "ControlSequenceOfOperationHeatingOnly", HasConst: true}, When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"heat", "heat_cool"}, None: []string{"cool", "heat_cool"}}}}},
+					{Name: "ControlSequenceOfOperation", Value: Value{Const: "ControlSequenceOfOperationCoolingOnly", HasConst: true}, When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"cool", "heat_cool"}, None: []string{"heat", "heat_cool"}}}}},
+					{Name: "ControlSequenceOfOperation", Value: Value{Const: "ControlSequenceOfOperationCoolingAndHeating", HasConst: true}, When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"heat_cool"}}}}},
+					{Name: "ControlSequenceOfOperation", Value: Value{Const: "ControlSequenceOfOperationCoolingAndHeating", HasConst: true}, When: &When{Extra: map[string]Set{"modes": Set{All: []string{"heat", "cool"}}}}},
+					{Name: "AbsMinHeatSetpointLimit", Value: Value{From: "extra.min_temp", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}, When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"heat", "heat_cool"}}}}},
+					{Name: "MinHeatSetpointLimit", Value: Value{From: "extra.min_temp", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}, When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"heat", "heat_cool"}}}}},
+					{Name: "AbsMaxHeatSetpointLimit", Value: Value{From: "extra.max_temp", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}, When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"heat", "heat_cool"}}}}},
+					{Name: "MaxHeatSetpointLimit", Value: Value{From: "extra.max_temp", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}, When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"heat", "heat_cool"}}}}},
+					{Name: "AbsMinCoolSetpointLimit", Value: Value{From: "extra.min_temp", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}, When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"cool", "heat_cool"}}}}},
+					{Name: "MinCoolSetpointLimit", Value: Value{From: "extra.min_temp", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}, When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"cool", "heat_cool"}}}}},
+					{Name: "AbsMaxCoolSetpointLimit", Value: Value{From: "extra.max_temp", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}, When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"cool", "heat_cool"}}}}},
+					{Name: "MaxCoolSetpointLimit", Value: Value{From: "extra.max_temp", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}, When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"cool", "heat_cool"}}}}},
+				},
+				Commands: []Command{
+					{Kind: "write", On: []string{"SystemMode"}, Method: "mode", Raw: &Value{Field: "SystemMode", Enum: map[int64]string{int64(thermostatdef.SystemModeAuto): "heat_cool", int64(thermostatdef.SystemModeCool): "cool", int64(thermostatdef.SystemModeDry): "dry", int64(thermostatdef.SystemModeFanOnly): "fan_only", int64(thermostatdef.SystemModeHeat): "heat", int64(thermostatdef.SystemModeOff): "off"}}},
+					{Kind: "write", On: []string{"OccupiedHeatingSetpoint"}, Method: "temperature", Raw: &Value{Field: "OccupiedHeatingSetpoint", Units: map[string]Linear{"°C": {Offset: 0, Scale: 0.01, Add: 0}, "°F": {Offset: 0, Scale: 0.018, Add: 32}}, DefaultUnit: "°C", Digits: 1}},
+					{Kind: "write", On: []string{"OccupiedHeatingSetpoint"}, Method: "temperature_low", Raw: &Value{Field: "OccupiedHeatingSetpoint", Units: map[string]Linear{"°C": {Offset: 0, Scale: 0.01, Add: 0}, "°F": {Offset: 0, Scale: 0.018, Add: 32}}, DefaultUnit: "°C", Digits: 1}},
+					{Kind: "write", On: []string{"OccupiedCoolingSetpoint"}, Method: "temperature", Raw: &Value{Field: "OccupiedCoolingSetpoint", Units: map[string]Linear{"°C": {Offset: 0, Scale: 0.01, Add: 0}, "°F": {Offset: 0, Scale: 0.018, Add: 32}}, DefaultUnit: "°C", Digits: 1}},
+					{Kind: "write", On: []string{"OccupiedCoolingSetpoint"}, Method: "temperature_high", Raw: &Value{Field: "OccupiedCoolingSetpoint", Units: map[string]Linear{"°C": {Offset: 0, Scale: 0.01, Add: 0}, "°F": {Offset: 0, Scale: 0.018, Add: 32}}, DefaultUnit: "°C", Digits: 1}},
+					{Kind: "change", On: []string{"OccupiedHeatingSetpoint"}, Method: "temperature", Raw: &Value{Field: "OccupiedHeatingSetpoint", Units: map[string]Linear{"°C": {Offset: 0, Scale: 0.01, Add: 0}, "°F": {Offset: 0, Scale: 0.018, Add: 32}}, DefaultUnit: "°C", Digits: 1}},
+					{Kind: "change", On: []string{"OccupiedCoolingSetpoint"}, Method: "temperature", Raw: &Value{Field: "OccupiedCoolingSetpoint", Units: map[string]Linear{"°C": {Offset: 0, Scale: 0.01, Add: 0}, "°F": {Offset: 0, Scale: 0.018, Add: 32}}, DefaultUnit: "°C", Digits: 1}},
+					{Kind: "change", On: []string{"OccupiedHeatingSetpoint"}, Method: "temperature_low", Raw: &Value{Field: "OccupiedHeatingSetpoint", Units: map[string]Linear{"°C": {Offset: 0, Scale: 0.01, Add: 0}, "°F": {Offset: 0, Scale: 0.018, Add: 32}}, DefaultUnit: "°C", Digits: 1}},
+					{Kind: "change", On: []string{"OccupiedCoolingSetpoint"}, Method: "temperature_high", Raw: &Value{Field: "OccupiedCoolingSetpoint", Units: map[string]Linear{"°C": {Offset: 0, Scale: 0.01, Add: 0}, "°F": {Offset: 0, Scale: 0.018, Add: 32}}, DefaultUnit: "°C", Digits: 1}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d thermostatdef.Declare
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"heat", "heat_cool"}}}}) {
+						d.Features |= thermostatdef.FeatureHeating
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"cool", "heat_cool"}}}}) {
+						d.Features |= thermostatdef.FeatureCooling
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"heat_cool"}}}}) {
+						d.Features |= thermostatdef.FeatureAutoMode
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"heat", "heat_cool"}, None: []string{"cool", "heat_cool"}}}}) {
+						d.Initial.ControlSequenceOfOperation = new(thermostatdef.ControlSequenceOfOperationHeatingOnly)
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"cool", "heat_cool"}, None: []string{"heat", "heat_cool"}}}}) {
+						d.Initial.ControlSequenceOfOperation = new(thermostatdef.ControlSequenceOfOperationCoolingOnly)
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"heat_cool"}}}}) {
+						d.Initial.ControlSequenceOfOperation = new(thermostatdef.ControlSequenceOfOperationCoolingAndHeating)
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{All: []string{"heat", "cool"}}}}) {
+						d.Initial.ControlSequenceOfOperation = new(thermostatdef.ControlSequenceOfOperationCoolingAndHeating)
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"heat", "heat_cool"}}}}) {
+						if v, ok := b.number(nil, ci, 4); ok {
+							d.Initial.AbsMinHeatSetpointLimit = new(conv[int16](v))
+						}
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"heat", "heat_cool"}}}}) {
+						if v, ok := b.number(nil, ci, 5); ok {
+							d.Initial.MinHeatSetpointLimit = new(conv[int16](v))
+						}
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"heat", "heat_cool"}}}}) {
+						if v, ok := b.number(nil, ci, 6); ok {
+							d.Initial.AbsMaxHeatSetpointLimit = new(conv[int16](v))
+						}
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"heat", "heat_cool"}}}}) {
+						if v, ok := b.number(nil, ci, 7); ok {
+							d.Initial.MaxHeatSetpointLimit = new(conv[int16](v))
+						}
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"cool", "heat_cool"}}}}) {
+						if v, ok := b.number(nil, ci, 8); ok {
+							d.Initial.AbsMinCoolSetpointLimit = new(conv[int16](v))
+						}
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"cool", "heat_cool"}}}}) {
+						if v, ok := b.number(nil, ci, 9); ok {
+							d.Initial.MinCoolSetpointLimit = new(conv[int16](v))
+						}
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"cool", "heat_cool"}}}}) {
+						if v, ok := b.number(nil, ci, 10); ok {
+							d.Initial.AbsMaxCoolSetpointLimit = new(conv[int16](v))
+						}
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"cool", "heat_cool"}}}}) {
+						if v, ok := b.number(nil, ci, 11); ok {
+							d.Initial.MaxCoolSetpointLimit = new(conv[int16](v))
+						}
+					}
+					d.OnWrite = func(_ context.Context, next thermostatdef.State, attrID uint32) error {
+						f := func(name string) (any, bool) {
+							switch name {
+							case "OccupiedCoolingSetpoint":
+								return next.OccupiedCoolingSetpoint, true
+							case "OccupiedHeatingSetpoint":
+								return next.OccupiedHeatingSetpoint, true
+							case "SystemMode":
+								return next.SystemMode, true
+							}
+							return nil, false
+						}
+						if slices.Contains([]uint32{thermostatdef.AttrSystemMode}, attrID) && true {
+							b.emit(ci, 0, f)
+						}
+						if slices.Contains([]uint32{thermostatdef.AttrOccupiedHeatingSetpoint}, attrID) && !slices.Contains([]thermostatdef.SystemModeEnum{thermostatdef.SystemModeAuto}, next.SystemMode) {
+							b.emit(ci, 1, f)
+						}
+						if slices.Contains([]uint32{thermostatdef.AttrOccupiedHeatingSetpoint}, attrID) && slices.Contains([]thermostatdef.SystemModeEnum{thermostatdef.SystemModeAuto}, next.SystemMode) {
+							b.emit(ci, 2, f)
+						}
+						if slices.Contains([]uint32{thermostatdef.AttrOccupiedCoolingSetpoint}, attrID) && !slices.Contains([]thermostatdef.SystemModeEnum{thermostatdef.SystemModeAuto}, next.SystemMode) {
+							b.emit(ci, 3, f)
+						}
+						if slices.Contains([]uint32{thermostatdef.AttrOccupiedCoolingSetpoint}, attrID) && slices.Contains([]thermostatdef.SystemModeEnum{thermostatdef.SystemModeAuto}, next.SystemMode) {
+							b.emit(ci, 4, f)
+						}
+						return nil
+					}
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p thermostatdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.LocalTemperature = new(conv[int16](v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, thermostatdef.AttrLocalTemperature)
+						n++
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"heat", "heat_cool"}}}}) {
+						if v, ok := b.number(&st, ci, 1); ok {
+							p.OccupiedHeatingSetpoint = new(conv[int16](v))
+							n++
+						}
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"heat", "heat_cool"}}}}) {
+						if v, ok := b.number(&st, ci, 2); ok {
+							p.OccupiedHeatingSetpoint = new(conv[int16](v))
+							n++
+						}
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"cool", "heat_cool"}}}}) {
+						if v, ok := b.number(&st, ci, 3); ok {
+							p.OccupiedCoolingSetpoint = new(conv[int16](v))
+							n++
+						}
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"cool", "heat_cool"}}}}) {
+						if v, ok := b.number(&st, ci, 4); ok {
+							p.OccupiedCoolingSetpoint = new(conv[int16](v))
+							n++
+						}
+					}
+					switch b.text(&st, ci, 5) {
+					case "cool":
+						p.SystemMode = new(thermostatdef.SystemModeCool)
+						n++
+					case "dry":
+						p.SystemMode = new(thermostatdef.SystemModeDry)
+						n++
+					case "fan_only":
+						p.SystemMode = new(thermostatdef.SystemModeFanOnly)
+						n++
+					case "heat":
+						p.SystemMode = new(thermostatdef.SystemModeHeat)
+						n++
+					case "heat_cool":
+						p.SystemMode = new(thermostatdef.SystemModeAuto)
+						n++
+					case "off":
+						p.SystemMode = new(thermostatdef.SystemModeOff)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, thermostatdef.Wrap(b.server(thermostatdef.ClusterID)).Set(p)
+				},
+				watch: func(b *binding, ci int) func() {
+					return b.target.OnChanged(thermostatdef.ClusterID, func(c contract.Change) {
+						st := thermostatdef.Wrap(b.server(thermostatdef.ClusterID)).Get()
+						f := func(name string) (any, bool) {
+							switch name {
+							case "OccupiedCoolingSetpoint":
+								return st.OccupiedCoolingSetpoint, true
+							case "OccupiedHeatingSetpoint":
+								return st.OccupiedHeatingSetpoint, true
+							}
+							return nil, false
+						}
+						if changed(c, thermostatdef.AttrOccupiedHeatingSetpoint) && !slices.Contains([]thermostatdef.SystemModeEnum{thermostatdef.SystemModeAuto, thermostatdef.SystemModeCool}, st.SystemMode) {
+							b.emit(ci, 5, f)
+						}
+						if changed(c, thermostatdef.AttrOccupiedCoolingSetpoint) && slices.Contains([]thermostatdef.SystemModeEnum{thermostatdef.SystemModeCool}, st.SystemMode) {
+							b.emit(ci, 6, f)
+						}
+						if changed(c, thermostatdef.AttrOccupiedHeatingSetpoint) && slices.Contains([]thermostatdef.SystemModeEnum{thermostatdef.SystemModeAuto}, st.SystemMode) {
+							b.emit(ci, 7, f)
+						}
+						if changed(c, thermostatdef.AttrOccupiedCoolingSetpoint) && slices.Contains([]thermostatdef.SystemModeEnum{thermostatdef.SystemModeAuto}, st.SystemMode) {
+							b.emit(ci, 8, f)
+						}
+					})
+				},
+			},
+			{
+				Name: "FanControl", ID: fancontroldef.ClusterID,
+				Features: []Feature{{Name: "Auto", When: &When{Extra: map[string]Set{"fan_modes": Set{Any: []string{"auto"}}}}}},
+				Attributes: []Attr{
+					{Name: "FanMode", Value: Value{From: "state.fan_mode"}},
+				},
+				Initial: []Attr{
+					{Name: "FanMode", Value: Value{Const: "FanModeOff", HasConst: true}},
+					{Name: "FanModeSequence", Value: Value{Const: "FanModeSequenceOffLowMedHigh", HasConst: true}},
+					{Name: "FanModeSequence", Value: Value{Const: "FanModeSequenceOffLowMedHighAuto", HasConst: true}, When: &When{Extra: map[string]Set{"fan_modes": Set{Any: []string{"auto"}}}}},
+					{Name: "PercentCurrent", Value: Value{Const: float64(0), HasConst: true}},
+				},
+				Commands: []Command{
+					{Kind: "write", On: []string{"FanMode"}, Method: "fan_mode", Raw: &Value{Field: "FanMode", Enum: map[int64]string{int64(fancontroldef.FanModeAuto): "auto", int64(fancontroldef.FanModeHigh): "high", int64(fancontroldef.FanModeLow): "low", int64(fancontroldef.FanModeMedium): "medium", int64(fancontroldef.FanModeOff): "off"}}},
+					{Kind: "write", On: []string{"PercentSetting"}, Method: "fan_mode", Raw: &Value{Const: "off", HasConst: true}},
+					{Kind: "write", On: []string{"PercentSetting"}, Method: "fan_mode", Raw: &Value{Const: "low", HasConst: true}},
+					{Kind: "write", On: []string{"PercentSetting"}, Method: "fan_mode", Raw: &Value{Const: "medium", HasConst: true}},
+					{Kind: "write", On: []string{"PercentSetting"}, Method: "fan_mode", Raw: &Value{Const: "high", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d fancontroldef.Declare
+					if b.match(&When{Extra: map[string]Set{"fan_modes": Set{Any: []string{"auto"}}}}) {
+						d.Features |= fancontroldef.FeatureAuto
+					}
+					d.Initial.FanMode = new(fancontroldef.FanModeOff)
+					d.Initial.FanModeSequence = new(fancontroldef.FanModeSequenceOffLowMedHigh)
+					if b.match(&When{Extra: map[string]Set{"fan_modes": Set{Any: []string{"auto"}}}}) {
+						d.Initial.FanModeSequence = new(fancontroldef.FanModeSequenceOffLowMedHighAuto)
+					}
+					d.Initial.PercentCurrent = new(uint8(0))
+					d.Initial.Null = append(d.Initial.Null, fancontroldef.AttrPercentSetting)
+					d.OnWrite = func(_ context.Context, next fancontroldef.State, attrID uint32) error {
+						f := func(name string) (any, bool) {
+							switch name {
+							case "FanMode":
+								return next.FanMode, true
+							}
+							return nil, false
+						}
+						if slices.Contains([]uint32{fancontroldef.AttrFanMode}, attrID) && slices.Contains([]fancontroldef.FanModeEnum{fancontroldef.FanModeOff, fancontroldef.FanModeLow, fancontroldef.FanModeMedium, fancontroldef.FanModeHigh, fancontroldef.FanModeAuto}, next.FanMode) {
+							b.emit(ci, 0, f)
+						}
+						if slices.Contains([]uint32{fancontroldef.AttrPercentSetting}, attrID) && next.PercentSetting != nil && slices.Contains([]uint8{uint8(0)}, *next.PercentSetting) {
+							b.emit(ci, 1, f)
+						}
+						if slices.Contains([]uint32{fancontroldef.AttrPercentSetting}, attrID) && next.PercentSetting != nil && slices.Contains([]uint8{uint8(1), uint8(2), uint8(3), uint8(4), uint8(5), uint8(6), uint8(7), uint8(8), uint8(9), uint8(10), uint8(11), uint8(12), uint8(13), uint8(14), uint8(15), uint8(16), uint8(17), uint8(18), uint8(19), uint8(20), uint8(21), uint8(22), uint8(23), uint8(24), uint8(25), uint8(26), uint8(27), uint8(28), uint8(29), uint8(30), uint8(31), uint8(32), uint8(33)}, *next.PercentSetting) {
+							b.emit(ci, 2, f)
+						}
+						if slices.Contains([]uint32{fancontroldef.AttrPercentSetting}, attrID) && next.PercentSetting != nil && slices.Contains([]uint8{uint8(34), uint8(35), uint8(36), uint8(37), uint8(38), uint8(39), uint8(40), uint8(41), uint8(42), uint8(43), uint8(44), uint8(45), uint8(46), uint8(47), uint8(48), uint8(49), uint8(50), uint8(51), uint8(52), uint8(53), uint8(54), uint8(55), uint8(56), uint8(57), uint8(58), uint8(59), uint8(60), uint8(61), uint8(62), uint8(63), uint8(64), uint8(65), uint8(66)}, *next.PercentSetting) {
+							b.emit(ci, 3, f)
+						}
+						if slices.Contains([]uint32{fancontroldef.AttrPercentSetting}, attrID) && next.PercentSetting != nil && slices.Contains([]uint8{uint8(67), uint8(68), uint8(69), uint8(70), uint8(71), uint8(72), uint8(73), uint8(74), uint8(75), uint8(76), uint8(77), uint8(78), uint8(79), uint8(80), uint8(81), uint8(82), uint8(83), uint8(84), uint8(85), uint8(86), uint8(87), uint8(88), uint8(89), uint8(90), uint8(91), uint8(92), uint8(93), uint8(94), uint8(95), uint8(96), uint8(97), uint8(98), uint8(99), uint8(100)}, *next.PercentSetting) {
+							b.emit(ci, 4, f)
+						}
+						return nil
+					}
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p fancontroldef.Patch
+					n := 0
+					switch b.text(&st, ci, 0) {
+					case "auto":
+						p.FanMode = new(fancontroldef.FanModeAuto)
+						n++
+					case "high":
+						p.FanMode = new(fancontroldef.FanModeHigh)
+						n++
+					case "low":
+						p.FanMode = new(fancontroldef.FanModeLow)
+						n++
+					case "medium":
+						p.FanMode = new(fancontroldef.FanModeMedium)
+						n++
+					case "off":
+						p.FanMode = new(fancontroldef.FanModeOff)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, fancontroldef.Wrap(b.server(fancontroldef.ClusterID)).Set(p)
+				},
+			},
+			{
+				Name: "RelativeHumidityMeasurement", ID: relativehumiditymeasurementdef.ClusterID,
+				Attributes: []Attr{
+					{Name: "MeasuredValue", Value: Value{From: "state.current_humidity", Linear: Linear{Offset: 0, Scale: 100, Add: 0}, Min: new(float64(0)), Max: new(float64(10000))}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d relativehumiditymeasurementdef.Declare
+					d.Initial.Null = append(d.Initial.Null, relativehumiditymeasurementdef.AttrMeasuredValue)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p relativehumiditymeasurementdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.MeasuredValue = new(conv[uint16](v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, relativehumiditymeasurementdef.AttrMeasuredValue)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, relativehumiditymeasurementdef.Wrap(b.server(relativehumiditymeasurementdef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
 		ID: "climate/thermostat", Platform: "climate",
 		When:  When{Extra: map[string]Set{"modes": Set{Any: []string{"heat", "cool", "heat_cool"}}}},
 		State: eligibility.StateMappable,
-		Cites: []string{"matter.js packages/model/src/standard/elements/thermostat-device.element.ts:25 @862ad75f (Thermostat mandatory)", "matter.js packages/model/src/standard/resources/thermostat-cluster.resource.ts:50,163,322 @862ad75f (LocalTemperature, OccupiedHeatingSetpoint, SystemMode)", "matter.js packages/model/src/standard/elements/temperature.element.ts:12 @862ad75f (the temperature datatype, int16 in 0.01 degC)", "go-ha-catalog data/mqtt.json:1200-1647 (climate schema; modes at 1385 with its default, mode_command_topic at 1370, temperature_command_topic at 1572, temperature_low/high_command_topic at 1582/1602)", "go-ha-catalog gen_vocab.go:837-847 (HVACMode vocabulary)"},
+		Cites: []string{"matter.js packages/model/src/standard/elements/thermostat-device.element.ts:25 @862ad75f (Thermostat mandatory)", "matter.js packages/model/src/standard/resources/thermostat-cluster.resource.ts:50,163,322 @862ad75f (LocalTemperature, OccupiedHeatingSetpoint, SystemMode)", "matter.js packages/model/src/standard/elements/temperature.element.ts:12 @862ad75f (the temperature datatype, int16 in 0.01 degC)", "go-fabric cluster/thermo/presets.go:246-257 @v0.15.4 (every preset needs the setpoints of the selected Heating and Cooling features)", "go-ha-catalog data/mqtt.json:1200-1647 (climate schema; modes at 1385 with its default, mode_command_topic at 1370, temperature_command_topic at 1572, temperature_low/high_command_topic at 1582/1602)", "go-ha-catalog gen_vocab.go:837-847 (HVACMode vocabulary)"},
 		Type:  &device.ThermostatType,
 		Caveats: []Caveat{
-			{When: When{Extra: map[string]Set{"modes": Set{Any: []string{"auto"}}}}, Reason: "the hvac mode auto (the device's own schedule) has no SystemMode: it is not mapped in H1"},
-			{When: When{Extra: map[string]Set{"fan_modes": Set{Present: new(true)}}}, Reason: "fan modes are not mapped in H1"},
-			{When: When{Extra: map[string]Set{"preset_modes": Set{Present: new(true)}}}, Reason: "preset modes are not mapped in H1 (Thermostat Presets is H2)"},
-			{When: When{Extra: map[string]Set{"swing_modes": Set{Present: new(true)}}}, Reason: "swing modes are not mapped in H1"},
+			{When: When{Extra: map[string]Set{"modes": Set{Any: []string{"auto"}}}}, Reason: "the hvac mode auto (the device's own schedule) has no SystemMode: it is not mapped"},
+			{When: When{Extra: map[string]Set{"fan_modes": Set{Present: new(true)}}}, Reason: "fan modes are not mapped without the climate's turn_on and turn_off (a RoomAirConditioner needs its OnOff)"},
+			{When: When{Extra: map[string]Set{"preset_modes": Set{Present: new(true)}}}, Reason: "preset modes are not mapped: go-fabric's Thermostat server requires a heating or cooling setpoint on every preset, and Home Assistant's preset modes carry none"},
+			{When: When{Extra: map[string]Set{"swing_modes": Set{Present: new(true)}}}, Reason: "swing modes are not mapped"},
 		},
 		Clusters: []Cluster{
 			{
