@@ -18,6 +18,7 @@ import (
 	electricalenergymeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/electricalenergymeasurement"
 	electricalpowermeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/electricalpowermeasurement"
 	fancontroldef "github.com/SukramJ/go-fabric/cluster/spec/fancontrol"
+	flowmeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/flowmeasurement"
 	illuminancemeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/illuminancemeasurement"
 	levelcontroldef "github.com/SukramJ/go-fabric/cluster/spec/levelcontrol"
 	modeselectdef "github.com/SukramJ/go-fabric/cluster/spec/modeselect"
@@ -34,6 +35,7 @@ import (
 	radonconcentrationmeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/radonconcentrationmeasurement"
 	relativehumiditymeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/relativehumiditymeasurement"
 	smokecoalarmdef "github.com/SukramJ/go-fabric/cluster/spec/smokecoalarm"
+	soilmeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/soilmeasurement"
 	temperaturemeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/temperaturemeasurement"
 	thermostatdef "github.com/SukramJ/go-fabric/cluster/spec/thermostat"
 	totalvolatileorganiccompoundsconcentrationmeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/totalvolatileorganiccompoundsconcentrationmeasurement"
@@ -192,6 +194,41 @@ var rows = []Row{
 		State: eligibility.StateMappable,
 		Cites: []string{"matter.js packages/model/src/standard/elements/water-leak-detector.element.ts:20-22 @862ad75f (BooleanState mandatory, CHGEVENT)", "go-ha-catalog data/mqtt.json:780-934 (binary_sensor schema; payload_on/payload_off at 898-907)", "go-ha-catalog data/device_classes.json:2-32 (binary_sensor device classes)"},
 		Type:  &device.WaterLeakDetectorType,
+		Clusters: []Cluster{
+			{
+				Name: "BooleanState", ID: booleanstatedef.ClusterID,
+				Attributes: []Attr{
+					{Name: "StateValue", Value: Value{From: "state"}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d booleanstatedef.Declare
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p booleanstatedef.Patch
+					n := 0
+					switch b.text(&st, ci, 0) {
+					case "off":
+						p.StateValue = new(false)
+						n++
+					case "on":
+						p.StateValue = new(true)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, booleanstatedef.Wrap(b.server(booleanstatedef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
+		ID: "binary_sensor/water_freeze", Platform: "binary_sensor",
+		When:  When{DeviceClass: []string{"cold"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/water-freeze-detector.element.ts:19-23 @862ad75f (BooleanState mandatory, CHGEVENT)", "home-assistant/core homeassistant/components/binary_sensor/const.py:23-24 @2026.10.3 (cold, on means cold)", "go-ha-catalog data/mqtt.json:780-934 (binary_sensor schema; payload_on/payload_off at 898-907)", "go-ha-catalog data/device_classes.json:2-32 (binary_sensor device classes)"},
+		Type:  &device.WaterFreezeDetectorType,
 		Clusters: []Cluster{
 			{
 				Name: "BooleanState", ID: booleanstatedef.ClusterID,
@@ -422,9 +459,9 @@ var rows = []Row{
 	},
 	{
 		ID: "binary_sensor/no_device_type", Platform: "binary_sensor",
-		When:   When{DeviceClass: []string{"battery", "battery_charging", "cold", "connectivity", "gas", "glass_break", "heat", "light", "lock", "moving", "plug", "power", "problem", "running", "safety", "sound", "tamper", "update", "vibration"}},
+		When:   When{DeviceClass: []string{"battery", "battery_charging", "connectivity", "gas", "glass_break", "heat", "light", "lock", "moving", "plug", "power", "problem", "running", "safety", "sound", "tamper", "update", "vibration"}},
 		State:  eligibility.StateUnmappable,
-		Reason: "no Matter device type for a binary_sensor of device_class {device_class} in H1",
+		Reason: "no Matter device type for a binary_sensor of device_class {device_class}",
 		Cites:  []string{"go-ha-catalog data/mqtt.json:780-934 (binary_sensor schema; payload_on/payload_off at 898-907)", "go-ha-catalog data/device_classes.json:2-32 (binary_sensor device classes)"},
 	},
 	{
@@ -3062,6 +3099,80 @@ var rows = []Row{
 		},
 	},
 	{
+		ID: "sensor/volume_flow_rate", Platform: "sensor",
+		When:  When{DeviceClass: []string{"volume_flow_rate"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/flow-sensor.element.ts:19 @862ad75f (FlowMeasurement mandatory)", "matter.js packages/model/src/standard/resources/flow-measurement.resource.ts:19-24 @862ad75f (MeasuredValue = 10 x Flow in m³/h)", "go-fabric cluster/measurement/flow.go:34-38 @v0.15.4 (uint16, 0.1 m³/h, clamped to 0..65534)", "home-assistant/core homeassistant/util/unit_conversion.py:44-45,66-70,88-92,986-1004 @2026.10.3 (VolumeFlowRateConverter: ratios to m³/h)", "go-ha-catalog data/sensor.json:668-680 (volume_flow_rate units)", "go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},
+		Type:  &device.FlowSensorType,
+		Clusters: []Cluster{
+			{
+				Name: "FlowMeasurement", ID: flowmeasurementdef.ClusterID,
+				Attributes: []Attr{
+					{Name: "MeasuredValue", Value: Value{From: "state", Units: map[string]Linear{"L/h": {Offset: 0, Scale: 0.01, Add: 0}, "L/min": {Offset: 0, Scale: 0.6, Add: 0}, "L/s": {Offset: 0, Scale: 36, Add: 0}, "ft³/min": {Offset: 0, Scale: 16.9901079552, Add: 0}, "gal/d": {Offset: 0, Scale: 0.00157725491, Add: 0}, "gal/h": {Offset: 0, Scale: 0.03785411784, Add: 0}, "gal/min": {Offset: 0, Scale: 2.2712470704, Add: 0}, "mL/s": {Offset: 0, Scale: 0.036, Add: 0}, "m³/h": {Offset: 0, Scale: 10, Add: 0}, "m³/min": {Offset: 0, Scale: 600, Add: 0}, "m³/s": {Offset: 0, Scale: 36000, Add: 0}}, Min: new(float64(0)), Max: new(float64(65534))}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d flowmeasurementdef.Declare
+					d.Initial.Null = append(d.Initial.Null, flowmeasurementdef.AttrMeasuredValue)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p flowmeasurementdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.MeasuredValue = new(conv[uint16](v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, flowmeasurementdef.AttrMeasuredValue)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, flowmeasurementdef.Wrap(b.server(flowmeasurementdef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
+		ID: "sensor/moisture", Platform: "sensor",
+		When:  When{DeviceClass: []string{"moisture"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/soil-sensor.element.ts:20 @862ad75f (SoilMeasurement mandatory)", "matter.js packages/model/src/standard/resources/soil-measurement.resource.ts:20-32,36-37 @862ad75f (the limits in percent, one accuracy range with PercentMax at most 10.00 %; the measured value in percent)", "go-fabric cluster/spec/soilmeasurement/definition_gen.go:40-46,105,133-142 @v0.15.4 (MeasurementAccuracyStruct, MeasurementTypeSoilMoisture, the range's PercentMax in 1/100 %)", "go-ha-catalog data/sensor.json:521-523 (moisture unit %)", "go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},
+		Type:  &device.SoilSensorType,
+		Clusters: []Cluster{
+			{
+				Name: "SoilMeasurement", ID: soilmeasurementdef.ClusterID,
+				Attributes: []Attr{
+					{Name: "SoilMoistureMeasuredValue", Value: Value{From: "state", Units: map[string]Linear{"%": {Offset: 0, Scale: 1, Add: 0}}, Min: new(float64(0)), Max: new(float64(100))}},
+				},
+				Initial: []Attr{
+					{Name: "SoilMoistureMeasurementLimits", Value: Value{}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d soilmeasurementdef.Declare
+					d.Initial.SoilMoistureMeasurementLimits = &soilmeasurementdef.MeasurementAccuracyStruct{MeasurementType: soilmeasurementdef.MeasurementTypeSoilMoisture, Measured: true, MinMeasuredValue: int64(0), MaxMeasuredValue: int64(100), AccuracyRanges: []soilmeasurementdef.MeasurementAccuracyRangeStruct{soilmeasurementdef.MeasurementAccuracyRangeStruct{RangeMin: int64(0), RangeMax: int64(100), PercentMax: new(uint16(100))}}}
+					d.Initial.Null = append(d.Initial.Null, soilmeasurementdef.AttrSoilMoistureMeasuredValue)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p soilmeasurementdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.SoilMoistureMeasuredValue = new(conv[uint8](v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, soilmeasurementdef.AttrSoilMoistureMeasuredValue)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, soilmeasurementdef.Wrap(b.server(soilmeasurementdef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
 		ID: "sensor/battery", Platform: "sensor",
 		When:            When{DeviceClass: []string{"battery"}},
 		State:           eligibility.StatePartial,
@@ -3109,9 +3220,9 @@ var rows = []Row{
 	},
 	{
 		ID: "sensor/no_device_type", Platform: "sensor",
-		When:   When{DeviceClass: []string{"absolute_humidity", "aqi", "area", "blood_glucose_concentration", "conductivity", "data_rate", "data_size", "date", "distance", "duration", "energy_distance", "energy_storage", "enum", "gas", "irradiance", "moisture", "monetary", "nitrogen_monoxide", "nitrous_oxide", "ph", "pm4", "precipitation", "precipitation_intensity", "reactive_energy", "signal_strength", "sound_pressure", "speed", "sulphur_dioxide", "temperature_delta", "timestamp", "uptime", "volume", "volume_flow_rate", "volume_storage", "water", "weight", "wind_direction", "wind_speed"}},
+		When:   When{DeviceClass: []string{"absolute_humidity", "aqi", "area", "blood_glucose_concentration", "conductivity", "data_rate", "data_size", "date", "distance", "duration", "energy_distance", "energy_storage", "enum", "gas", "irradiance", "monetary", "nitrogen_monoxide", "nitrous_oxide", "ph", "pm4", "precipitation", "precipitation_intensity", "reactive_energy", "signal_strength", "sound_pressure", "speed", "sulphur_dioxide", "temperature_delta", "timestamp", "uptime", "volume", "volume_storage", "water", "weight", "wind_direction", "wind_speed"}},
 		State:  eligibility.StateUnmappable,
-		Reason: "no Matter device type for a sensor of device_class {device_class} in H1",
+		Reason: "no Matter device type for a sensor of device_class {device_class}",
 		Cites:  []string{"go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},
 	},
 	{

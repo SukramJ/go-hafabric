@@ -24,6 +24,14 @@ All notable changes to this project are documented here. The format follows
 - sensor: apparent_power, reactive_power, frequency and power_factor as an
   ElectricalSensor (ApparentPower mVA, ReactivePower mVAR, Frequency mHz,
   PowerFactor in 1/100 %; a power factor without a unit is a ratio).
+- sensor: volume_flow_rate as a FlowSensor (0.1 m³/h), moisture as a
+  SoilSensor; binary_sensor: cold as a WaterFreezeDetector.
+
+### Changed
+
+- The unmappable verdicts of `sensor/no_device_type` and
+  `binary_sensor/no_device_type` no longer say "in H1" and list only the
+  classes no row maps.
 
 ## [0.2.1] - 2026-10-26
 

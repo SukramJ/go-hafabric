@@ -7,11 +7,14 @@ import (
 	"testing"
 
 	airqualitydef "github.com/SukramJ/go-fabric/cluster/spec/airquality"
+	booleanstatedef "github.com/SukramJ/go-fabric/cluster/spec/booleanstate"
 	co2def "github.com/SukramJ/go-fabric/cluster/spec/carbondioxideconcentrationmeasurement"
 	codef "github.com/SukramJ/go-fabric/cluster/spec/carbonmonoxideconcentrationmeasurement"
 	epmdef "github.com/SukramJ/go-fabric/cluster/spec/electricalpowermeasurement"
+	flowdef "github.com/SukramJ/go-fabric/cluster/spec/flowmeasurement"
 	no2def "github.com/SukramJ/go-fabric/cluster/spec/nitrogendioxideconcentrationmeasurement"
 	radondef "github.com/SukramJ/go-fabric/cluster/spec/radonconcentrationmeasurement"
+	soildef "github.com/SukramJ/go-fabric/cluster/spec/soilmeasurement"
 	tvocdef "github.com/SukramJ/go-fabric/cluster/spec/totalvolatileorganiccompoundsconcentrationmeasurement"
 	"github.com/SukramJ/go-fabric/device"
 	"github.com/SukramJ/go-fabric/eligibility"
@@ -115,5 +118,31 @@ func TestSensorElectricalQuantities(t *testing.T) {
 	}
 	if a := read("hz").Accuracy; len(a) != 1 || a[0].MeasurementType != epmdef.MeasurementTypeFrequency {
 		t.Errorf("Accuracy %+v", a)
+	}
+}
+
+func TestSensorFlowAndSoil(t *testing.T) {
+	r := serve(t, sensor("flow", "volume_flow_rate", "L/min"), sensor("soil", "moisture", "%"))
+	wantType(t, r, "flow", &device.FlowSensorType, eligibility.StateMappable)
+	wantType(t, r, "soil", &device.SoilSensorType, eligibility.StateMappable)
+	r.apply("flow", value(12.5)) // 0.75 m³/h
+	r.apply("soil", value(41.6))
+	if st, _ := flowdef.StateFrom(r.values("flow", flowdef.ClusterID)); st.MeasuredValue == nil || *st.MeasuredValue != 8 {
+		t.Fatalf("flow MeasuredValue %v, want 8 (0.75 m³/h in 0.1 m³/h)", st.MeasuredValue)
+	}
+	st, _ := soildef.StateFrom(r.values("soil", soildef.ClusterID))
+	if st.SoilMoistureMeasuredValue == nil || *st.SoilMoistureMeasuredValue != 42 ||
+		st.SoilMoistureMeasurementLimits.MeasurementType != soildef.MeasurementTypeSoilMoisture ||
+		st.SoilMoistureMeasurementLimits.MaxMeasuredValue != 100 {
+		t.Fatalf("soil %+v", st)
+	}
+}
+
+func TestBinarySensorCold(t *testing.T) {
+	r := serve(t, binary("cold", "cold"))
+	wantType(t, r, "cold", &device.WaterFreezeDetectorType, eligibility.StateMappable)
+	r.apply("cold", value("on"))
+	if st, _ := booleanstatedef.StateFrom(r.values("cold", booleanstatedef.ClusterID)); !st.StateValue {
+		t.Fatal("cold on: StateValue false, want true")
 	}
 }

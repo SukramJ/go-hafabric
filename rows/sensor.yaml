@@ -510,6 +510,46 @@ rows:
               "GWh": {scale: 1.0e12}
               "TWh": {scale: 1.0e15}
               "thm": {scale: 2.9307107017222222e7}
+  - id: volume_flow_rate
+    when: {device_class: [volume_flow_rate]}
+    type: FlowSensor
+    verdict: mappable
+    cites:
+      - matter.js packages/model/src/standard/elements/flow-sensor.element.ts:19 @862ad75f (FlowMeasurement mandatory)
+      - matter.js packages/model/src/standard/resources/flow-measurement.resource.ts:19-24 @862ad75f (MeasuredValue = 10 x Flow in m³/h)
+      - go-fabric cluster/measurement/flow.go:34-38 @v0.15.4 (uint16, 0.1 m³/h, clamped to 0..65534)
+      - "home-assistant/core homeassistant/util/unit_conversion.py:44-45,66-70,88-92,986-1004 @2026.10.3 (VolumeFlowRateConverter: ratios to m³/h)"
+      - go-ha-catalog data/sensor.json:668-680 (volume_flow_rate units)
+    clusters:
+      - cluster: FlowMeasurement
+        start_null: [MeasuredValue]
+        attributes:
+          - attribute: MeasuredValue
+            from: state
+            min: 0
+            max: 65534
+            units: {"m³/h": {scale: 10}, "m³/min": {scale: 600}, "m³/s": {scale: 36000}, "ft³/min": {scale: 16.9901079552}, "L/h": {scale: 0.01}, "L/min": {scale: 0.6}, "L/s": {scale: 36}, "gal/h": {scale: 0.03785411784}, "gal/min": {scale: 2.2712470704}, "gal/d": {scale: 0.00157725491}, "mL/s": {scale: 0.036}}
+  - id: moisture
+    when: {device_class: [moisture]}
+    type: SoilSensor
+    verdict: mappable
+    cites:
+      - matter.js packages/model/src/standard/elements/soil-sensor.element.ts:20 @862ad75f (SoilMeasurement mandatory)
+      - matter.js packages/model/src/standard/resources/soil-measurement.resource.ts:20-32,36-37 @862ad75f (the limits in percent, one accuracy range with PercentMax at most 10.00 %; the measured value in percent)
+      - go-fabric cluster/spec/soilmeasurement/definition_gen.go:40-46,105,133-142 @v0.15.4 (MeasurementAccuracyStruct, MeasurementTypeSoilMoisture, the range's PercentMax in 1/100 %)
+      - go-ha-catalog data/sensor.json:521-523 (moisture unit %)
+    clusters:
+      - cluster: SoilMeasurement
+        initial:
+          - attribute: SoilMoistureMeasurementLimits
+            literal: {MeasurementType: MeasurementTypeSoilMoisture, Measured: true, MinMeasuredValue: 0, MaxMeasuredValue: 100, AccuracyRanges: [{RangeMin: 0, RangeMax: 100, PercentMax: 100}]}
+        start_null: [SoilMoistureMeasuredValue]
+        attributes:
+          - attribute: SoilMoistureMeasuredValue
+            from: state
+            min: 0
+            max: 100
+            units: {"%": {scale: 1}}
   - id: battery
     when: {device_class: [battery]}
     type: PowerSource
@@ -543,8 +583,8 @@ rows:
             default_unit: "%"
   - id: no_device_type
     when:
-      device_class: [absolute_humidity, aqi, area, blood_glucose_concentration, conductivity, data_rate, data_size, date, distance, duration, energy_distance, energy_storage, enum, gas, irradiance, moisture, monetary, nitrogen_monoxide, nitrous_oxide, ph, pm4, precipitation, precipitation_intensity, reactive_energy, signal_strength, sound_pressure, speed, sulphur_dioxide, temperature_delta, timestamp, uptime, volume, volume_flow_rate, volume_storage, water, weight, wind_direction, wind_speed]
-    verdict: "unmappable: no Matter device type for a sensor of device_class {device_class} in H1"
+      device_class: [absolute_humidity, aqi, area, blood_glucose_concentration, conductivity, data_rate, data_size, date, distance, duration, energy_distance, energy_storage, enum, gas, irradiance, monetary, nitrogen_monoxide, nitrous_oxide, ph, pm4, precipitation, precipitation_intensity, reactive_energy, signal_strength, sound_pressure, speed, sulphur_dioxide, temperature_delta, timestamp, uptime, volume, volume_storage, water, weight, wind_direction, wind_speed]
+    verdict: "unmappable: no Matter device type for a sensor of device_class {device_class}"
   - id: no_device_class
     when: {device_class: [none]}
     verdict: "unmappable: a sensor without device_class has no Matter device type"
