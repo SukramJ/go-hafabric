@@ -70,6 +70,10 @@ rows:
             raw: {...}           # the payload as one value, or
             json: {state: {...}, color.h: {...}}   # a JSON object by dotted key
             derive: rgb_from_xy  # keys computed from several fields
+        events:                  # events Plan.Apply emits when a value changes
+          - on: state            # state, state.<key> or extra.<key>
+            emit:                # in order, through Server.Emit<Event>
+              - {event: InitialPress, literal: {NewPosition: 1}}
 ```
 
 **Values.** `from` reads the entity: `state` (the primary state value; for a
@@ -105,6 +109,18 @@ the named method (the MQTT `<method>_command_topic` of the platform).
 Every method a row names is an exported constant of the package
 (`hamapping.MethodPresetMode` for `preset_mode`), generated with the rows,
 so a consumer's command handler compares against the constant.
+
+**Events.** `events` emit events of the cluster through its typed server
+(`<cluster>def.Server.Emit<Event>`, on the device's endpoint number) when
+the value `on` names changes from a known value to a different non-empty
+one: Home Assistant's event entity, whose state is the timestamp of its
+last event, becomes a press. The first value after the plan is built, or
+after the entity was unavailable or its value `unknown`, only sets the
+baseline and emits nothing. `literal` gives the event's data by field name
+of the event structure in the `<cluster>def` package; the generator refuses
+an event or a field the package does not have. `Plan.Apply` reports the
+events it emitted in `Patch.Events`. The table names them as
+`[on <value>: <events>]` after the cluster.
 
 ## The rows
 

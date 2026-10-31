@@ -27,6 +27,9 @@ rows:
             raw: {from: extra.payload_on, catalog: true}
           - handle: Off
             json: {state: {const: "OFF"}}
+        events:
+          - on: state
+            emit: [{event: InitialPress, literal: {NewPosition: 1}}, {event: ShortRelease}]
   - id: rest
     when: {}
     verdict: "unmappable: no"
@@ -37,7 +40,8 @@ func TestParse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if f.Platform != "switch" || len(f.Rows) != 2 || f.Rows[0].Clusters[0].Features[1].When == nil {
+	if f.Platform != "switch" || len(f.Rows) != 2 || f.Rows[0].Clusters[0].Features[1].When == nil ||
+		f.Rows[0].Clusters[0].Events[0].On != "state" || len(f.Rows[0].Clusters[0].Events[0].Emit) != 2 {
 		t.Fatalf("%+v", f)
 	}
 }
@@ -71,6 +75,11 @@ func TestParseRefuses(t *testing.T) {
 		"derive":               {"json: {state: {const: \"OFF\"}}", "json: {state: {const: \"OFF\"}}\n            derive: nope"},
 		"per":                  {"from: state, enum", "from: state, per: state, enum"},
 		"start_null":           {"start_null: [B]", "start_null: [\"b c\"]"},
+		"event on":             {"- on: state", "- on: desc.min"},
+		"event on key":         {"- on: state", "- on: \"extra.\""},
+		"event no emit":        {"emit: [{event: InitialPress, literal: {NewPosition: 1}}, {event: ShortRelease}]", "emit: []"},
+		"event name":           {"{event: ShortRelease}", "{event: \"Short Release\"}"},
+		"event field":          {"literal: {NewPosition: 1}", "literal: {\"New Position\": 1}"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			src := strings.Replace(good, edit[0], edit[1], 1)

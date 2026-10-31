@@ -105,6 +105,26 @@ type Cluster struct {
 	StartNull  []string  `yaml:"start_null"`
 	Attributes []Attr    `yaml:"attributes"`
 	Commands   []Command `yaml:"commands"`
+	// Events emit the cluster's events when a value of the entity
+	// changes.
+	Events []Event `yaml:"events"`
+}
+
+// Event emits events of a cluster when the value On names changes from
+// a known value to another; the first value (after start or after the
+// entity was unavailable) only sets the baseline.
+type Event struct {
+	// On is the value: "state", "state.<key>" or "extra.<key>".
+	On string `yaml:"on"`
+	// Emit are the events, emitted in order.
+	Emit []Emit `yaml:"emit"`
+}
+
+// Emit is one event and its data, by field name of the event's
+// structure in the cluster's <cluster>def package.
+type Emit struct {
+	Event   string         `yaml:"event"`
+	Literal map[string]any `yaml:"literal"`
 }
 
 // Feature is a feature selection, a name or {name, when}.
@@ -344,8 +364,8 @@ func (r *Row) check() error {
 		}
 		for j := range p.Clusters {
 			c := &p.Clusters[j]
-			if len(c.Attributes) > 0 || len(c.Commands) > 0 {
-				return fmt.Errorf("part %s: cluster %s: a part declares no attributes or commands", p.Type, c.Cluster)
+			if len(c.Attributes) > 0 || len(c.Commands) > 0 || len(c.Events) > 0 {
+				return fmt.Errorf("part %s: cluster %s: a part declares no attributes, commands or events", p.Type, c.Cluster)
 			}
 			for k := range c.Initial {
 				if a := &c.Initial[k]; a.From != "" {
@@ -424,7 +444,46 @@ func (c *Cluster) check() error {
 			return fmt.Errorf("command %d: %w", i, err)
 		}
 	}
+	for i := range c.Events {
+		if err := c.Events[i].check(); err != nil {
+			return fmt.Errorf("event %d: %w", i, err)
+		}
+	}
 	return nil
+}
+
+func (e *Event) check() error {
+	if !valueFrom(e.On) {
+		return fmt.Errorf("on %q: state, state.<key> or extra.<key>", e.On)
+	}
+	if len(e.Emit) == 0 {
+		return errors.New("no emit")
+	}
+	for _, x := range e.Emit {
+		if !ident(x.Event) {
+			return fmt.Errorf("event %q", x.Event)
+		}
+		for k := range x.Literal {
+			if !ident(k) {
+				return fmt.Errorf("event %s: field %q", x.Event, k)
+			}
+		}
+	}
+	return nil
+}
+
+// valueFrom reports whether s names a value of the entity a change can
+// be seen on: "state", "state.<key>" or "extra.<key>".
+func valueFrom(s string) bool {
+	if s == "state" {
+		return true
+	}
+	for _, p := range []string{"state.", "extra."} {
+		if k, ok := strings.CutPrefix(s, p); ok {
+			return k != "" && !strings.Contains(k, "..")
+		}
+	}
+	return false
 }
 
 func (cmd *Command) check() error {

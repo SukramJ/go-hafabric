@@ -67,6 +67,9 @@ type Patch struct {
 	Value any
 	// Reachable is the reachability set; nil for a cluster patch.
 	Reachable *bool
+	// Events are the events emitted on the cluster, by name; nil
+	// otherwise.
+	Events []string
 	// Err is what the Set returned.
 	Err error
 }
@@ -411,6 +414,7 @@ func (p *Plan) Apply(ctx context.Context, key string, st model.State) []Patch {
 		b.target.SetReachable(ctx, reachable)
 		out = append(out, Patch{Key: key, Reachable: &reachable})
 		if !reachable {
+			b.forget()
 			return out
 		}
 	}
@@ -434,6 +438,14 @@ func (p *Plan) Apply(ctx context.Context, key string, st model.State) []Patch {
 			continue
 		}
 		out = append(out, Patch{Key: key, Cluster: c.Name, Value: v, Err: err})
+	}
+	for ci := range b.row.Clusters {
+		c := &b.row.Clusters[ci]
+		for ei := range c.Events {
+			if names, err := b.event(ci, ei, &st); names != nil || err != nil {
+				out = append(out, Patch{Key: key, Cluster: c.Name, Events: names, Err: err})
+			}
+		}
 	}
 	return out
 }

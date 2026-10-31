@@ -55,6 +55,13 @@ func Table(files []rowfile.File) string {
 				if len(fs) > 0 {
 					name += " (" + strings.Join(fs, ", ") + ")"
 				}
+				for _, e := range c.Events {
+					var es []string
+					for _, x := range e.Emit {
+						es = append(es, x.Event)
+					}
+					name += " [on " + e.On + ": " + strings.Join(es, ", ") + "]"
+				}
 				cs = append(cs, name)
 			}
 			for _, p := range r.Parts {
@@ -697,7 +704,45 @@ func (g *gen) cluster(w *bytes.Buffer, c *rowfile.Cluster, d def) error {
 			return err
 		}
 	}
+	if len(c.Events) > 0 {
+		if err := g.events(w, c, d); err != nil {
+			return err
+		}
+	}
 	w.WriteString("},\n")
+	return nil
+}
+
+// events emits the cluster's events and the fire closure that emits them
+// through the typed server's Emit<Event>.
+func (g *gen) events(w *bytes.Buffer, c *rowfile.Cluster, d def) error {
+	var body bytes.Buffer
+	w.WriteString("Events: []Event{\n")
+	for i := range c.Events {
+		e := &c.Events[i]
+		names := make([]string, 0, len(e.Emit))
+		fmt.Fprintf(&body, "case %d:\n", i)
+		for _, x := range e.Emit {
+			m, ok := d.server.MethodByName("Emit" + x.Event)
+			if !ok || m.Type.NumIn() != 3 || m.Type.NumOut() != 1 {
+				return fmt.Errorf("event %q: %s has none", x.Event, d.name)
+			}
+			lit := map[string]any{}
+			for k, v := range x.Literal {
+				lit[k] = v
+			}
+			data, err := g.literal(m.Type.In(2), lit)
+			if err != nil {
+				return fmt.Errorf("event %s: %w", x.Event, err)
+			}
+			fmt.Fprintf(&body, "if err := s.Emit%s(endpoint, %s); err != nil {\nreturn err\n}\n", x.Event, data)
+			names = append(names, x.Event)
+		}
+		fmt.Fprintf(w, "{On: %q, Emit: %s},\n", e.On, strs(names))
+	}
+	w.WriteString("},\n")
+	fmt.Fprintf(w, "fire: func(b *binding, ei int, endpoint uint16) error {\ns := %s.Wrap(b.server(%s.ClusterID))\nswitch ei {\n%s}\nreturn nil\n},\n",
+		d.alias, d.alias, body.String())
 	return nil
 }
 

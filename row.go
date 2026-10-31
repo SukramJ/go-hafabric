@@ -85,10 +85,27 @@ type Cluster struct {
 	Initial []Attr
 	// Commands map a controller's command or write back to the entity.
 	Commands []Command
+	// Events emit the cluster's events when a value of the entity
+	// changes.
+	Events []Event
 
 	declare func(b *binding, ci int) device.Declaration
 	apply   func(b *binding, ci int, st model.State) (any, error)
 	watch   func(b *binding, ci int) func()
+	fire    func(b *binding, ei int, endpoint uint16) error
+}
+
+// Event emits events of a cluster, in order, through the cluster's typed
+// server (<cluster>def.Server.Emit<Event>) when the value On names
+// changes from a known value to another non-empty one. The first value —
+// after the plan is built, or after the entity was unavailable or its
+// value unknown — only sets the baseline: a value that was there before
+// is no event.
+type Event struct {
+	// On is the value: "state", "state.<key>" or "extra.<key>".
+	On string
+	// Emit names the events, as the cluster's definition does.
+	Emit []string
 }
 
 // Feature is one feature a cluster declaration selects, when When holds

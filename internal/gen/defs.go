@@ -37,14 +37,18 @@ type def struct {
 	declare reflect.Type
 	patch   reflect.Type
 	state   reflect.Type
+	// server is the typed server (*<cluster>def.Server), whose
+	// Emit<Event> methods name the cluster's events and their data.
+	server reflect.Type
 }
 
 const specPath = "github.com/SukramJ/go-fabric/cluster/spec/"
 
-func newDef[D, P, S any](name string, id uint32, pkg string) def {
+func newDef[D, P, S, V any](name string, id uint32, pkg string) def {
 	return def{
 		name: name, id: id, path: specPath + pkg, alias: pkg + "def",
 		declare: reflect.TypeFor[D](), patch: reflect.TypeFor[P](), state: reflect.TypeFor[S](),
+		server: reflect.TypeFor[*V](),
 	}
 }
 
@@ -52,24 +56,24 @@ func newDef[D, P, S any](name string, id uint32, pkg string) def {
 // cluster fails generation until its package is listed here.
 var defs = func() map[string]def {
 	all := []def{
-		newDef[booleanstatedef.Declare, booleanstatedef.Patch, booleanstatedef.State](booleanstatedef.Name, booleanstatedef.ClusterID, "booleanstate"),
-		newDef[colorcontroldef.Declare, colorcontroldef.Patch, colorcontroldef.State](colorcontroldef.Name, colorcontroldef.ClusterID, "colorcontrol"),
-		newDef[doorlockdef.Declare, doorlockdef.Patch, doorlockdef.State](doorlockdef.Name, doorlockdef.ClusterID, "doorlock"),
-		newDef[electricalenergymeasurementdef.Declare, electricalenergymeasurementdef.Patch, electricalenergymeasurementdef.State](electricalenergymeasurementdef.Name, electricalenergymeasurementdef.ClusterID, "electricalenergymeasurement"),
-		newDef[electricalpowermeasurementdef.Declare, electricalpowermeasurementdef.Patch, electricalpowermeasurementdef.State](electricalpowermeasurementdef.Name, electricalpowermeasurementdef.ClusterID, "electricalpowermeasurement"),
-		newDef[fancontroldef.Declare, fancontroldef.Patch, fancontroldef.State](fancontroldef.Name, fancontroldef.ClusterID, "fancontrol"),
-		newDef[illuminancemeasurementdef.Declare, illuminancemeasurementdef.Patch, illuminancemeasurementdef.State](illuminancemeasurementdef.Name, illuminancemeasurementdef.ClusterID, "illuminancemeasurement"),
-		newDef[levelcontroldef.Declare, levelcontroldef.Patch, levelcontroldef.State](levelcontroldef.Name, levelcontroldef.ClusterID, "levelcontrol"),
-		newDef[occupancysensingdef.Declare, occupancysensingdef.Patch, occupancysensingdef.State](occupancysensingdef.Name, occupancysensingdef.ClusterID, "occupancysensing"),
-		newDef[onoffdef.Declare, onoffdef.Patch, onoffdef.State](onoffdef.Name, onoffdef.ClusterID, "onoff"),
-		newDef[powersourcedef.Declare, powersourcedef.Patch, powersourcedef.State](powersourcedef.Name, powersourcedef.ClusterID, "powersource"),
-		newDef[powertopologydef.Declare, powertopologydef.Patch, powertopologydef.State](powertopologydef.Name, powertopologydef.ClusterID, "powertopology"),
-		newDef[pressuremeasurementdef.Declare, pressuremeasurementdef.Patch, pressuremeasurementdef.State](pressuremeasurementdef.Name, pressuremeasurementdef.ClusterID, "pressuremeasurement"),
-		newDef[relativehumiditymeasurementdef.Declare, relativehumiditymeasurementdef.Patch, relativehumiditymeasurementdef.State](relativehumiditymeasurementdef.Name, relativehumiditymeasurementdef.ClusterID, "relativehumiditymeasurement"),
-		newDef[smokecoalarmdef.Declare, smokecoalarmdef.Patch, smokecoalarmdef.State](smokecoalarmdef.Name, smokecoalarmdef.ClusterID, "smokecoalarm"),
-		newDef[temperaturemeasurementdef.Declare, temperaturemeasurementdef.Patch, temperaturemeasurementdef.State](temperaturemeasurementdef.Name, temperaturemeasurementdef.ClusterID, "temperaturemeasurement"),
-		newDef[thermostatdef.Declare, thermostatdef.Patch, thermostatdef.State](thermostatdef.Name, thermostatdef.ClusterID, "thermostat"),
-		newDef[windowcoveringdef.Declare, windowcoveringdef.Patch, windowcoveringdef.State](windowcoveringdef.Name, windowcoveringdef.ClusterID, "windowcovering"),
+		newDef[booleanstatedef.Declare, booleanstatedef.Patch, booleanstatedef.State, booleanstatedef.Server](booleanstatedef.Name, booleanstatedef.ClusterID, "booleanstate"),
+		newDef[colorcontroldef.Declare, colorcontroldef.Patch, colorcontroldef.State, colorcontroldef.Server](colorcontroldef.Name, colorcontroldef.ClusterID, "colorcontrol"),
+		newDef[doorlockdef.Declare, doorlockdef.Patch, doorlockdef.State, doorlockdef.Server](doorlockdef.Name, doorlockdef.ClusterID, "doorlock"),
+		newDef[electricalenergymeasurementdef.Declare, electricalenergymeasurementdef.Patch, electricalenergymeasurementdef.State, electricalenergymeasurementdef.Server](electricalenergymeasurementdef.Name, electricalenergymeasurementdef.ClusterID, "electricalenergymeasurement"),
+		newDef[electricalpowermeasurementdef.Declare, electricalpowermeasurementdef.Patch, electricalpowermeasurementdef.State, electricalpowermeasurementdef.Server](electricalpowermeasurementdef.Name, electricalpowermeasurementdef.ClusterID, "electricalpowermeasurement"),
+		newDef[fancontroldef.Declare, fancontroldef.Patch, fancontroldef.State, fancontroldef.Server](fancontroldef.Name, fancontroldef.ClusterID, "fancontrol"),
+		newDef[illuminancemeasurementdef.Declare, illuminancemeasurementdef.Patch, illuminancemeasurementdef.State, illuminancemeasurementdef.Server](illuminancemeasurementdef.Name, illuminancemeasurementdef.ClusterID, "illuminancemeasurement"),
+		newDef[levelcontroldef.Declare, levelcontroldef.Patch, levelcontroldef.State, levelcontroldef.Server](levelcontroldef.Name, levelcontroldef.ClusterID, "levelcontrol"),
+		newDef[occupancysensingdef.Declare, occupancysensingdef.Patch, occupancysensingdef.State, occupancysensingdef.Server](occupancysensingdef.Name, occupancysensingdef.ClusterID, "occupancysensing"),
+		newDef[onoffdef.Declare, onoffdef.Patch, onoffdef.State, onoffdef.Server](onoffdef.Name, onoffdef.ClusterID, "onoff"),
+		newDef[powersourcedef.Declare, powersourcedef.Patch, powersourcedef.State, powersourcedef.Server](powersourcedef.Name, powersourcedef.ClusterID, "powersource"),
+		newDef[powertopologydef.Declare, powertopologydef.Patch, powertopologydef.State, powertopologydef.Server](powertopologydef.Name, powertopologydef.ClusterID, "powertopology"),
+		newDef[pressuremeasurementdef.Declare, pressuremeasurementdef.Patch, pressuremeasurementdef.State, pressuremeasurementdef.Server](pressuremeasurementdef.Name, pressuremeasurementdef.ClusterID, "pressuremeasurement"),
+		newDef[relativehumiditymeasurementdef.Declare, relativehumiditymeasurementdef.Patch, relativehumiditymeasurementdef.State, relativehumiditymeasurementdef.Server](relativehumiditymeasurementdef.Name, relativehumiditymeasurementdef.ClusterID, "relativehumiditymeasurement"),
+		newDef[smokecoalarmdef.Declare, smokecoalarmdef.Patch, smokecoalarmdef.State, smokecoalarmdef.Server](smokecoalarmdef.Name, smokecoalarmdef.ClusterID, "smokecoalarm"),
+		newDef[temperaturemeasurementdef.Declare, temperaturemeasurementdef.Patch, temperaturemeasurementdef.State, temperaturemeasurementdef.Server](temperaturemeasurementdef.Name, temperaturemeasurementdef.ClusterID, "temperaturemeasurement"),
+		newDef[thermostatdef.Declare, thermostatdef.Patch, thermostatdef.State, thermostatdef.Server](thermostatdef.Name, thermostatdef.ClusterID, "thermostat"),
+		newDef[windowcoveringdef.Declare, windowcoveringdef.Patch, windowcoveringdef.State, windowcoveringdef.Server](windowcoveringdef.Name, windowcoveringdef.ClusterID, "windowcovering"),
 	}
 	m := make(map[string]def, len(all))
 	for _, d := range all {

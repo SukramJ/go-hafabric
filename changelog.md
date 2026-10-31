@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- The row format's `events` on a cluster: events emitted through the
+  cluster's typed server (`<cluster>def.Server.Emit<Event>`) when a value
+  of the entity changes; `Patch.Events` reports them.
+
 ## [0.2.1] - 2026-10-26
 
 The verbatim name of go-ha2fabric's H3 report (Q3), brief F1.

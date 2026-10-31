@@ -176,6 +176,9 @@ func Keys(files []rowfile.File) []Key {
 							}
 						}
 					}
+					for k := range c.Events {
+						val(&rowfile.Value{From: c.Events[k].On})
+					}
 					for k := range c.Commands {
 						cmd := &c.Commands[k]
 						when(cmd.When)

@@ -34,6 +34,9 @@ rows:
             if: {field: LockState, not_in: [LockStateLocked]}
             method: m
             json: {a.b: {field: ActuatorEnabled, enum: {"true": "on"}}}
+        events:
+          - on: state
+            emit: [{event: DoorLockAlarm, literal: {AlarmCode: AlarmCodeLockJammed}}]
 `
 
 func generate(t *testing.T, src string) error {
@@ -63,6 +66,8 @@ func TestGenerateRefuses(t *testing.T) {
 		"command field":     {"raw: {const: LOCK}", "raw: {field: Nope}"},
 		"write veto field":  {"write: [ActuatorEnabled]", "write: [Nope]"},
 		"change attribute":  {"change: [LockState]", "change: [Nope]"},
+		"event":             {"event: DoorLockAlarm", "event: Explosion"},
+		"event field":       {"literal: {AlarmCode: AlarmCodeLockJammed}", "literal: {Nope: 1}"},
 		"part type":         {"    clusters:\n      - cluster: DoorLock", "    parts: [{type: Toaster}]\n    clusters:\n      - cluster: DoorLock"},
 	} {
 		t.Run(name, func(t *testing.T) {
