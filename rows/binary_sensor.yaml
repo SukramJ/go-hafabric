@@ -60,6 +60,17 @@ rows:
       - cluster: BooleanState
         attributes:
           - {attribute: StateValue, from: state, enum: {"on": true, "off": false}}
+  - id: water_freeze
+    when: {device_class: [cold]}
+    type: WaterFreezeDetector
+    verdict: mappable
+    cites:
+      - matter.js packages/model/src/standard/elements/water-freeze-detector.element.ts:19-23 @862ad75f (BooleanState mandatory, CHGEVENT)
+      - home-assistant/core homeassistant/components/binary_sensor/const.py:23-24 @2026.10.3 (cold, on means cold)
+    clusters:
+      - cluster: BooleanState
+        attributes:
+          - {attribute: StateValue, from: state, enum: {"on": true, "off": false}}
   - id: smoke
     when: {device_class: [smoke]}
     type: SmokeCoAlarm
@@ -127,5 +138,5 @@ rows:
           # As opening: Home Assistant's on is StateValue false.
           - {attribute: StateValue, from: state, enum: {"on": false, "off": true}}
   - id: no_device_type
-    when: {device_class: [battery, battery_charging, cold, connectivity, gas, glass_break, heat, light, lock, moving, plug, power, problem, running, safety, sound, tamper, update, vibration]}
-    verdict: "unmappable: no Matter device type for a binary_sensor of device_class {device_class} in H1"
+    when: {device_class: [battery, battery_charging, connectivity, gas, glass_break, heat, light, lock, moving, plug, power, problem, running, safety, sound, tamper, update, vibration]}
+    verdict: "unmappable: no Matter device type for a binary_sensor of device_class {device_class}"

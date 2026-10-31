@@ -85,10 +85,46 @@ type Cluster struct {
 	Initial []Attr
 	// Commands map a controller's command or write back to the entity.
 	Commands []Command
+	// Events emit the cluster's events when a value of the entity
+	// changes.
+	Events []Event
+	// Options is a list of the entity a materializer turns into the
+	// cluster's attributes and command (options.go); nil for none.
+	Options *OptionList
 
 	declare func(b *binding, ci int) device.Declaration
 	apply   func(b *binding, ci int, st model.State) (any, error)
 	watch   func(b *binding, ci int) func()
+	fire    func(b *binding, ei int, endpoint uint16) error
+}
+
+// OptionList is a list of strings of the entity — a select's options, a
+// climate's preset modes — that a cluster-specific materializer
+// (options.go) turns into the cluster's attributes, the entry Current
+// names into its current one, and a controller's choice into a
+// model.Command of Method with the chosen string as the payload.
+type OptionList struct {
+	// List is "desc.options" (Description.Options' codes, in order) or
+	// "extra.<key>" (a list of strings in Description.Extra).
+	List string
+	// Current is the value naming the current entry: "state",
+	// "state.<key>" or "extra.<key>".
+	Current string
+	// Method is the entity's method a choice goes to.
+	Method string
+}
+
+// Event emits events of a cluster, in order, through the cluster's typed
+// server (<cluster>def.Server.Emit<Event>) when the value On names
+// changes from a known value to another non-empty one. The first value —
+// after the plan is built, or after the entity was unavailable or its
+// value unknown — only sets the baseline: a value that was there before
+// is no event.
+type Event struct {
+	// On is the value: "state", "state.<key>" or "extra.<key>".
+	On string
+	// Emit names the events, as the cluster's definition does.
+	Emit []string
 }
 
 // Feature is one feature a cluster declaration selects, when When holds

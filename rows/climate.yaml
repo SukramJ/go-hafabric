@@ -2,33 +2,53 @@
 # temperature, target_temp_low and target_temp_high are keys of the state.
 # A command on a mode or a temperature goes to the entity's named method
 # (mode, temperature, temperature_low, temperature_high: the MQTT
-# <name>_command_topic keys of the catalog).
+# <name>_command_topic keys of the catalog); a RoomAirConditioner's power
+# goes to turn_on and turn_off, its fan to fan_mode with the mode's name.
 platform: climate
 cites:
   - go-ha-catalog data/mqtt.json:1200-1647 (climate schema; modes at 1385 with its default, mode_command_topic at 1370, temperature_command_topic at 1572, temperature_low/high_command_topic at 1582/1602)
   - go-ha-catalog gen_vocab.go:837-847 (HVACMode vocabulary)
 rows:
-  - id: thermostat
+  - id: air_conditioner
     when:
+      features: {all: [FAN_MODE, TURN_ON, TURN_OFF]}
       extra:
         modes: {any: [heat, cool, heat_cool]}
-    type: Thermostat
+    type: RoomAirConditioner
     verdict: mappable
     caveats:
       - when: {extra: {modes: {any: [auto]}}}
-        reason: "the hvac mode auto (the device's own schedule) has no SystemMode: it is not mapped in H1"
-      - when: {extra: {fan_modes: {present: true}}}
-        reason: "fan modes are not mapped in H1"
+        reason: "the hvac mode auto (the device's own schedule) has no SystemMode: it is not mapped"
       - when: {extra: {preset_modes: {present: true}}}
-        reason: "preset modes are not mapped in H1 (Thermostat Presets is H2)"
+        reason: "preset modes are not mapped: go-fabric's Thermostat server requires a heating or cooling setpoint on every preset, and Home Assistant's preset modes carry none"
       - when: {extra: {swing_modes: {present: true}}}
-        reason: "swing modes are not mapped in H1"
+        reason: "swing modes are not mapped"
+      - when: {}
+        reason: "fan modes map to FanMode only where the names are off, low, medium, high or auto"
     cites:
-      - matter.js packages/model/src/standard/elements/thermostat-device.element.ts:25 @862ad75f (Thermostat mandatory)
-      - matter.js packages/model/src/standard/resources/thermostat-cluster.resource.ts:50,163,322 @862ad75f (LocalTemperature, OccupiedHeatingSetpoint, SystemMode)
-      - matter.js packages/model/src/standard/elements/temperature.element.ts:12 @862ad75f (the temperature datatype, int16 in 0.01 degC)
+      - go-fabric cluster/thermo/presets.go:246-257 @v0.15.4 (every preset needs the setpoints of the selected Heating and Cooling features)
+      - go-fabric device/room_air_conditioner_gen.go:39-86 @v0.15.4 (OnOff mandatory with DF, Thermostat mandatory, FanControl and RelativeHumidityMeasurement optional)
+      - matter.js packages/model/src/standard/resources/fan-control.resource.ts:44,80,95 @862ad75f (FanMode, PercentSetting, PercentCurrent)
+      - matter.js packages/model/src/standard/resources/relative-humidity-measurement.resource.ts:20-26 @862ad75f (MeasuredValue = 100 x water content)
+      - home-assistant/core homeassistant/components/climate/const.py:71-81,194-205 @2026.10.3 (fan modes; FAN_MODE, TURN_OFF, TURN_ON)
+      - home-assistant/core homeassistant/components/climate/__init__.py:318-325 @2026.10.3 (current_humidity and fan_mode state attributes)
+      - home-assistant/core homeassistant/components/climate/services.py:170-180,214-218 @2026.10.3 (turn_on, turn_off, set_fan_mode)
+      - home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/climate/index.ts:83-102,172-186 @664575a (FAN_MODE makes a RoomAirConditioner; OnOff with TURN_ON and TURN_OFF; humidity from current_humidity)
+      - go-ha-catalog data/features.json:14-24 (climate feature flags)
     clusters:
-      - cluster: Thermostat
+      - cluster: OnOff
+        features: [DeadFrontBehavior]
+        attributes:
+          - {attribute: OnOff, from: state, enum: {"off": false, heat: true, cool: true, heat_cool: true, auto: true, dry: true, fan_only: true}}
+        commands:
+          - handle: "On"
+            method: turn_on
+            raw: {const: "ON"}
+          - handle: "Off"
+            method: turn_off
+            raw: {const: "OFF"}
+      - &thermostat
+        cluster: Thermostat
         features:
           - {name: Heating, when: &heat {extra: {modes: {any: [heat, heat_cool]}}}}
           - {name: Cooling, when: &cool {extra: {modes: {any: [cool, heat_cool]}}}}
@@ -91,6 +111,64 @@ rows:
             if: {field: SystemMode, in: [SystemModeAuto]}
             method: temperature_high
             raw: *coolpoint
+      - cluster: FanControl
+        features:
+          - {name: Auto, when: &autofan {extra: {fan_modes: {any: [auto]}}}}
+        initial:
+          - {attribute: FanMode, const: FanModeOff}
+          - {attribute: FanModeSequence, const: FanModeSequenceOffLowMedHigh}
+          - {attribute: FanModeSequence, const: FanModeSequenceOffLowMedHighAuto, when: *autofan}
+          - {attribute: PercentCurrent, const: 0}
+        start_null: [PercentSetting]
+        attributes:
+          - {attribute: FanMode, from: state.fan_mode, enum: {"off": FanModeOff, low: FanModeLow, medium: FanModeMedium, high: FanModeHigh, auto: FanModeAuto}}
+        commands:
+          - write: [FanMode]
+            if: {field: FanMode, in: [FanModeOff, FanModeLow, FanModeMedium, FanModeHigh, FanModeAuto]}
+            method: fan_mode
+            raw: {field: FanMode, enum: {FanModeOff: "off", FanModeLow: low, FanModeMedium: medium, FanModeHigh: high, FanModeAuto: auto}}
+          - write: [PercentSetting]
+            if: {field: PercentSetting, in: ["0"]}
+            method: fan_mode
+            raw: {const: "off"}
+          - write: [PercentSetting]
+            if: {field: PercentSetting, in: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33"]}
+            method: fan_mode
+            raw: {const: low}
+          - write: [PercentSetting]
+            if: {field: PercentSetting, in: ["34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50", "51", "52", "53", "54", "55", "56", "57", "58", "59", "60", "61", "62", "63", "64", "65", "66"]}
+            method: fan_mode
+            raw: {const: medium}
+          - write: [PercentSetting]
+            if: {field: PercentSetting, in: ["67", "68", "69", "70", "71", "72", "73", "74", "75", "76", "77", "78", "79", "80", "81", "82", "83", "84", "85", "86", "87", "88", "89", "90", "91", "92", "93", "94", "95", "96", "97", "98", "99", "100"]}
+            method: fan_mode
+            raw: {const: high}
+      - cluster: RelativeHumidityMeasurement
+        start_null: [MeasuredValue]
+        attributes:
+          - {attribute: MeasuredValue, from: state.current_humidity, min: 0, max: 10000, scale: 100}
+  - id: thermostat
+    when:
+      extra:
+        modes: {any: [heat, cool, heat_cool]}
+    type: Thermostat
+    verdict: mappable
+    caveats:
+      - when: {extra: {modes: {any: [auto]}}}
+        reason: "the hvac mode auto (the device's own schedule) has no SystemMode: it is not mapped"
+      - when: {extra: {fan_modes: {present: true}}}
+        reason: "fan modes are not mapped without the climate's turn_on and turn_off (a RoomAirConditioner needs its OnOff)"
+      - when: {extra: {preset_modes: {present: true}}}
+        reason: "preset modes are not mapped: go-fabric's Thermostat server requires a heating or cooling setpoint on every preset, and Home Assistant's preset modes carry none"
+      - when: {extra: {swing_modes: {present: true}}}
+        reason: "swing modes are not mapped"
+    cites:
+      - matter.js packages/model/src/standard/elements/thermostat-device.element.ts:25 @862ad75f (Thermostat mandatory)
+      - matter.js packages/model/src/standard/resources/thermostat-cluster.resource.ts:50,163,322 @862ad75f (LocalTemperature, OccupiedHeatingSetpoint, SystemMode)
+      - matter.js packages/model/src/standard/elements/temperature.element.ts:12 @862ad75f (the temperature datatype, int16 in 0.01 degC)
+      - go-fabric cluster/thermo/presets.go:246-257 @v0.15.4 (every preset needs the setpoints of the selected Heating and Cooling features)
+    clusters:
+      - *thermostat
   - id: no_heating_or_cooling
     when: {}
     verdict: "unmappable: a climate entity without the hvac modes heat, cool or heat_cool has no Thermostat feature (Heating or Cooling)"

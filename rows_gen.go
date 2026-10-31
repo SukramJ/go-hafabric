@@ -9,23 +9,42 @@ import (
 	"context"
 	"slices"
 
+	airqualitydef "github.com/SukramJ/go-fabric/cluster/spec/airquality"
 	booleanstatedef "github.com/SukramJ/go-fabric/cluster/spec/booleanstate"
+	carbondioxideconcentrationmeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/carbondioxideconcentrationmeasurement"
+	carbonmonoxideconcentrationmeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/carbonmonoxideconcentrationmeasurement"
 	colorcontroldef "github.com/SukramJ/go-fabric/cluster/spec/colorcontrol"
 	doorlockdef "github.com/SukramJ/go-fabric/cluster/spec/doorlock"
 	electricalenergymeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/electricalenergymeasurement"
 	electricalpowermeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/electricalpowermeasurement"
 	fancontroldef "github.com/SukramJ/go-fabric/cluster/spec/fancontrol"
+	flowmeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/flowmeasurement"
 	illuminancemeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/illuminancemeasurement"
+	keypadinputdef "github.com/SukramJ/go-fabric/cluster/spec/keypadinput"
 	levelcontroldef "github.com/SukramJ/go-fabric/cluster/spec/levelcontrol"
+	mediaplaybackdef "github.com/SukramJ/go-fabric/cluster/spec/mediaplayback"
+	modeselectdef "github.com/SukramJ/go-fabric/cluster/spec/modeselect"
+	nitrogendioxideconcentrationmeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/nitrogendioxideconcentrationmeasurement"
 	occupancysensingdef "github.com/SukramJ/go-fabric/cluster/spec/occupancysensing"
 	onoffdef "github.com/SukramJ/go-fabric/cluster/spec/onoff"
+	ozoneconcentrationmeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/ozoneconcentrationmeasurement"
+	pm10concentrationmeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/pm10concentrationmeasurement"
+	pm1concentrationmeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/pm1concentrationmeasurement"
+	pm25concentrationmeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/pm25concentrationmeasurement"
 	powersourcedef "github.com/SukramJ/go-fabric/cluster/spec/powersource"
 	powertopologydef "github.com/SukramJ/go-fabric/cluster/spec/powertopology"
 	pressuremeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/pressuremeasurement"
+	radonconcentrationmeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/radonconcentrationmeasurement"
 	relativehumiditymeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/relativehumiditymeasurement"
+	rvcoperationalstatedef "github.com/SukramJ/go-fabric/cluster/spec/rvcoperationalstate"
+	rvcrunmodedef "github.com/SukramJ/go-fabric/cluster/spec/rvcrunmode"
 	smokecoalarmdef "github.com/SukramJ/go-fabric/cluster/spec/smokecoalarm"
+	soilmeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/soilmeasurement"
+	switchclusterdef "github.com/SukramJ/go-fabric/cluster/spec/switchcluster"
 	temperaturemeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/temperaturemeasurement"
 	thermostatdef "github.com/SukramJ/go-fabric/cluster/spec/thermostat"
+	totalvolatileorganiccompoundsconcentrationmeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/totalvolatileorganiccompoundsconcentrationmeasurement"
+	valveconfigurationandcontroldef "github.com/SukramJ/go-fabric/cluster/spec/valveconfigurationandcontrol"
 	windowcoveringdef "github.com/SukramJ/go-fabric/cluster/spec/windowcovering"
 	"github.com/SukramJ/go-fabric/contract"
 	"github.com/SukramJ/go-fabric/device"
@@ -36,20 +55,38 @@ import (
 // The methods the rows' commands deliver as model.Command.Method: a
 // consumer's command handler compares against these, not against literals.
 const (
+	MethodCloseValve      = "close_valve"
 	MethodDirection       = "direction"
+	MethodFanMode         = "fan_mode"
+	MethodGoHome          = "go_home"
+	MethodKey             = "key"
+	MethodMediaPause      = "media_pause"
+	MethodMediaPlay       = "media_play"
+	MethodMediaStop       = "media_stop"
 	MethodMode            = "mode"
+	MethodOpenValve       = "open_valve"
+	MethodOperationMode   = "operation_mode"
 	MethodOscillation     = "oscillation"
+	MethodPause           = "pause"
 	MethodPercentage      = "percentage"
 	MethodPresetMode      = "preset_mode"
+	MethodPress           = "press"
+	MethodResume          = "resume"
+	MethodRunMode         = "run_mode"
+	MethodSelectOption    = "select_option"
 	MethodSetPosition     = "set_position"
 	MethodTemperature     = "temperature"
 	MethodTemperatureHigh = "temperature_high"
 	MethodTemperatureLow  = "temperature_low"
 	MethodTilt            = "tilt"
+	MethodTurnOff         = "turn_off"
+	MethodTurnOn          = "turn_on"
+	MethodVolumeLevel     = "volume_level"
+	MethodVolumeMute      = "volume_mute"
 )
 
 // methods are the method constants, sorted.
-var methods = []string{MethodDirection, MethodMode, MethodOscillation, MethodPercentage, MethodPresetMode, MethodSetPosition, MethodTemperature, MethodTemperatureHigh, MethodTemperatureLow, MethodTilt}
+var methods = []string{MethodCloseValve, MethodDirection, MethodFanMode, MethodGoHome, MethodKey, MethodMediaPause, MethodMediaPlay, MethodMediaStop, MethodMode, MethodOpenValve, MethodOperationMode, MethodOscillation, MethodPause, MethodPercentage, MethodPresetMode, MethodPress, MethodResume, MethodRunMode, MethodSelectOption, MethodSetPosition, MethodTemperature, MethodTemperatureHigh, MethodTemperatureLow, MethodTilt, MethodTurnOff, MethodTurnOn, MethodVolumeLevel, MethodVolumeMute}
 
 // rows is the table, in the order [Map] tries it.
 var rows = []Row{
@@ -180,6 +217,41 @@ var rows = []Row{
 		State: eligibility.StateMappable,
 		Cites: []string{"matter.js packages/model/src/standard/elements/water-leak-detector.element.ts:20-22 @862ad75f (BooleanState mandatory, CHGEVENT)", "go-ha-catalog data/mqtt.json:780-934 (binary_sensor schema; payload_on/payload_off at 898-907)", "go-ha-catalog data/device_classes.json:2-32 (binary_sensor device classes)"},
 		Type:  &device.WaterLeakDetectorType,
+		Clusters: []Cluster{
+			{
+				Name: "BooleanState", ID: booleanstatedef.ClusterID,
+				Attributes: []Attr{
+					{Name: "StateValue", Value: Value{From: "state"}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d booleanstatedef.Declare
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p booleanstatedef.Patch
+					n := 0
+					switch b.text(&st, ci, 0) {
+					case "off":
+						p.StateValue = new(false)
+						n++
+					case "on":
+						p.StateValue = new(true)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, booleanstatedef.Wrap(b.server(booleanstatedef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
+		ID: "binary_sensor/water_freeze", Platform: "binary_sensor",
+		When:  When{DeviceClass: []string{"cold"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/water-freeze-detector.element.ts:19-23 @862ad75f (BooleanState mandatory, CHGEVENT)", "home-assistant/core homeassistant/components/binary_sensor/const.py:23-24 @2026.10.3 (cold, on means cold)", "go-ha-catalog data/mqtt.json:780-934 (binary_sensor schema; payload_on/payload_off at 898-907)", "go-ha-catalog data/device_classes.json:2-32 (binary_sensor device classes)"},
+		Type:  &device.WaterFreezeDetectorType,
 		Clusters: []Cluster{
 			{
 				Name: "BooleanState", ID: booleanstatedef.ClusterID,
@@ -410,28 +482,463 @@ var rows = []Row{
 	},
 	{
 		ID: "binary_sensor/no_device_type", Platform: "binary_sensor",
-		When:   When{DeviceClass: []string{"battery", "battery_charging", "cold", "connectivity", "gas", "glass_break", "heat", "light", "lock", "moving", "plug", "power", "problem", "running", "safety", "sound", "tamper", "update", "vibration"}},
+		When:   When{DeviceClass: []string{"battery", "battery_charging", "connectivity", "gas", "glass_break", "heat", "light", "lock", "moving", "plug", "power", "problem", "running", "safety", "sound", "tamper", "update", "vibration"}},
 		State:  eligibility.StateUnmappable,
-		Reason: "no Matter device type for a binary_sensor of device_class {device_class} in H1",
+		Reason: "no Matter device type for a binary_sensor of device_class {device_class}",
 		Cites:  []string{"go-ha-catalog data/mqtt.json:780-934 (binary_sensor schema; payload_on/payload_off at 898-907)", "go-ha-catalog data/device_classes.json:2-32 (binary_sensor device classes)"},
 	},
 	{
-		ID: "button/unmapped", Platform: "button",
-		When:   When{},
-		State:  eligibility.StateUnmappable,
-		Reason: "no generic Matter counterpart for a button entity in H1",
+		ID: "button/plug", Platform: "button",
+		When:  When{},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/on-off-plug-in-unit.element.ts:27-31 @862ad75f (OnOff mandatory, feature LT)", "home-assistant/core homeassistant/components/button/__init__.py:101-106 @2026.10.3 (the state is the last press's timestamp)", "home-assistant/core homeassistant/components/button/services.py:11-15 @2026.10.3 (press, no fields)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/button/index.ts:22-49 @664575a (OnOffPlugInUnit; On presses, OnOff returns to off)"},
+		Type:  &device.OnOffPlugInUnitType,
+		Clusters: []Cluster{
+			{
+				Name: "OnOff", ID: onoffdef.ClusterID,
+				Attributes: []Attr{
+					{Name: "OnOff", Value: Value{Const: false, HasConst: true}},
+				},
+				Commands: []Command{
+					{Kind: "handle", On: []string{"On"}, Method: "press", Raw: &Value{Const: "PRESS", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d onoffdef.Declare
+					d.HandleOn = func(_ context.Context, req onoffdef.OnRequest) (resp struct{}, err error) {
+						f := func(string) (any, bool) { return nil, false }
+						if true {
+							b.emit(ci, 0, f)
+						}
+						return resp, err
+					}
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p onoffdef.Patch
+					n := 0
+					p.OnOff = new(false)
+					n++
+					if n == 0 {
+						return nil, nil
+					}
+					return p, onoffdef.Wrap(b.server(onoffdef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
+		ID: "climate/air_conditioner", Platform: "climate",
+		When:  When{Features: &Set{All: []string{"FAN_MODE", "TURN_ON", "TURN_OFF"}}, Extra: map[string]Set{"modes": Set{Any: []string{"heat", "cool", "heat_cool"}}}},
+		State: eligibility.StateMappable,
+		Cites: []string{"go-fabric cluster/thermo/presets.go:246-257 @v0.15.4 (every preset needs the setpoints of the selected Heating and Cooling features)", "go-fabric device/room_air_conditioner_gen.go:39-86 @v0.15.4 (OnOff mandatory with DF, Thermostat mandatory, FanControl and RelativeHumidityMeasurement optional)", "matter.js packages/model/src/standard/resources/fan-control.resource.ts:44,80,95 @862ad75f (FanMode, PercentSetting, PercentCurrent)", "matter.js packages/model/src/standard/resources/relative-humidity-measurement.resource.ts:20-26 @862ad75f (MeasuredValue = 100 x water content)", "home-assistant/core homeassistant/components/climate/const.py:71-81,194-205 @2026.10.3 (fan modes; FAN_MODE, TURN_OFF, TURN_ON)", "home-assistant/core homeassistant/components/climate/__init__.py:318-325 @2026.10.3 (current_humidity and fan_mode state attributes)", "home-assistant/core homeassistant/components/climate/services.py:170-180,214-218 @2026.10.3 (turn_on, turn_off, set_fan_mode)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/climate/index.ts:83-102,172-186 @664575a (FAN_MODE makes a RoomAirConditioner; OnOff with TURN_ON and TURN_OFF; humidity from current_humidity)", "go-ha-catalog data/features.json:14-24 (climate feature flags)", "go-ha-catalog data/mqtt.json:1200-1647 (climate schema; modes at 1385 with its default, mode_command_topic at 1370, temperature_command_topic at 1572, temperature_low/high_command_topic at 1582/1602)", "go-ha-catalog gen_vocab.go:837-847 (HVACMode vocabulary)"},
+		Type:  &device.RoomAirConditionerType,
+		Caveats: []Caveat{
+			{When: When{Extra: map[string]Set{"modes": Set{Any: []string{"auto"}}}}, Reason: "the hvac mode auto (the device's own schedule) has no SystemMode: it is not mapped"},
+			{When: When{Extra: map[string]Set{"preset_modes": Set{Present: new(true)}}}, Reason: "preset modes are not mapped: go-fabric's Thermostat server requires a heating or cooling setpoint on every preset, and Home Assistant's preset modes carry none"},
+			{When: When{Extra: map[string]Set{"swing_modes": Set{Present: new(true)}}}, Reason: "swing modes are not mapped"},
+			{When: When{}, Reason: "fan modes map to FanMode only where the names are off, low, medium, high or auto"},
+		},
+		Clusters: []Cluster{
+			{
+				Name: "OnOff", ID: onoffdef.ClusterID,
+				Features: []Feature{{Name: "DeadFrontBehavior", When: nil}},
+				Attributes: []Attr{
+					{Name: "OnOff", Value: Value{From: "state"}},
+				},
+				Commands: []Command{
+					{Kind: "handle", On: []string{"On"}, Method: "turn_on", Raw: &Value{Const: "ON", HasConst: true}},
+					{Kind: "handle", On: []string{"Off"}, Method: "turn_off", Raw: &Value{Const: "OFF", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d onoffdef.Declare
+					d.Features |= onoffdef.FeatureDeadFrontBehavior
+					d.HandleOn = func(_ context.Context, req onoffdef.OnRequest) (resp struct{}, err error) {
+						f := func(string) (any, bool) { return nil, false }
+						if true {
+							b.emit(ci, 0, f)
+						}
+						return resp, err
+					}
+					d.HandleOff = func(_ context.Context, req onoffdef.OffRequest) (resp struct{}, err error) {
+						f := func(string) (any, bool) { return nil, false }
+						if true {
+							b.emit(ci, 1, f)
+						}
+						return resp, err
+					}
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p onoffdef.Patch
+					n := 0
+					switch b.text(&st, ci, 0) {
+					case "auto":
+						p.OnOff = new(true)
+						n++
+					case "cool":
+						p.OnOff = new(true)
+						n++
+					case "dry":
+						p.OnOff = new(true)
+						n++
+					case "fan_only":
+						p.OnOff = new(true)
+						n++
+					case "heat":
+						p.OnOff = new(true)
+						n++
+					case "heat_cool":
+						p.OnOff = new(true)
+						n++
+					case "off":
+						p.OnOff = new(false)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, onoffdef.Wrap(b.server(onoffdef.ClusterID)).Set(p)
+				},
+			},
+			{
+				Name: "Thermostat", ID: thermostatdef.ClusterID,
+				Features: []Feature{{Name: "Heating", When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"heat", "heat_cool"}}}}}, {Name: "Cooling", When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"cool", "heat_cool"}}}}}, {Name: "AutoMode", When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"heat_cool"}}}}}},
+				Attributes: []Attr{
+					{Name: "LocalTemperature", Value: Value{From: "state.current_temperature", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}},
+					{Name: "OccupiedHeatingSetpoint", Value: Value{From: "state.temperature", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}, When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"heat", "heat_cool"}}}}, StateIn: []string{"heat"}},
+					{Name: "OccupiedHeatingSetpoint", Value: Value{From: "state.target_temp_low", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}, When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"heat", "heat_cool"}}}}},
+					{Name: "OccupiedCoolingSetpoint", Value: Value{From: "state.temperature", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}, When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"cool", "heat_cool"}}}}, StateIn: []string{"cool"}},
+					{Name: "OccupiedCoolingSetpoint", Value: Value{From: "state.target_temp_high", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}, When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"cool", "heat_cool"}}}}},
+					{Name: "SystemMode", Value: Value{From: "state"}},
+				},
+				Initial: []Attr{
+					{Name: "ControlSequenceOfOperation", Value: Value{Const: "ControlSequenceOfOperationHeatingOnly", HasConst: true}, When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"heat", "heat_cool"}, None: []string{"cool", "heat_cool"}}}}},
+					{Name: "ControlSequenceOfOperation", Value: Value{Const: "ControlSequenceOfOperationCoolingOnly", HasConst: true}, When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"cool", "heat_cool"}, None: []string{"heat", "heat_cool"}}}}},
+					{Name: "ControlSequenceOfOperation", Value: Value{Const: "ControlSequenceOfOperationCoolingAndHeating", HasConst: true}, When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"heat_cool"}}}}},
+					{Name: "ControlSequenceOfOperation", Value: Value{Const: "ControlSequenceOfOperationCoolingAndHeating", HasConst: true}, When: &When{Extra: map[string]Set{"modes": Set{All: []string{"heat", "cool"}}}}},
+					{Name: "AbsMinHeatSetpointLimit", Value: Value{From: "extra.min_temp", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}, When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"heat", "heat_cool"}}}}},
+					{Name: "MinHeatSetpointLimit", Value: Value{From: "extra.min_temp", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}, When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"heat", "heat_cool"}}}}},
+					{Name: "AbsMaxHeatSetpointLimit", Value: Value{From: "extra.max_temp", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}, When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"heat", "heat_cool"}}}}},
+					{Name: "MaxHeatSetpointLimit", Value: Value{From: "extra.max_temp", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}, When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"heat", "heat_cool"}}}}},
+					{Name: "AbsMinCoolSetpointLimit", Value: Value{From: "extra.min_temp", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}, When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"cool", "heat_cool"}}}}},
+					{Name: "MinCoolSetpointLimit", Value: Value{From: "extra.min_temp", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}, When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"cool", "heat_cool"}}}}},
+					{Name: "AbsMaxCoolSetpointLimit", Value: Value{From: "extra.max_temp", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}, When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"cool", "heat_cool"}}}}},
+					{Name: "MaxCoolSetpointLimit", Value: Value{From: "extra.max_temp", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}, When: &When{Extra: map[string]Set{"modes": Set{Any: []string{"cool", "heat_cool"}}}}},
+				},
+				Commands: []Command{
+					{Kind: "write", On: []string{"SystemMode"}, Method: "mode", Raw: &Value{Field: "SystemMode", Enum: map[int64]string{int64(thermostatdef.SystemModeAuto): "heat_cool", int64(thermostatdef.SystemModeCool): "cool", int64(thermostatdef.SystemModeDry): "dry", int64(thermostatdef.SystemModeFanOnly): "fan_only", int64(thermostatdef.SystemModeHeat): "heat", int64(thermostatdef.SystemModeOff): "off"}}},
+					{Kind: "write", On: []string{"OccupiedHeatingSetpoint"}, Method: "temperature", Raw: &Value{Field: "OccupiedHeatingSetpoint", Units: map[string]Linear{"°C": {Offset: 0, Scale: 0.01, Add: 0}, "°F": {Offset: 0, Scale: 0.018, Add: 32}}, DefaultUnit: "°C", Digits: 1}},
+					{Kind: "write", On: []string{"OccupiedHeatingSetpoint"}, Method: "temperature_low", Raw: &Value{Field: "OccupiedHeatingSetpoint", Units: map[string]Linear{"°C": {Offset: 0, Scale: 0.01, Add: 0}, "°F": {Offset: 0, Scale: 0.018, Add: 32}}, DefaultUnit: "°C", Digits: 1}},
+					{Kind: "write", On: []string{"OccupiedCoolingSetpoint"}, Method: "temperature", Raw: &Value{Field: "OccupiedCoolingSetpoint", Units: map[string]Linear{"°C": {Offset: 0, Scale: 0.01, Add: 0}, "°F": {Offset: 0, Scale: 0.018, Add: 32}}, DefaultUnit: "°C", Digits: 1}},
+					{Kind: "write", On: []string{"OccupiedCoolingSetpoint"}, Method: "temperature_high", Raw: &Value{Field: "OccupiedCoolingSetpoint", Units: map[string]Linear{"°C": {Offset: 0, Scale: 0.01, Add: 0}, "°F": {Offset: 0, Scale: 0.018, Add: 32}}, DefaultUnit: "°C", Digits: 1}},
+					{Kind: "change", On: []string{"OccupiedHeatingSetpoint"}, Method: "temperature", Raw: &Value{Field: "OccupiedHeatingSetpoint", Units: map[string]Linear{"°C": {Offset: 0, Scale: 0.01, Add: 0}, "°F": {Offset: 0, Scale: 0.018, Add: 32}}, DefaultUnit: "°C", Digits: 1}},
+					{Kind: "change", On: []string{"OccupiedCoolingSetpoint"}, Method: "temperature", Raw: &Value{Field: "OccupiedCoolingSetpoint", Units: map[string]Linear{"°C": {Offset: 0, Scale: 0.01, Add: 0}, "°F": {Offset: 0, Scale: 0.018, Add: 32}}, DefaultUnit: "°C", Digits: 1}},
+					{Kind: "change", On: []string{"OccupiedHeatingSetpoint"}, Method: "temperature_low", Raw: &Value{Field: "OccupiedHeatingSetpoint", Units: map[string]Linear{"°C": {Offset: 0, Scale: 0.01, Add: 0}, "°F": {Offset: 0, Scale: 0.018, Add: 32}}, DefaultUnit: "°C", Digits: 1}},
+					{Kind: "change", On: []string{"OccupiedCoolingSetpoint"}, Method: "temperature_high", Raw: &Value{Field: "OccupiedCoolingSetpoint", Units: map[string]Linear{"°C": {Offset: 0, Scale: 0.01, Add: 0}, "°F": {Offset: 0, Scale: 0.018, Add: 32}}, DefaultUnit: "°C", Digits: 1}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d thermostatdef.Declare
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"heat", "heat_cool"}}}}) {
+						d.Features |= thermostatdef.FeatureHeating
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"cool", "heat_cool"}}}}) {
+						d.Features |= thermostatdef.FeatureCooling
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"heat_cool"}}}}) {
+						d.Features |= thermostatdef.FeatureAutoMode
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"heat", "heat_cool"}, None: []string{"cool", "heat_cool"}}}}) {
+						d.Initial.ControlSequenceOfOperation = new(thermostatdef.ControlSequenceOfOperationHeatingOnly)
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"cool", "heat_cool"}, None: []string{"heat", "heat_cool"}}}}) {
+						d.Initial.ControlSequenceOfOperation = new(thermostatdef.ControlSequenceOfOperationCoolingOnly)
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"heat_cool"}}}}) {
+						d.Initial.ControlSequenceOfOperation = new(thermostatdef.ControlSequenceOfOperationCoolingAndHeating)
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{All: []string{"heat", "cool"}}}}) {
+						d.Initial.ControlSequenceOfOperation = new(thermostatdef.ControlSequenceOfOperationCoolingAndHeating)
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"heat", "heat_cool"}}}}) {
+						if v, ok := b.number(nil, ci, 4); ok {
+							d.Initial.AbsMinHeatSetpointLimit = new(conv[int16](v))
+						}
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"heat", "heat_cool"}}}}) {
+						if v, ok := b.number(nil, ci, 5); ok {
+							d.Initial.MinHeatSetpointLimit = new(conv[int16](v))
+						}
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"heat", "heat_cool"}}}}) {
+						if v, ok := b.number(nil, ci, 6); ok {
+							d.Initial.AbsMaxHeatSetpointLimit = new(conv[int16](v))
+						}
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"heat", "heat_cool"}}}}) {
+						if v, ok := b.number(nil, ci, 7); ok {
+							d.Initial.MaxHeatSetpointLimit = new(conv[int16](v))
+						}
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"cool", "heat_cool"}}}}) {
+						if v, ok := b.number(nil, ci, 8); ok {
+							d.Initial.AbsMinCoolSetpointLimit = new(conv[int16](v))
+						}
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"cool", "heat_cool"}}}}) {
+						if v, ok := b.number(nil, ci, 9); ok {
+							d.Initial.MinCoolSetpointLimit = new(conv[int16](v))
+						}
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"cool", "heat_cool"}}}}) {
+						if v, ok := b.number(nil, ci, 10); ok {
+							d.Initial.AbsMaxCoolSetpointLimit = new(conv[int16](v))
+						}
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"cool", "heat_cool"}}}}) {
+						if v, ok := b.number(nil, ci, 11); ok {
+							d.Initial.MaxCoolSetpointLimit = new(conv[int16](v))
+						}
+					}
+					d.OnWrite = func(_ context.Context, next thermostatdef.State, attrID uint32) error {
+						f := func(name string) (any, bool) {
+							switch name {
+							case "OccupiedCoolingSetpoint":
+								return next.OccupiedCoolingSetpoint, true
+							case "OccupiedHeatingSetpoint":
+								return next.OccupiedHeatingSetpoint, true
+							case "SystemMode":
+								return next.SystemMode, true
+							}
+							return nil, false
+						}
+						if slices.Contains([]uint32{thermostatdef.AttrSystemMode}, attrID) && true {
+							b.emit(ci, 0, f)
+						}
+						if slices.Contains([]uint32{thermostatdef.AttrOccupiedHeatingSetpoint}, attrID) && !slices.Contains([]thermostatdef.SystemModeEnum{thermostatdef.SystemModeAuto}, next.SystemMode) {
+							b.emit(ci, 1, f)
+						}
+						if slices.Contains([]uint32{thermostatdef.AttrOccupiedHeatingSetpoint}, attrID) && slices.Contains([]thermostatdef.SystemModeEnum{thermostatdef.SystemModeAuto}, next.SystemMode) {
+							b.emit(ci, 2, f)
+						}
+						if slices.Contains([]uint32{thermostatdef.AttrOccupiedCoolingSetpoint}, attrID) && !slices.Contains([]thermostatdef.SystemModeEnum{thermostatdef.SystemModeAuto}, next.SystemMode) {
+							b.emit(ci, 3, f)
+						}
+						if slices.Contains([]uint32{thermostatdef.AttrOccupiedCoolingSetpoint}, attrID) && slices.Contains([]thermostatdef.SystemModeEnum{thermostatdef.SystemModeAuto}, next.SystemMode) {
+							b.emit(ci, 4, f)
+						}
+						return nil
+					}
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p thermostatdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.LocalTemperature = new(conv[int16](v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, thermostatdef.AttrLocalTemperature)
+						n++
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"heat", "heat_cool"}}}}) {
+						if v, ok := b.number(&st, ci, 1); ok {
+							p.OccupiedHeatingSetpoint = new(conv[int16](v))
+							n++
+						}
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"heat", "heat_cool"}}}}) {
+						if v, ok := b.number(&st, ci, 2); ok {
+							p.OccupiedHeatingSetpoint = new(conv[int16](v))
+							n++
+						}
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"cool", "heat_cool"}}}}) {
+						if v, ok := b.number(&st, ci, 3); ok {
+							p.OccupiedCoolingSetpoint = new(conv[int16](v))
+							n++
+						}
+					}
+					if b.match(&When{Extra: map[string]Set{"modes": Set{Any: []string{"cool", "heat_cool"}}}}) {
+						if v, ok := b.number(&st, ci, 4); ok {
+							p.OccupiedCoolingSetpoint = new(conv[int16](v))
+							n++
+						}
+					}
+					switch b.text(&st, ci, 5) {
+					case "cool":
+						p.SystemMode = new(thermostatdef.SystemModeCool)
+						n++
+					case "dry":
+						p.SystemMode = new(thermostatdef.SystemModeDry)
+						n++
+					case "fan_only":
+						p.SystemMode = new(thermostatdef.SystemModeFanOnly)
+						n++
+					case "heat":
+						p.SystemMode = new(thermostatdef.SystemModeHeat)
+						n++
+					case "heat_cool":
+						p.SystemMode = new(thermostatdef.SystemModeAuto)
+						n++
+					case "off":
+						p.SystemMode = new(thermostatdef.SystemModeOff)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, thermostatdef.Wrap(b.server(thermostatdef.ClusterID)).Set(p)
+				},
+				watch: func(b *binding, ci int) func() {
+					return b.target.OnChanged(thermostatdef.ClusterID, func(c contract.Change) {
+						st := thermostatdef.Wrap(b.server(thermostatdef.ClusterID)).Get()
+						f := func(name string) (any, bool) {
+							switch name {
+							case "OccupiedCoolingSetpoint":
+								return st.OccupiedCoolingSetpoint, true
+							case "OccupiedHeatingSetpoint":
+								return st.OccupiedHeatingSetpoint, true
+							}
+							return nil, false
+						}
+						if changed(c, thermostatdef.AttrOccupiedHeatingSetpoint) && !slices.Contains([]thermostatdef.SystemModeEnum{thermostatdef.SystemModeAuto, thermostatdef.SystemModeCool}, st.SystemMode) {
+							b.emit(ci, 5, f)
+						}
+						if changed(c, thermostatdef.AttrOccupiedCoolingSetpoint) && slices.Contains([]thermostatdef.SystemModeEnum{thermostatdef.SystemModeCool}, st.SystemMode) {
+							b.emit(ci, 6, f)
+						}
+						if changed(c, thermostatdef.AttrOccupiedHeatingSetpoint) && slices.Contains([]thermostatdef.SystemModeEnum{thermostatdef.SystemModeAuto}, st.SystemMode) {
+							b.emit(ci, 7, f)
+						}
+						if changed(c, thermostatdef.AttrOccupiedCoolingSetpoint) && slices.Contains([]thermostatdef.SystemModeEnum{thermostatdef.SystemModeAuto}, st.SystemMode) {
+							b.emit(ci, 8, f)
+						}
+					})
+				},
+			},
+			{
+				Name: "FanControl", ID: fancontroldef.ClusterID,
+				Features: []Feature{{Name: "Auto", When: &When{Extra: map[string]Set{"fan_modes": Set{Any: []string{"auto"}}}}}},
+				Attributes: []Attr{
+					{Name: "FanMode", Value: Value{From: "state.fan_mode"}},
+				},
+				Initial: []Attr{
+					{Name: "FanMode", Value: Value{Const: "FanModeOff", HasConst: true}},
+					{Name: "FanModeSequence", Value: Value{Const: "FanModeSequenceOffLowMedHigh", HasConst: true}},
+					{Name: "FanModeSequence", Value: Value{Const: "FanModeSequenceOffLowMedHighAuto", HasConst: true}, When: &When{Extra: map[string]Set{"fan_modes": Set{Any: []string{"auto"}}}}},
+					{Name: "PercentCurrent", Value: Value{Const: float64(0), HasConst: true}},
+				},
+				Commands: []Command{
+					{Kind: "write", On: []string{"FanMode"}, Method: "fan_mode", Raw: &Value{Field: "FanMode", Enum: map[int64]string{int64(fancontroldef.FanModeAuto): "auto", int64(fancontroldef.FanModeHigh): "high", int64(fancontroldef.FanModeLow): "low", int64(fancontroldef.FanModeMedium): "medium", int64(fancontroldef.FanModeOff): "off"}}},
+					{Kind: "write", On: []string{"PercentSetting"}, Method: "fan_mode", Raw: &Value{Const: "off", HasConst: true}},
+					{Kind: "write", On: []string{"PercentSetting"}, Method: "fan_mode", Raw: &Value{Const: "low", HasConst: true}},
+					{Kind: "write", On: []string{"PercentSetting"}, Method: "fan_mode", Raw: &Value{Const: "medium", HasConst: true}},
+					{Kind: "write", On: []string{"PercentSetting"}, Method: "fan_mode", Raw: &Value{Const: "high", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d fancontroldef.Declare
+					if b.match(&When{Extra: map[string]Set{"fan_modes": Set{Any: []string{"auto"}}}}) {
+						d.Features |= fancontroldef.FeatureAuto
+					}
+					d.Initial.FanMode = new(fancontroldef.FanModeOff)
+					d.Initial.FanModeSequence = new(fancontroldef.FanModeSequenceOffLowMedHigh)
+					if b.match(&When{Extra: map[string]Set{"fan_modes": Set{Any: []string{"auto"}}}}) {
+						d.Initial.FanModeSequence = new(fancontroldef.FanModeSequenceOffLowMedHighAuto)
+					}
+					d.Initial.PercentCurrent = new(uint8(0))
+					d.Initial.Null = append(d.Initial.Null, fancontroldef.AttrPercentSetting)
+					d.OnWrite = func(_ context.Context, next fancontroldef.State, attrID uint32) error {
+						f := func(name string) (any, bool) {
+							switch name {
+							case "FanMode":
+								return next.FanMode, true
+							}
+							return nil, false
+						}
+						if slices.Contains([]uint32{fancontroldef.AttrFanMode}, attrID) && slices.Contains([]fancontroldef.FanModeEnum{fancontroldef.FanModeOff, fancontroldef.FanModeLow, fancontroldef.FanModeMedium, fancontroldef.FanModeHigh, fancontroldef.FanModeAuto}, next.FanMode) {
+							b.emit(ci, 0, f)
+						}
+						if slices.Contains([]uint32{fancontroldef.AttrPercentSetting}, attrID) && next.PercentSetting != nil && slices.Contains([]uint8{uint8(0)}, *next.PercentSetting) {
+							b.emit(ci, 1, f)
+						}
+						if slices.Contains([]uint32{fancontroldef.AttrPercentSetting}, attrID) && next.PercentSetting != nil && slices.Contains([]uint8{uint8(1), uint8(2), uint8(3), uint8(4), uint8(5), uint8(6), uint8(7), uint8(8), uint8(9), uint8(10), uint8(11), uint8(12), uint8(13), uint8(14), uint8(15), uint8(16), uint8(17), uint8(18), uint8(19), uint8(20), uint8(21), uint8(22), uint8(23), uint8(24), uint8(25), uint8(26), uint8(27), uint8(28), uint8(29), uint8(30), uint8(31), uint8(32), uint8(33)}, *next.PercentSetting) {
+							b.emit(ci, 2, f)
+						}
+						if slices.Contains([]uint32{fancontroldef.AttrPercentSetting}, attrID) && next.PercentSetting != nil && slices.Contains([]uint8{uint8(34), uint8(35), uint8(36), uint8(37), uint8(38), uint8(39), uint8(40), uint8(41), uint8(42), uint8(43), uint8(44), uint8(45), uint8(46), uint8(47), uint8(48), uint8(49), uint8(50), uint8(51), uint8(52), uint8(53), uint8(54), uint8(55), uint8(56), uint8(57), uint8(58), uint8(59), uint8(60), uint8(61), uint8(62), uint8(63), uint8(64), uint8(65), uint8(66)}, *next.PercentSetting) {
+							b.emit(ci, 3, f)
+						}
+						if slices.Contains([]uint32{fancontroldef.AttrPercentSetting}, attrID) && next.PercentSetting != nil && slices.Contains([]uint8{uint8(67), uint8(68), uint8(69), uint8(70), uint8(71), uint8(72), uint8(73), uint8(74), uint8(75), uint8(76), uint8(77), uint8(78), uint8(79), uint8(80), uint8(81), uint8(82), uint8(83), uint8(84), uint8(85), uint8(86), uint8(87), uint8(88), uint8(89), uint8(90), uint8(91), uint8(92), uint8(93), uint8(94), uint8(95), uint8(96), uint8(97), uint8(98), uint8(99), uint8(100)}, *next.PercentSetting) {
+							b.emit(ci, 4, f)
+						}
+						return nil
+					}
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p fancontroldef.Patch
+					n := 0
+					switch b.text(&st, ci, 0) {
+					case "auto":
+						p.FanMode = new(fancontroldef.FanModeAuto)
+						n++
+					case "high":
+						p.FanMode = new(fancontroldef.FanModeHigh)
+						n++
+					case "low":
+						p.FanMode = new(fancontroldef.FanModeLow)
+						n++
+					case "medium":
+						p.FanMode = new(fancontroldef.FanModeMedium)
+						n++
+					case "off":
+						p.FanMode = new(fancontroldef.FanModeOff)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, fancontroldef.Wrap(b.server(fancontroldef.ClusterID)).Set(p)
+				},
+			},
+			{
+				Name: "RelativeHumidityMeasurement", ID: relativehumiditymeasurementdef.ClusterID,
+				Attributes: []Attr{
+					{Name: "MeasuredValue", Value: Value{From: "state.current_humidity", Linear: Linear{Offset: 0, Scale: 100, Add: 0}, Min: new(float64(0)), Max: new(float64(10000))}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d relativehumiditymeasurementdef.Declare
+					d.Initial.Null = append(d.Initial.Null, relativehumiditymeasurementdef.AttrMeasuredValue)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p relativehumiditymeasurementdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.MeasuredValue = new(conv[uint16](v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, relativehumiditymeasurementdef.AttrMeasuredValue)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, relativehumiditymeasurementdef.Wrap(b.server(relativehumiditymeasurementdef.ClusterID)).Set(p)
+				},
+			},
+		},
 	},
 	{
 		ID: "climate/thermostat", Platform: "climate",
 		When:  When{Extra: map[string]Set{"modes": Set{Any: []string{"heat", "cool", "heat_cool"}}}},
 		State: eligibility.StateMappable,
-		Cites: []string{"matter.js packages/model/src/standard/elements/thermostat-device.element.ts:25 @862ad75f (Thermostat mandatory)", "matter.js packages/model/src/standard/resources/thermostat-cluster.resource.ts:50,163,322 @862ad75f (LocalTemperature, OccupiedHeatingSetpoint, SystemMode)", "matter.js packages/model/src/standard/elements/temperature.element.ts:12 @862ad75f (the temperature datatype, int16 in 0.01 degC)", "go-ha-catalog data/mqtt.json:1200-1647 (climate schema; modes at 1385 with its default, mode_command_topic at 1370, temperature_command_topic at 1572, temperature_low/high_command_topic at 1582/1602)", "go-ha-catalog gen_vocab.go:837-847 (HVACMode vocabulary)"},
+		Cites: []string{"matter.js packages/model/src/standard/elements/thermostat-device.element.ts:25 @862ad75f (Thermostat mandatory)", "matter.js packages/model/src/standard/resources/thermostat-cluster.resource.ts:50,163,322 @862ad75f (LocalTemperature, OccupiedHeatingSetpoint, SystemMode)", "matter.js packages/model/src/standard/elements/temperature.element.ts:12 @862ad75f (the temperature datatype, int16 in 0.01 degC)", "go-fabric cluster/thermo/presets.go:246-257 @v0.15.4 (every preset needs the setpoints of the selected Heating and Cooling features)", "go-ha-catalog data/mqtt.json:1200-1647 (climate schema; modes at 1385 with its default, mode_command_topic at 1370, temperature_command_topic at 1572, temperature_low/high_command_topic at 1582/1602)", "go-ha-catalog gen_vocab.go:837-847 (HVACMode vocabulary)"},
 		Type:  &device.ThermostatType,
 		Caveats: []Caveat{
-			{When: When{Extra: map[string]Set{"modes": Set{Any: []string{"auto"}}}}, Reason: "the hvac mode auto (the device's own schedule) has no SystemMode: it is not mapped in H1"},
-			{When: When{Extra: map[string]Set{"fan_modes": Set{Present: new(true)}}}, Reason: "fan modes are not mapped in H1"},
-			{When: When{Extra: map[string]Set{"preset_modes": Set{Present: new(true)}}}, Reason: "preset modes are not mapped in H1 (Thermostat Presets is H2)"},
-			{When: When{Extra: map[string]Set{"swing_modes": Set{Present: new(true)}}}, Reason: "swing modes are not mapped in H1"},
+			{When: When{Extra: map[string]Set{"modes": Set{Any: []string{"auto"}}}}, Reason: "the hvac mode auto (the device's own schedule) has no SystemMode: it is not mapped"},
+			{When: When{Extra: map[string]Set{"fan_modes": Set{Present: new(true)}}}, Reason: "fan modes are not mapped without the climate's turn_on and turn_off (a RoomAirConditioner needs its OnOff)"},
+			{When: When{Extra: map[string]Set{"preset_modes": Set{Present: new(true)}}}, Reason: "preset modes are not mapped: go-fabric's Thermostat server requires a heating or cooling setpoint on every preset, and Home Assistant's preset modes carry none"},
+			{When: When{Extra: map[string]Set{"swing_modes": Set{Present: new(true)}}}, Reason: "swing modes are not mapped"},
 		},
 		Clusters: []Cluster{
 			{
@@ -848,10 +1355,48 @@ var rows = []Row{
 		},
 	},
 	{
-		ID: "event/unmapped", Platform: "event",
-		When:   When{},
-		State:  eligibility.StateUnmappable,
-		Reason: "no generic Matter counterpart for an event entity in H1 (GenericSwitch is H2)",
+		ID: "event/generic_switch", Platform: "event",
+		When:  When{},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/generic-switch.element.ts:19 @862ad75f (Switch mandatory)", "go-fabric cluster/spec/switchcluster/definition_gen.go:30-31,38,40,54-55 @v0.15.4 (NumberOfPositions, CurrentPosition; InitialPress (MS), ShortRelease (MSR))", "go-fabric cluster/spec/switchcluster/server_gen.go:156-171 @v0.15.4 (EmitInitialPress, EmitShortRelease)", "home-assistant/core homeassistant/components/event/__init__.py:187-194 @2026.10.3 (the state is the last event's timestamp)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/event/index.ts:12-24,191-195 @664575a (GenericSwitch; a short press is InitialPress then ShortRelease at position 1)"},
+		Type:  &device.GenericSwitchType,
+		Caveats: []Caveat{
+			{When: When{}, Reason: "every event is a short press (InitialPress, ShortRelease); long and multi presses from the event type are not mapped yet"},
+		},
+		Clusters: []Cluster{
+			{
+				Name: "Switch", ID: switchclusterdef.ClusterID,
+				Features: []Feature{{Name: "MomentarySwitch", When: nil}, {Name: "MomentarySwitchRelease", When: nil}},
+				Initial: []Attr{
+					{Name: "NumberOfPositions", Value: Value{Const: float64(2), HasConst: true}},
+					{Name: "CurrentPosition", Value: Value{Const: float64(0), HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d switchclusterdef.Declare
+					d.Features |= switchclusterdef.FeatureMomentarySwitch
+					d.Features |= switchclusterdef.FeatureMomentarySwitchRelease
+					d.Initial.NumberOfPositions = new(uint8(2))
+					d.Initial.CurrentPosition = new(uint8(0))
+					return d
+				},
+				Events: []Event{
+					{On: "state", Emit: []string{"InitialPress", "ShortRelease"}},
+				},
+				fire: func(b *binding, ei int, endpoint uint16) error {
+					s := switchclusterdef.Wrap(b.server(switchclusterdef.ClusterID))
+					switch ei {
+					case 0:
+						if err := s.EmitInitialPress(endpoint, switchclusterdef.InitialPressEvent{NewPosition: uint8(1)}); err != nil {
+							return err
+						}
+						if err := s.EmitShortRelease(endpoint, switchclusterdef.ShortReleaseEvent{PreviousPosition: uint8(1)}); err != nil {
+							return err
+						}
+					}
+					return nil
+				},
+			},
+		},
 	},
 	{
 		ID: "fan/fan", Platform: "fan",
@@ -1876,16 +2421,524 @@ var rows = []Row{
 		},
 	},
 	{
+		ID: "media_player/video_player", Platform: "media_player",
+		When:  When{DeviceClass: []string{"tv"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/basic-video-player.element.ts:22,27,30 @862ad75f (OnOff, MediaPlayback and KeypadInput mandatory)", "go-fabric cluster/spec/mediaplayback/definition_gen.go:45-48,169-172,192-197,425-428 @v0.15.4 (Play, Pause, Stop; PlaybackStateEnum; StatusEnum; PlaybackResponse)", "go-fabric cluster/spec/keypadinput/definition_gen.go:95-98,238-240,253-255,272-274 @v0.15.4 (Power, VolumeUp, VolumeDown, Mute; StatusEnum; SendKey)", "go-fabric device/defaults_media.go:63-72 @v0.15.4 (the kit's media servers need their ports; without them the generated servers)", "home-assistant/core homeassistant/components/media_player/services.py:125-163 @2026.10.3 (turn_on, turn_off, toggle, volume_up, volume_down, media_play, media_pause, media_stop)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/media-player/index.ts:24-39 @664575a (device_class tv is a video player)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/media-player/behaviors/media-player-media-playback-server.ts:17-63 @664575a (the playback states and commands)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/media-player/behaviors/media-player-keypad-input-server.ts:42-130 @664575a (keys onto services)", "go-ha-catalog data/features.json:61-83 (media_player feature flags)", "home-assistant/core homeassistant/components/media_player/const.py:69-84,196-230 @2026.10.3 (the states, the feature flags, the device classes)"},
+		Type:  &device.BasicVideoPlayerType,
+		Caveats: []Caveat{
+			{When: When{}, Reason: "the volume is reached through KeypadInput's VolumeUp, VolumeDown and Mute keys only; sources and tracks are not mapped"},
+		},
+		Clusters: []Cluster{
+			{
+				Name: "OnOff", ID: onoffdef.ClusterID,
+				Attributes: []Attr{
+					{Name: "OnOff", Value: Value{From: "state"}},
+				},
+				Commands: []Command{
+					{Kind: "handle", On: []string{"On"}, Method: "turn_on", Raw: &Value{Const: "ON", HasConst: true}, When: &When{Features: &Set{All: []string{"TURN_ON", "TURN_OFF"}}}},
+					{Kind: "handle", On: []string{"Off"}, Method: "turn_off", Raw: &Value{Const: "OFF", HasConst: true}, When: &When{Features: &Set{All: []string{"TURN_ON", "TURN_OFF"}}}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d onoffdef.Declare
+					if b.match(&When{Features: &Set{All: []string{"TURN_ON", "TURN_OFF"}}}) {
+						d.HandleOn = func(_ context.Context, req onoffdef.OnRequest) (resp struct{}, err error) {
+							f := func(string) (any, bool) { return nil, false }
+							if true {
+								b.emit(ci, 0, f)
+							}
+							return resp, err
+						}
+					}
+					if b.match(&When{Features: &Set{All: []string{"TURN_ON", "TURN_OFF"}}}) {
+						d.HandleOff = func(_ context.Context, req onoffdef.OffRequest) (resp struct{}, err error) {
+							f := func(string) (any, bool) { return nil, false }
+							if true {
+								b.emit(ci, 1, f)
+							}
+							return resp, err
+						}
+					}
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p onoffdef.Patch
+					n := 0
+					switch b.text(&st, ci, 0) {
+					case "buffering":
+						p.OnOff = new(true)
+						n++
+					case "idle":
+						p.OnOff = new(true)
+						n++
+					case "off":
+						p.OnOff = new(false)
+						n++
+					case "on":
+						p.OnOff = new(true)
+						n++
+					case "paused":
+						p.OnOff = new(true)
+						n++
+					case "playing":
+						p.OnOff = new(true)
+						n++
+					case "standby":
+						p.OnOff = new(false)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, onoffdef.Wrap(b.server(onoffdef.ClusterID)).Set(p)
+				},
+			},
+			{
+				Name: "MediaPlayback", ID: mediaplaybackdef.ClusterID,
+				Attributes: []Attr{
+					{Name: "CurrentState", Value: Value{From: "state"}},
+				},
+				Initial: []Attr{
+					{Name: "CurrentState", Value: Value{Const: "PlaybackStateNotPlaying", HasConst: true}},
+				},
+				Commands: []Command{
+					{Kind: "handle", On: []string{"Play"}, Method: "media_play", Raw: &Value{Const: "PLAY", HasConst: true}},
+					{Kind: "handle", On: []string{"Pause"}, Method: "media_pause", Raw: &Value{Const: "PAUSE", HasConst: true}},
+					{Kind: "handle", On: []string{"Stop"}, Method: "media_stop", Raw: &Value{Const: "STOP", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d mediaplaybackdef.Declare
+					d.Initial.CurrentState = new(mediaplaybackdef.PlaybackStateNotPlaying)
+					d.HandlePlay = func(_ context.Context, req mediaplaybackdef.PlayRequest) (resp mediaplaybackdef.PlaybackResponse, err error) {
+						f := func(string) (any, bool) { return nil, false }
+						if true {
+							b.emit(ci, 0, f)
+						}
+						return resp, err
+					}
+					d.HandlePause = func(_ context.Context, req mediaplaybackdef.PauseRequest) (resp mediaplaybackdef.PlaybackResponse, err error) {
+						f := func(string) (any, bool) { return nil, false }
+						if true {
+							b.emit(ci, 1, f)
+						}
+						return resp, err
+					}
+					d.HandleStop = func(_ context.Context, req mediaplaybackdef.StopRequest) (resp mediaplaybackdef.PlaybackResponse, err error) {
+						f := func(string) (any, bool) { return nil, false }
+						if true {
+							b.emit(ci, 2, f)
+						}
+						return resp, err
+					}
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p mediaplaybackdef.Patch
+					n := 0
+					switch b.text(&st, ci, 0) {
+					case "buffering":
+						p.CurrentState = new(mediaplaybackdef.PlaybackStateBuffering)
+						n++
+					case "idle":
+						p.CurrentState = new(mediaplaybackdef.PlaybackStateNotPlaying)
+						n++
+					case "off":
+						p.CurrentState = new(mediaplaybackdef.PlaybackStateNotPlaying)
+						n++
+					case "on":
+						p.CurrentState = new(mediaplaybackdef.PlaybackStateNotPlaying)
+						n++
+					case "paused":
+						p.CurrentState = new(mediaplaybackdef.PlaybackStatePaused)
+						n++
+					case "playing":
+						p.CurrentState = new(mediaplaybackdef.PlaybackStatePlaying)
+						n++
+					case "standby":
+						p.CurrentState = new(mediaplaybackdef.PlaybackStateNotPlaying)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, mediaplaybackdef.Wrap(b.server(mediaplaybackdef.ClusterID)).Set(p)
+				},
+			},
+			{
+				Name: "KeypadInput", ID: keypadinputdef.ClusterID,
+				Commands: []Command{
+					{Kind: "handle", On: []string{"SendKey"}, Method: "key", Raw: &Value{Field: "KeyCode"}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d keypadinputdef.Declare
+					d.HandleSendKey = func(_ context.Context, req keypadinputdef.SendKeyRequest) (resp keypadinputdef.SendKeyResponse, err error) {
+						f := func(name string) (any, bool) {
+							switch name {
+							case "KeyCode":
+								return req.KeyCode, true
+							}
+							return nil, false
+						}
+						handled := false
+						if slices.Contains([]keypadinputdef.CecKeyCodeEnum{keypadinputdef.CecKeyCodePower, keypadinputdef.CecKeyCodeVolumeUp, keypadinputdef.CecKeyCodeVolumeDown, keypadinputdef.CecKeyCodeMute}, req.KeyCode) {
+							b.emit(ci, 0, f)
+							handled = true
+						}
+						if !handled {
+							resp = keypadinputdef.SendKeyResponse{Status: keypadinputdef.StatusUnsupportedKey}
+						}
+						return resp, err
+					}
+					return d
+				},
+			},
+		},
+	},
+	{
+		ID: "media_player/speaker", Platform: "media_player",
+		When:  When{Features: &Set{All: []string{"TURN_ON", "TURN_OFF"}}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/speaker.element.ts:18-19 @862ad75f (OnOff and LevelControl mandatory)", "go-fabric cluster/spec/levelcontrol/values.go:19-44 @v0.15.4 (levels 0 to 254, a unit value times 254)", "home-assistant/core homeassistant/components/media_player/__init__.py:334,362-364,379-381 @2026.10.3 (volume_level 0 to 1, is_volume_muted)", "home-assistant/core homeassistant/components/media_player/services.py:125-130,182-203 @2026.10.3 (turn_on, turn_off, volume_set, volume_mute)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/media-player/index.ts:41-91 @664575a (a Speaker; power with TURN_ON and TURN_OFF, else mute as OnOff; VolumeSet as LevelControl)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/media-player/behaviors/media-player-power-on-off-server.ts:8-16 @664575a (off and standby are off)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/media-player/behaviors/media-player-on-off-server.ts:8-17 @664575a (OnOff is not muted)", "go-ha-catalog data/features.json:61-83 (media_player feature flags)", "home-assistant/core homeassistant/components/media_player/const.py:69-84,196-230 @2026.10.3 (the states, the feature flags, the device classes)"},
+		Type:  &device.SpeakerType,
+		Clusters: []Cluster{
+			{
+				Name: "OnOff", ID: onoffdef.ClusterID,
+				Attributes: []Attr{
+					{Name: "OnOff", Value: Value{From: "state"}},
+				},
+				Commands: []Command{
+					{Kind: "handle", On: []string{"On"}, Method: "turn_on", Raw: &Value{Const: "ON", HasConst: true}},
+					{Kind: "handle", On: []string{"Off"}, Method: "turn_off", Raw: &Value{Const: "OFF", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d onoffdef.Declare
+					d.HandleOn = func(_ context.Context, req onoffdef.OnRequest) (resp struct{}, err error) {
+						f := func(string) (any, bool) { return nil, false }
+						if true {
+							b.emit(ci, 0, f)
+						}
+						return resp, err
+					}
+					d.HandleOff = func(_ context.Context, req onoffdef.OffRequest) (resp struct{}, err error) {
+						f := func(string) (any, bool) { return nil, false }
+						if true {
+							b.emit(ci, 1, f)
+						}
+						return resp, err
+					}
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p onoffdef.Patch
+					n := 0
+					switch b.text(&st, ci, 0) {
+					case "buffering":
+						p.OnOff = new(true)
+						n++
+					case "idle":
+						p.OnOff = new(true)
+						n++
+					case "off":
+						p.OnOff = new(false)
+						n++
+					case "on":
+						p.OnOff = new(true)
+						n++
+					case "paused":
+						p.OnOff = new(true)
+						n++
+					case "playing":
+						p.OnOff = new(true)
+						n++
+					case "standby":
+						p.OnOff = new(false)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, onoffdef.Wrap(b.server(onoffdef.ClusterID)).Set(p)
+				},
+			},
+			{
+				Name: "LevelControl", ID: levelcontroldef.ClusterID,
+				Attributes: []Attr{
+					{Name: "CurrentLevel", Value: Value{From: "state.volume_level", Linear: Linear{Offset: 0, Scale: 254, Add: 0}, Min: new(float64(0)), Max: new(float64(254))}},
+				},
+				Commands: []Command{
+					{Kind: "change", On: []string{"CurrentLevel"}, Method: "volume_level", Raw: &Value{Field: "CurrentLevel"}, When: &When{Features: &Set{Any: []string{"VOLUME_SET"}}}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d levelcontroldef.Declare
+					d.Initial.Null = append(d.Initial.Null, levelcontroldef.AttrCurrentLevel)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p levelcontroldef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.CurrentLevel = new(conv[uint8](v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, levelcontroldef.AttrCurrentLevel)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, levelcontroldef.Wrap(b.server(levelcontroldef.ClusterID)).Set(p)
+				},
+				watch: func(b *binding, ci int) func() {
+					return b.target.OnChanged(levelcontroldef.ClusterID, func(c contract.Change) {
+						st := levelcontroldef.Wrap(b.server(levelcontroldef.ClusterID)).Get()
+						f := func(name string) (any, bool) {
+							switch name {
+							case "CurrentLevel":
+								return st.CurrentLevel, true
+							}
+							return nil, false
+						}
+						if changed(c, levelcontroldef.AttrCurrentLevel) && true {
+							b.emit(ci, 0, f)
+						}
+					})
+				},
+			},
+		},
+	},
+	{
+		ID: "media_player/speaker_mute", Platform: "media_player",
+		When:  When{Features: &Set{Any: []string{"VOLUME_MUTE"}}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/speaker.element.ts:18-19 @862ad75f (OnOff and LevelControl mandatory)", "go-fabric cluster/spec/levelcontrol/values.go:19-44 @v0.15.4 (levels 0 to 254, a unit value times 254)", "home-assistant/core homeassistant/components/media_player/__init__.py:334,362-364,379-381 @2026.10.3 (volume_level 0 to 1, is_volume_muted)", "home-assistant/core homeassistant/components/media_player/services.py:125-130,182-203 @2026.10.3 (turn_on, turn_off, volume_set, volume_mute)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/media-player/index.ts:41-91 @664575a (a Speaker; power with TURN_ON and TURN_OFF, else mute as OnOff; VolumeSet as LevelControl)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/media-player/behaviors/media-player-power-on-off-server.ts:8-16 @664575a (off and standby are off)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/media-player/behaviors/media-player-on-off-server.ts:8-17 @664575a (OnOff is not muted)", "go-ha-catalog data/features.json:61-83 (media_player feature flags)", "home-assistant/core homeassistant/components/media_player/const.py:69-84,196-230 @2026.10.3 (the states, the feature flags, the device classes)"},
+		Type:  &device.SpeakerType,
+		Clusters: []Cluster{
+			{
+				Name: "OnOff", ID: onoffdef.ClusterID,
+				Attributes: []Attr{
+					{Name: "OnOff", Value: Value{From: "state.is_volume_muted"}},
+				},
+				Commands: []Command{
+					{Kind: "handle", On: []string{"On"}, Method: "volume_mute", Raw: &Value{Const: false, HasConst: true}},
+					{Kind: "handle", On: []string{"Off"}, Method: "volume_mute", Raw: &Value{Const: true, HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d onoffdef.Declare
+					d.HandleOn = func(_ context.Context, req onoffdef.OnRequest) (resp struct{}, err error) {
+						f := func(string) (any, bool) { return nil, false }
+						if true {
+							b.emit(ci, 0, f)
+						}
+						return resp, err
+					}
+					d.HandleOff = func(_ context.Context, req onoffdef.OffRequest) (resp struct{}, err error) {
+						f := func(string) (any, bool) { return nil, false }
+						if true {
+							b.emit(ci, 1, f)
+						}
+						return resp, err
+					}
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p onoffdef.Patch
+					n := 0
+					switch b.text(&st, ci, 0) {
+					case "off":
+						p.OnOff = new(true)
+						n++
+					case "on":
+						p.OnOff = new(false)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, onoffdef.Wrap(b.server(onoffdef.ClusterID)).Set(p)
+				},
+			},
+			{
+				Name: "LevelControl", ID: levelcontroldef.ClusterID,
+				Attributes: []Attr{
+					{Name: "CurrentLevel", Value: Value{From: "state.volume_level", Linear: Linear{Offset: 0, Scale: 254, Add: 0}, Min: new(float64(0)), Max: new(float64(254))}},
+				},
+				Commands: []Command{
+					{Kind: "change", On: []string{"CurrentLevel"}, Method: "volume_level", Raw: &Value{Field: "CurrentLevel"}, When: &When{Features: &Set{Any: []string{"VOLUME_SET"}}}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d levelcontroldef.Declare
+					d.Initial.Null = append(d.Initial.Null, levelcontroldef.AttrCurrentLevel)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p levelcontroldef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.CurrentLevel = new(conv[uint8](v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, levelcontroldef.AttrCurrentLevel)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, levelcontroldef.Wrap(b.server(levelcontroldef.ClusterID)).Set(p)
+				},
+				watch: func(b *binding, ci int) func() {
+					return b.target.OnChanged(levelcontroldef.ClusterID, func(c contract.Change) {
+						st := levelcontroldef.Wrap(b.server(levelcontroldef.ClusterID)).Get()
+						f := func(name string) (any, bool) {
+							switch name {
+							case "CurrentLevel":
+								return st.CurrentLevel, true
+							}
+							return nil, false
+						}
+						if changed(c, levelcontroldef.AttrCurrentLevel) && true {
+							b.emit(ci, 0, f)
+						}
+					})
+				},
+			},
+		},
+	},
+	{
+		ID: "media_player/speaker_volume", Platform: "media_player",
+		When:  When{Features: &Set{Any: []string{"VOLUME_SET"}}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/speaker.element.ts:18-19 @862ad75f (OnOff and LevelControl mandatory)", "go-fabric cluster/spec/levelcontrol/values.go:19-44 @v0.15.4 (levels 0 to 254, a unit value times 254)", "home-assistant/core homeassistant/components/media_player/__init__.py:334,362-364,379-381 @2026.10.3 (volume_level 0 to 1, is_volume_muted)", "home-assistant/core homeassistant/components/media_player/services.py:125-130,182-203 @2026.10.3 (turn_on, turn_off, volume_set, volume_mute)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/media-player/index.ts:41-91 @664575a (a Speaker; power with TURN_ON and TURN_OFF, else mute as OnOff; VolumeSet as LevelControl)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/media-player/behaviors/media-player-power-on-off-server.ts:8-16 @664575a (off and standby are off)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/media-player/behaviors/media-player-on-off-server.ts:8-17 @664575a (OnOff is not muted)", "go-ha-catalog data/features.json:61-83 (media_player feature flags)", "home-assistant/core homeassistant/components/media_player/const.py:69-84,196-230 @2026.10.3 (the states, the feature flags, the device classes)"},
+		Type:  &device.SpeakerType,
+		Caveats: []Caveat{
+			{When: When{}, Reason: "without turn_on and turn_off or volume_mute the Speaker's OnOff only shows the state"},
+		},
+		Clusters: []Cluster{
+			{
+				Name: "OnOff", ID: onoffdef.ClusterID,
+				Attributes: []Attr{
+					{Name: "OnOff", Value: Value{From: "state"}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d onoffdef.Declare
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p onoffdef.Patch
+					n := 0
+					switch b.text(&st, ci, 0) {
+					case "buffering":
+						p.OnOff = new(true)
+						n++
+					case "idle":
+						p.OnOff = new(true)
+						n++
+					case "off":
+						p.OnOff = new(false)
+						n++
+					case "on":
+						p.OnOff = new(true)
+						n++
+					case "paused":
+						p.OnOff = new(true)
+						n++
+					case "playing":
+						p.OnOff = new(true)
+						n++
+					case "standby":
+						p.OnOff = new(false)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, onoffdef.Wrap(b.server(onoffdef.ClusterID)).Set(p)
+				},
+			},
+			{
+				Name: "LevelControl", ID: levelcontroldef.ClusterID,
+				Attributes: []Attr{
+					{Name: "CurrentLevel", Value: Value{From: "state.volume_level", Linear: Linear{Offset: 0, Scale: 254, Add: 0}, Min: new(float64(0)), Max: new(float64(254))}},
+				},
+				Commands: []Command{
+					{Kind: "change", On: []string{"CurrentLevel"}, Method: "volume_level", Raw: &Value{Field: "CurrentLevel"}, When: &When{Features: &Set{Any: []string{"VOLUME_SET"}}}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d levelcontroldef.Declare
+					d.Initial.Null = append(d.Initial.Null, levelcontroldef.AttrCurrentLevel)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p levelcontroldef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.CurrentLevel = new(conv[uint8](v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, levelcontroldef.AttrCurrentLevel)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, levelcontroldef.Wrap(b.server(levelcontroldef.ClusterID)).Set(p)
+				},
+				watch: func(b *binding, ci int) func() {
+					return b.target.OnChanged(levelcontroldef.ClusterID, func(c contract.Change) {
+						st := levelcontroldef.Wrap(b.server(levelcontroldef.ClusterID)).Get()
+						f := func(name string) (any, bool) {
+							switch name {
+							case "CurrentLevel":
+								return st.CurrentLevel, true
+							}
+							return nil, false
+						}
+						if changed(c, levelcontroldef.AttrCurrentLevel) && true {
+							b.emit(ci, 0, f)
+						}
+					})
+				},
+			},
+		},
+	},
+	{
+		ID: "media_player/unmapped", Platform: "media_player",
+		When:   When{},
+		State:  eligibility.StateUnmappable,
+		Reason: "a media player without turn_on and turn_off, volume_mute or volume_set has nothing a Speaker serves",
+		Cites:  []string{"go-ha-catalog data/features.json:61-83 (media_player feature flags)", "home-assistant/core homeassistant/components/media_player/const.py:69-84,196-230 @2026.10.3 (the states, the feature flags, the device classes)"},
+	},
+	{
 		ID: "number/unmapped", Platform: "number",
 		When:   When{},
 		State:  eligibility.StateUnmappable,
-		Reason: "no generic Matter counterpart for a number entity in H1",
+		Reason: "no generic Matter counterpart for a number entity",
 	},
 	{
-		ID: "select/unmapped", Platform: "select",
-		When:   When{},
-		State:  eligibility.StateUnmappable,
-		Reason: "no generic Matter counterpart for a select entity in H1 (ModeSelect from its options is H2)",
+		ID: "select/mode_select", Platform: "select",
+		When:  When{},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/mode-select-device.element.ts:18 @862ad75f (ModeSelect mandatory)", "go-fabric cluster/spec/modeselect/definition_gen.go:30-40,54-58 @v0.15.4 (SupportedModes, CurrentMode, ChangeToMode; ModeOptionStruct)", "home-assistant/core homeassistant/components/select/__init__.py:108-122 @2026.10.3 (options capability; state is the current option)", "home-assistant/core homeassistant/components/select/services.py:42-46 @2026.10.3 (select_option with option)", "home-assistant-matter-hub packages/backend/src/matter/behaviors/mode-select-server.ts:10-16 @664575a (the option's 0-based index is the mode)"},
+		Type:  &device.ModeSelectType,
+		Clusters: []Cluster{
+			{
+				Name: "ModeSelect", ID: modeselectdef.ClusterID,
+				declare: func(b *binding, ci int) device.Declaration {
+					var d modeselectdef.Declare
+					b.optionsModeSelect(&d, ci)
+					return d
+				},
+				Options: &OptionList{List: "desc.options", Current: "state", Method: "select_option"},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p modeselectdef.Patch
+					n := 0
+					n += b.optionsModeSelectApply(&p, &st, ci)
+					if n == 0 {
+						return nil, nil
+					}
+					return p, modeselectdef.Wrap(b.server(modeselectdef.ClusterID)).Set(p)
+				},
+			},
+		},
 	},
 	{
 		ID: "sensor/temperature", Platform: "sensor",
@@ -2031,6 +3084,564 @@ var rows = []Row{
 						return nil, nil
 					}
 					return p, illuminancemeasurementdef.Wrap(b.server(illuminancemeasurementdef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
+		ID: "sensor/carbon_dioxide", Platform: "sensor",
+		When:  When{DeviceClass: []string{"carbon_dioxide"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/air-quality-sensor.element.ts:19,22-34 @862ad75f (AirQuality mandatory, the concentration clusters optional)", "go-fabric cluster/spec/carbondioxideconcentrationmeasurement/definition_gen.go:47,87-89,108-115 @v0.15.4 (NumericMeasurement; MeasurementMedium; MeasurementUnit, the same names in every concentration package)", "go-fabric cluster/measurement/concentration.go:136-139 @v0.15.4 (AirQuality reads Unknown beside a concentration)", "go-ha-catalog data/sensor.json:383-385 (carbon_dioxide unit ppm)", "go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},
+		Type:  &device.AirQualitySensorType,
+		Clusters: []Cluster{
+			{
+				Name: "AirQuality", ID: airqualitydef.ClusterID,
+				Initial: []Attr{
+					{Name: "AirQuality", Value: Value{Const: "AirQualityUnknown", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d airqualitydef.Declare
+					d.Initial.AirQuality = new(airqualitydef.AirQualityUnknown)
+					return d
+				},
+			},
+			{
+				Name: "CarbonDioxideConcentrationMeasurement", ID: carbondioxideconcentrationmeasurementdef.ClusterID,
+				Features: []Feature{{Name: "NumericMeasurement", When: nil}},
+				Attributes: []Attr{
+					{Name: "MeasuredValue", Value: Value{From: "state", Units: map[string]Linear{"ppm": {Offset: 0, Scale: 1, Add: 0}}}},
+				},
+				Initial: []Attr{
+					{Name: "MeasurementMedium", Value: Value{Const: "MeasurementMediumAir", HasConst: true}},
+					{Name: "MeasurementUnit", Value: Value{Const: "MeasurementUnitPpm", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d carbondioxideconcentrationmeasurementdef.Declare
+					d.Features |= carbondioxideconcentrationmeasurementdef.FeatureNumericMeasurement
+					d.Initial.MeasurementMedium = new(carbondioxideconcentrationmeasurementdef.MeasurementMediumAir)
+					d.Initial.MeasurementUnit = new(carbondioxideconcentrationmeasurementdef.MeasurementUnitPpm)
+					d.Initial.Null = append(d.Initial.Null, carbondioxideconcentrationmeasurementdef.AttrMeasuredValue)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p carbondioxideconcentrationmeasurementdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.MeasuredValue = new(float32(v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, carbondioxideconcentrationmeasurementdef.AttrMeasuredValue)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, carbondioxideconcentrationmeasurementdef.Wrap(b.server(carbondioxideconcentrationmeasurementdef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
+		ID: "sensor/carbon_monoxide", Platform: "sensor",
+		When:  When{DeviceClass: []string{"carbon_monoxide"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/air-quality-sensor.element.ts:19,22-34 @862ad75f (AirQuality mandatory, the concentration clusters optional)", "go-fabric cluster/spec/carbondioxideconcentrationmeasurement/definition_gen.go:47,87-89,108-115 @v0.15.4 (NumericMeasurement; MeasurementMedium; MeasurementUnit, the same names in every concentration package)", "go-fabric cluster/measurement/concentration.go:136-139 @v0.15.4 (AirQuality reads Unknown beside a concentration)", "home-assistant/core homeassistant/util/unit_conversion.py:243-262 @2026.10.3 (CarbonMonoxideConcentrationConverter: ppm 1e6, ppb 1e9, mg/m³ and μg/m³ through the molar mass, 1e3 apart)", "go-ha-catalog data/sensor.json:386-391 (carbon_monoxide units)", "go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},
+		Type:  &device.AirQualitySensorType,
+		Clusters: []Cluster{
+			{
+				Name: "AirQuality", ID: airqualitydef.ClusterID,
+				Initial: []Attr{
+					{Name: "AirQuality", Value: Value{Const: "AirQualityUnknown", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d airqualitydef.Declare
+					d.Initial.AirQuality = new(airqualitydef.AirQualityUnknown)
+					return d
+				},
+			},
+			{
+				Name: "CarbonMonoxideConcentrationMeasurement", ID: carbonmonoxideconcentrationmeasurementdef.ClusterID,
+				Features: []Feature{{Name: "NumericMeasurement", When: nil}},
+				Attributes: []Attr{
+					{Name: "MeasuredValue", Value: Value{From: "state", Units: map[string]Linear{"mg/m³": {Offset: 0, Scale: 1000, Add: 0}, "ppb": {Offset: 0, Scale: 0.001, Add: 0}, "ppm": {Offset: 0, Scale: 1, Add: 0}, "μg/m³": {Offset: 0, Scale: 1, Add: 0}}}},
+				},
+				Initial: []Attr{
+					{Name: "MeasurementMedium", Value: Value{Const: "MeasurementMediumAir", HasConst: true}},
+					{Name: "MeasurementUnit", Value: Value{Const: "MeasurementUnitPpm", HasConst: true}, When: &When{Unit: []string{"ppb", "ppm"}}},
+					{Name: "MeasurementUnit", Value: Value{Const: "MeasurementUnitUgm3", HasConst: true}, When: &When{Unit: []string{"mg/m³", "μg/m³"}}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d carbonmonoxideconcentrationmeasurementdef.Declare
+					d.Features |= carbonmonoxideconcentrationmeasurementdef.FeatureNumericMeasurement
+					d.Initial.MeasurementMedium = new(carbonmonoxideconcentrationmeasurementdef.MeasurementMediumAir)
+					if b.match(&When{Unit: []string{"ppb", "ppm"}}) {
+						d.Initial.MeasurementUnit = new(carbonmonoxideconcentrationmeasurementdef.MeasurementUnitPpm)
+					}
+					if b.match(&When{Unit: []string{"mg/m³", "μg/m³"}}) {
+						d.Initial.MeasurementUnit = new(carbonmonoxideconcentrationmeasurementdef.MeasurementUnitUgm3)
+					}
+					d.Initial.Null = append(d.Initial.Null, carbonmonoxideconcentrationmeasurementdef.AttrMeasuredValue)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p carbonmonoxideconcentrationmeasurementdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.MeasuredValue = new(float32(v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, carbonmonoxideconcentrationmeasurementdef.AttrMeasuredValue)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, carbonmonoxideconcentrationmeasurementdef.Wrap(b.server(carbonmonoxideconcentrationmeasurementdef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
+		ID: "sensor/pm1", Platform: "sensor",
+		When:  When{DeviceClass: []string{"pm1"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/air-quality-sensor.element.ts:19,22-34 @862ad75f (AirQuality mandatory, the concentration clusters optional)", "go-fabric cluster/spec/carbondioxideconcentrationmeasurement/definition_gen.go:47,87-89,108-115 @v0.15.4 (NumericMeasurement; MeasurementMedium; MeasurementUnit, the same names in every concentration package)", "go-fabric cluster/measurement/concentration.go:136-139 @v0.15.4 (AirQuality reads Unknown beside a concentration)", "go-ha-catalog data/sensor.json:544-546 (pm1 unit μg/m³)", "go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},
+		Type:  &device.AirQualitySensorType,
+		Clusters: []Cluster{
+			{
+				Name: "AirQuality", ID: airqualitydef.ClusterID,
+				Initial: []Attr{
+					{Name: "AirQuality", Value: Value{Const: "AirQualityUnknown", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d airqualitydef.Declare
+					d.Initial.AirQuality = new(airqualitydef.AirQualityUnknown)
+					return d
+				},
+			},
+			{
+				Name: "Pm1ConcentrationMeasurement", ID: pm1concentrationmeasurementdef.ClusterID,
+				Features: []Feature{{Name: "NumericMeasurement", When: nil}},
+				Attributes: []Attr{
+					{Name: "MeasuredValue", Value: Value{From: "state", Units: map[string]Linear{"μg/m³": {Offset: 0, Scale: 1, Add: 0}}}},
+				},
+				Initial: []Attr{
+					{Name: "MeasurementMedium", Value: Value{Const: "MeasurementMediumAir", HasConst: true}},
+					{Name: "MeasurementUnit", Value: Value{Const: "MeasurementUnitUgm3", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d pm1concentrationmeasurementdef.Declare
+					d.Features |= pm1concentrationmeasurementdef.FeatureNumericMeasurement
+					d.Initial.MeasurementMedium = new(pm1concentrationmeasurementdef.MeasurementMediumAir)
+					d.Initial.MeasurementUnit = new(pm1concentrationmeasurementdef.MeasurementUnitUgm3)
+					d.Initial.Null = append(d.Initial.Null, pm1concentrationmeasurementdef.AttrMeasuredValue)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p pm1concentrationmeasurementdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.MeasuredValue = new(float32(v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, pm1concentrationmeasurementdef.AttrMeasuredValue)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, pm1concentrationmeasurementdef.Wrap(b.server(pm1concentrationmeasurementdef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
+		ID: "sensor/pm25", Platform: "sensor",
+		When:  When{DeviceClass: []string{"pm25"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/air-quality-sensor.element.ts:19,22-34 @862ad75f (AirQuality mandatory, the concentration clusters optional)", "go-fabric cluster/spec/carbondioxideconcentrationmeasurement/definition_gen.go:47,87-89,108-115 @v0.15.4 (NumericMeasurement; MeasurementMedium; MeasurementUnit, the same names in every concentration package)", "go-fabric cluster/measurement/concentration.go:136-139 @v0.15.4 (AirQuality reads Unknown beside a concentration)", "go-ha-catalog data/sensor.json:550-552 (pm25 unit μg/m³)", "go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},
+		Type:  &device.AirQualitySensorType,
+		Clusters: []Cluster{
+			{
+				Name: "AirQuality", ID: airqualitydef.ClusterID,
+				Initial: []Attr{
+					{Name: "AirQuality", Value: Value{Const: "AirQualityUnknown", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d airqualitydef.Declare
+					d.Initial.AirQuality = new(airqualitydef.AirQualityUnknown)
+					return d
+				},
+			},
+			{
+				Name: "Pm25ConcentrationMeasurement", ID: pm25concentrationmeasurementdef.ClusterID,
+				Features: []Feature{{Name: "NumericMeasurement", When: nil}},
+				Attributes: []Attr{
+					{Name: "MeasuredValue", Value: Value{From: "state", Units: map[string]Linear{"μg/m³": {Offset: 0, Scale: 1, Add: 0}}}},
+				},
+				Initial: []Attr{
+					{Name: "MeasurementMedium", Value: Value{Const: "MeasurementMediumAir", HasConst: true}},
+					{Name: "MeasurementUnit", Value: Value{Const: "MeasurementUnitUgm3", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d pm25concentrationmeasurementdef.Declare
+					d.Features |= pm25concentrationmeasurementdef.FeatureNumericMeasurement
+					d.Initial.MeasurementMedium = new(pm25concentrationmeasurementdef.MeasurementMediumAir)
+					d.Initial.MeasurementUnit = new(pm25concentrationmeasurementdef.MeasurementUnitUgm3)
+					d.Initial.Null = append(d.Initial.Null, pm25concentrationmeasurementdef.AttrMeasuredValue)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p pm25concentrationmeasurementdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.MeasuredValue = new(float32(v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, pm25concentrationmeasurementdef.AttrMeasuredValue)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, pm25concentrationmeasurementdef.Wrap(b.server(pm25concentrationmeasurementdef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
+		ID: "sensor/pm10", Platform: "sensor",
+		When:  When{DeviceClass: []string{"pm10"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/air-quality-sensor.element.ts:19,22-34 @862ad75f (AirQuality mandatory, the concentration clusters optional)", "go-fabric cluster/spec/carbondioxideconcentrationmeasurement/definition_gen.go:47,87-89,108-115 @v0.15.4 (NumericMeasurement; MeasurementMedium; MeasurementUnit, the same names in every concentration package)", "go-fabric cluster/measurement/concentration.go:136-139 @v0.15.4 (AirQuality reads Unknown beside a concentration)", "go-ha-catalog data/sensor.json:547-549 (pm10 unit μg/m³)", "go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},
+		Type:  &device.AirQualitySensorType,
+		Clusters: []Cluster{
+			{
+				Name: "AirQuality", ID: airqualitydef.ClusterID,
+				Initial: []Attr{
+					{Name: "AirQuality", Value: Value{Const: "AirQualityUnknown", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d airqualitydef.Declare
+					d.Initial.AirQuality = new(airqualitydef.AirQualityUnknown)
+					return d
+				},
+			},
+			{
+				Name: "Pm10ConcentrationMeasurement", ID: pm10concentrationmeasurementdef.ClusterID,
+				Features: []Feature{{Name: "NumericMeasurement", When: nil}},
+				Attributes: []Attr{
+					{Name: "MeasuredValue", Value: Value{From: "state", Units: map[string]Linear{"μg/m³": {Offset: 0, Scale: 1, Add: 0}}}},
+				},
+				Initial: []Attr{
+					{Name: "MeasurementMedium", Value: Value{Const: "MeasurementMediumAir", HasConst: true}},
+					{Name: "MeasurementUnit", Value: Value{Const: "MeasurementUnitUgm3", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d pm10concentrationmeasurementdef.Declare
+					d.Features |= pm10concentrationmeasurementdef.FeatureNumericMeasurement
+					d.Initial.MeasurementMedium = new(pm10concentrationmeasurementdef.MeasurementMediumAir)
+					d.Initial.MeasurementUnit = new(pm10concentrationmeasurementdef.MeasurementUnitUgm3)
+					d.Initial.Null = append(d.Initial.Null, pm10concentrationmeasurementdef.AttrMeasuredValue)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p pm10concentrationmeasurementdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.MeasuredValue = new(float32(v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, pm10concentrationmeasurementdef.AttrMeasuredValue)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, pm10concentrationmeasurementdef.Wrap(b.server(pm10concentrationmeasurementdef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
+		ID: "sensor/volatile_organic_compounds", Platform: "sensor",
+		When:  When{DeviceClass: []string{"volatile_organic_compounds"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/air-quality-sensor.element.ts:19,22-34 @862ad75f (AirQuality mandatory, the concentration clusters optional)", "go-fabric cluster/spec/carbondioxideconcentrationmeasurement/definition_gen.go:47,87-89,108-115 @v0.15.4 (NumericMeasurement; MeasurementMedium; MeasurementUnit, the same names in every concentration package)", "go-fabric cluster/measurement/concentration.go:136-139 @v0.15.4 (AirQuality reads Unknown beside a concentration)", "home-assistant/core homeassistant/util/unit_conversion.py:495-503 @2026.10.3 (MassVolumeConcentrationConverter: 1000 μg/m³ = 1 mg/m³)", "go-ha-catalog data/sensor.json:643-646 (volatile_organic_compounds units)", "go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},
+		Type:  &device.AirQualitySensorType,
+		Clusters: []Cluster{
+			{
+				Name: "AirQuality", ID: airqualitydef.ClusterID,
+				Initial: []Attr{
+					{Name: "AirQuality", Value: Value{Const: "AirQualityUnknown", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d airqualitydef.Declare
+					d.Initial.AirQuality = new(airqualitydef.AirQualityUnknown)
+					return d
+				},
+			},
+			{
+				Name: "TotalVolatileOrganicCompoundsConcentrationMeasurement", ID: totalvolatileorganiccompoundsconcentrationmeasurementdef.ClusterID,
+				Features: []Feature{{Name: "NumericMeasurement", When: nil}},
+				Attributes: []Attr{
+					{Name: "MeasuredValue", Value: Value{From: "state", Units: map[string]Linear{"mg/m³": {Offset: 0, Scale: 1000, Add: 0}, "μg/m³": {Offset: 0, Scale: 1, Add: 0}}}},
+				},
+				Initial: []Attr{
+					{Name: "MeasurementMedium", Value: Value{Const: "MeasurementMediumAir", HasConst: true}},
+					{Name: "MeasurementUnit", Value: Value{Const: "MeasurementUnitUgm3", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d totalvolatileorganiccompoundsconcentrationmeasurementdef.Declare
+					d.Features |= totalvolatileorganiccompoundsconcentrationmeasurementdef.FeatureNumericMeasurement
+					d.Initial.MeasurementMedium = new(totalvolatileorganiccompoundsconcentrationmeasurementdef.MeasurementMediumAir)
+					d.Initial.MeasurementUnit = new(totalvolatileorganiccompoundsconcentrationmeasurementdef.MeasurementUnitUgm3)
+					d.Initial.Null = append(d.Initial.Null, totalvolatileorganiccompoundsconcentrationmeasurementdef.AttrMeasuredValue)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p totalvolatileorganiccompoundsconcentrationmeasurementdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.MeasuredValue = new(float32(v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, totalvolatileorganiccompoundsconcentrationmeasurementdef.AttrMeasuredValue)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, totalvolatileorganiccompoundsconcentrationmeasurementdef.Wrap(b.server(totalvolatileorganiccompoundsconcentrationmeasurementdef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
+		ID: "sensor/volatile_organic_compounds_parts", Platform: "sensor",
+		When:  When{DeviceClass: []string{"volatile_organic_compounds_parts"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/air-quality-sensor.element.ts:19,22-34 @862ad75f (AirQuality mandatory, the concentration clusters optional)", "go-fabric cluster/spec/carbondioxideconcentrationmeasurement/definition_gen.go:47,87-89,108-115 @v0.15.4 (NumericMeasurement; MeasurementMedium; MeasurementUnit, the same names in every concentration package)", "go-fabric cluster/measurement/concentration.go:136-139 @v0.15.4 (AirQuality reads Unknown beside a concentration)", "home-assistant/core homeassistant/util/unit_conversion.py:941-956 @2026.10.3 (UnitlessRatioConverter: ppm 1e6, ppb 1e9)", "go-ha-catalog data/sensor.json:647-650 (volatile_organic_compounds_parts units)", "go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},
+		Type:  &device.AirQualitySensorType,
+		Clusters: []Cluster{
+			{
+				Name: "AirQuality", ID: airqualitydef.ClusterID,
+				Initial: []Attr{
+					{Name: "AirQuality", Value: Value{Const: "AirQualityUnknown", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d airqualitydef.Declare
+					d.Initial.AirQuality = new(airqualitydef.AirQualityUnknown)
+					return d
+				},
+			},
+			{
+				Name: "TotalVolatileOrganicCompoundsConcentrationMeasurement", ID: totalvolatileorganiccompoundsconcentrationmeasurementdef.ClusterID,
+				Features: []Feature{{Name: "NumericMeasurement", When: nil}},
+				Attributes: []Attr{
+					{Name: "MeasuredValue", Value: Value{From: "state", Units: map[string]Linear{"ppb": {Offset: 0, Scale: 1, Add: 0}, "ppm": {Offset: 0, Scale: 1000, Add: 0}}}},
+				},
+				Initial: []Attr{
+					{Name: "MeasurementMedium", Value: Value{Const: "MeasurementMediumAir", HasConst: true}},
+					{Name: "MeasurementUnit", Value: Value{Const: "MeasurementUnitPpb", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d totalvolatileorganiccompoundsconcentrationmeasurementdef.Declare
+					d.Features |= totalvolatileorganiccompoundsconcentrationmeasurementdef.FeatureNumericMeasurement
+					d.Initial.MeasurementMedium = new(totalvolatileorganiccompoundsconcentrationmeasurementdef.MeasurementMediumAir)
+					d.Initial.MeasurementUnit = new(totalvolatileorganiccompoundsconcentrationmeasurementdef.MeasurementUnitPpb)
+					d.Initial.Null = append(d.Initial.Null, totalvolatileorganiccompoundsconcentrationmeasurementdef.AttrMeasuredValue)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p totalvolatileorganiccompoundsconcentrationmeasurementdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.MeasuredValue = new(float32(v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, totalvolatileorganiccompoundsconcentrationmeasurementdef.AttrMeasuredValue)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, totalvolatileorganiccompoundsconcentrationmeasurementdef.Wrap(b.server(totalvolatileorganiccompoundsconcentrationmeasurementdef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
+		ID: "sensor/nitrogen_dioxide", Platform: "sensor",
+		When:  When{DeviceClass: []string{"nitrogen_dioxide"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/air-quality-sensor.element.ts:19,22-34 @862ad75f (AirQuality mandatory, the concentration clusters optional)", "go-fabric cluster/spec/carbondioxideconcentrationmeasurement/definition_gen.go:47,87-89,108-115 @v0.15.4 (NumericMeasurement; MeasurementMedium; MeasurementUnit, the same names in every concentration package)", "go-fabric cluster/measurement/concentration.go:136-139 @v0.15.4 (AirQuality reads Unknown beside a concentration)", "home-assistant/core homeassistant/util/unit_conversion.py:511-526 @2026.10.3 (NitrogenDioxideConcentrationConverter: ppm 1e6, ppb 1e9, μg/m³ through the molar mass)", "go-ha-catalog data/sensor.json:524-528 (nitrogen_dioxide units)", "go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},
+		Type:  &device.AirQualitySensorType,
+		Clusters: []Cluster{
+			{
+				Name: "AirQuality", ID: airqualitydef.ClusterID,
+				Initial: []Attr{
+					{Name: "AirQuality", Value: Value{Const: "AirQualityUnknown", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d airqualitydef.Declare
+					d.Initial.AirQuality = new(airqualitydef.AirQualityUnknown)
+					return d
+				},
+			},
+			{
+				Name: "NitrogenDioxideConcentrationMeasurement", ID: nitrogendioxideconcentrationmeasurementdef.ClusterID,
+				Features: []Feature{{Name: "NumericMeasurement", When: nil}},
+				Attributes: []Attr{
+					{Name: "MeasuredValue", Value: Value{From: "state", Units: map[string]Linear{"ppb": {Offset: 0, Scale: 1, Add: 0}, "ppm": {Offset: 0, Scale: 1000, Add: 0}, "μg/m³": {Offset: 0, Scale: 1, Add: 0}}}},
+				},
+				Initial: []Attr{
+					{Name: "MeasurementMedium", Value: Value{Const: "MeasurementMediumAir", HasConst: true}},
+					{Name: "MeasurementUnit", Value: Value{Const: "MeasurementUnitPpb", HasConst: true}, When: &When{Unit: []string{"ppb", "ppm"}}},
+					{Name: "MeasurementUnit", Value: Value{Const: "MeasurementUnitUgm3", HasConst: true}, When: &When{Unit: []string{"μg/m³"}}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d nitrogendioxideconcentrationmeasurementdef.Declare
+					d.Features |= nitrogendioxideconcentrationmeasurementdef.FeatureNumericMeasurement
+					d.Initial.MeasurementMedium = new(nitrogendioxideconcentrationmeasurementdef.MeasurementMediumAir)
+					if b.match(&When{Unit: []string{"ppb", "ppm"}}) {
+						d.Initial.MeasurementUnit = new(nitrogendioxideconcentrationmeasurementdef.MeasurementUnitPpb)
+					}
+					if b.match(&When{Unit: []string{"μg/m³"}}) {
+						d.Initial.MeasurementUnit = new(nitrogendioxideconcentrationmeasurementdef.MeasurementUnitUgm3)
+					}
+					d.Initial.Null = append(d.Initial.Null, nitrogendioxideconcentrationmeasurementdef.AttrMeasuredValue)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p nitrogendioxideconcentrationmeasurementdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.MeasuredValue = new(float32(v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, nitrogendioxideconcentrationmeasurementdef.AttrMeasuredValue)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, nitrogendioxideconcentrationmeasurementdef.Wrap(b.server(nitrogendioxideconcentrationmeasurementdef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
+		ID: "sensor/ozone", Platform: "sensor",
+		When:  When{DeviceClass: []string{"ozone"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/air-quality-sensor.element.ts:19,22-34 @862ad75f (AirQuality mandatory, the concentration clusters optional)", "go-fabric cluster/spec/carbondioxideconcentrationmeasurement/definition_gen.go:47,87-89,108-115 @v0.15.4 (NumericMeasurement; MeasurementMedium; MeasurementUnit, the same names in every concentration package)", "go-fabric cluster/measurement/concentration.go:136-139 @v0.15.4 (AirQuality reads Unknown beside a concentration)", "home-assistant/core homeassistant/util/unit_conversion.py:545-560 @2026.10.3 (OzoneConcentrationConverter: ppm 1e6, ppb 1e9, μg/m³ through the molar mass)", "go-ha-catalog data/sensor.json:536-540 (ozone units)", "go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},
+		Type:  &device.AirQualitySensorType,
+		Clusters: []Cluster{
+			{
+				Name: "AirQuality", ID: airqualitydef.ClusterID,
+				Initial: []Attr{
+					{Name: "AirQuality", Value: Value{Const: "AirQualityUnknown", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d airqualitydef.Declare
+					d.Initial.AirQuality = new(airqualitydef.AirQualityUnknown)
+					return d
+				},
+			},
+			{
+				Name: "OzoneConcentrationMeasurement", ID: ozoneconcentrationmeasurementdef.ClusterID,
+				Features: []Feature{{Name: "NumericMeasurement", When: nil}},
+				Attributes: []Attr{
+					{Name: "MeasuredValue", Value: Value{From: "state", Units: map[string]Linear{"ppb": {Offset: 0, Scale: 1, Add: 0}, "ppm": {Offset: 0, Scale: 1000, Add: 0}, "μg/m³": {Offset: 0, Scale: 1, Add: 0}}}},
+				},
+				Initial: []Attr{
+					{Name: "MeasurementMedium", Value: Value{Const: "MeasurementMediumAir", HasConst: true}},
+					{Name: "MeasurementUnit", Value: Value{Const: "MeasurementUnitPpb", HasConst: true}, When: &When{Unit: []string{"ppb", "ppm"}}},
+					{Name: "MeasurementUnit", Value: Value{Const: "MeasurementUnitUgm3", HasConst: true}, When: &When{Unit: []string{"μg/m³"}}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d ozoneconcentrationmeasurementdef.Declare
+					d.Features |= ozoneconcentrationmeasurementdef.FeatureNumericMeasurement
+					d.Initial.MeasurementMedium = new(ozoneconcentrationmeasurementdef.MeasurementMediumAir)
+					if b.match(&When{Unit: []string{"ppb", "ppm"}}) {
+						d.Initial.MeasurementUnit = new(ozoneconcentrationmeasurementdef.MeasurementUnitPpb)
+					}
+					if b.match(&When{Unit: []string{"μg/m³"}}) {
+						d.Initial.MeasurementUnit = new(ozoneconcentrationmeasurementdef.MeasurementUnitUgm3)
+					}
+					d.Initial.Null = append(d.Initial.Null, ozoneconcentrationmeasurementdef.AttrMeasuredValue)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p ozoneconcentrationmeasurementdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.MeasuredValue = new(float32(v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, ozoneconcentrationmeasurementdef.AttrMeasuredValue)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, ozoneconcentrationmeasurementdef.Wrap(b.server(ozoneconcentrationmeasurementdef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
+		ID: "sensor/radon", Platform: "sensor",
+		When:  When{DeviceClass: []string{"radon"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/air-quality-sensor.element.ts:19,22-34 @862ad75f (AirQuality mandatory, the concentration clusters optional)", "go-fabric cluster/spec/carbondioxideconcentrationmeasurement/definition_gen.go:47,87-89,108-115 @v0.15.4 (NumericMeasurement; MeasurementMedium; MeasurementUnit, the same names in every concentration package)", "go-fabric cluster/measurement/concentration.go:136-139 @v0.15.4 (AirQuality reads Unknown beside a concentration)", "home-assistant/core homeassistant/util/unit_conversion.py:111,623-633 @2026.10.3 (RadiationConcentrationConverter: 1 pCi/L = 37 Bq/m³)", "go-ha-catalog data/sensor.json:593-596 (radon units)", "go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},
+		Type:  &device.AirQualitySensorType,
+		Clusters: []Cluster{
+			{
+				Name: "AirQuality", ID: airqualitydef.ClusterID,
+				Initial: []Attr{
+					{Name: "AirQuality", Value: Value{Const: "AirQualityUnknown", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d airqualitydef.Declare
+					d.Initial.AirQuality = new(airqualitydef.AirQualityUnknown)
+					return d
+				},
+			},
+			{
+				Name: "RadonConcentrationMeasurement", ID: radonconcentrationmeasurementdef.ClusterID,
+				Features: []Feature{{Name: "NumericMeasurement", When: nil}},
+				Attributes: []Attr{
+					{Name: "MeasuredValue", Value: Value{From: "state", Units: map[string]Linear{"Bq/m³": {Offset: 0, Scale: 1, Add: 0}, "pCi/L": {Offset: 0, Scale: 37, Add: 0}}}},
+				},
+				Initial: []Attr{
+					{Name: "MeasurementMedium", Value: Value{Const: "MeasurementMediumAir", HasConst: true}},
+					{Name: "MeasurementUnit", Value: Value{Const: "MeasurementUnitBqm3", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d radonconcentrationmeasurementdef.Declare
+					d.Features |= radonconcentrationmeasurementdef.FeatureNumericMeasurement
+					d.Initial.MeasurementMedium = new(radonconcentrationmeasurementdef.MeasurementMediumAir)
+					d.Initial.MeasurementUnit = new(radonconcentrationmeasurementdef.MeasurementUnitBqm3)
+					d.Initial.Null = append(d.Initial.Null, radonconcentrationmeasurementdef.AttrMeasuredValue)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p radonconcentrationmeasurementdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.MeasuredValue = new(float32(v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, radonconcentrationmeasurementdef.AttrMeasuredValue)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, radonconcentrationmeasurementdef.Wrap(b.server(radonconcentrationmeasurementdef.ClusterID)).Set(p)
 				},
 			},
 		},
@@ -2200,6 +3811,226 @@ var rows = []Row{
 		},
 	},
 	{
+		ID: "sensor/apparent_power", Platform: "sensor",
+		When:  When{DeviceClass: []string{"apparent_power"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/electrical-sensor.element.ts:18-20 @862ad75f (PowerTopology mandatory, ElectricalPowerMeasurement O.a+)", "matter.js packages/model/src/standard/resources/electrical-power-measurement.resource.ts:201-203 @862ad75f (ApparentPower in millivolt-amps, mVA)", "home-assistant/core homeassistant/util/unit_conversion.py:195-209 @2026.10.3 (ApparentPowerConverter: mVA 1000, VA 1, kVA 1/1000)", "go-ha-catalog data/sensor.json:342-346 (apparent_power units)", "go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},
+		Type:  &device.ElectricalSensorType,
+		Clusters: []Cluster{
+			{
+				Name: "PowerTopology", ID: powertopologydef.ClusterID,
+				Features: []Feature{{Name: "NodeTopology", When: nil}},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d powertopologydef.Declare
+					d.Features |= powertopologydef.FeatureNodeTopology
+					return d
+				},
+			},
+			{
+				Name: "ElectricalPowerMeasurement", ID: electricalpowermeasurementdef.ClusterID,
+				Features: []Feature{{Name: "AlternatingCurrent", When: nil}},
+				Attributes: []Attr{
+					{Name: "ApparentPower", Value: Value{From: "state", Units: map[string]Linear{"VA": {Offset: 0, Scale: 1000, Add: 0}, "kVA": {Offset: 0, Scale: 1e+06, Add: 0}, "mVA": {Offset: 0, Scale: 1, Add: 0}}}},
+				},
+				Initial: []Attr{
+					{Name: "PowerMode", Value: Value{Const: "PowerModeAc", HasConst: true}},
+					{Name: "NumberOfMeasurementTypes", Value: Value{Const: float64(1), HasConst: true}},
+					{Name: "Accuracy", Value: Value{}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d electricalpowermeasurementdef.Declare
+					d.Features |= electricalpowermeasurementdef.FeatureAlternatingCurrent
+					d.Initial.PowerMode = new(electricalpowermeasurementdef.PowerModeAc)
+					d.Initial.NumberOfMeasurementTypes = new(uint8(1))
+					d.Initial.Accuracy = new([]electricalpowermeasurementdef.MeasurementAccuracyStruct{electricalpowermeasurementdef.MeasurementAccuracyStruct{MeasurementType: electricalpowermeasurementdef.MeasurementTypeApparentPower, Measured: true, MinMeasuredValue: int64(-4611686018427387904), MaxMeasuredValue: int64(4611686018427387904), AccuracyRanges: []electricalpowermeasurementdef.MeasurementAccuracyRangeStruct{electricalpowermeasurementdef.MeasurementAccuracyRangeStruct{RangeMin: int64(-4611686018427387904), RangeMax: int64(4611686018427387904), FixedMax: new(uint64(1))}}}})
+					d.Initial.Null = append(d.Initial.Null, electricalpowermeasurementdef.AttrActivePower)
+					d.Initial.Null = append(d.Initial.Null, electricalpowermeasurementdef.AttrApparentPower)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p electricalpowermeasurementdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.ApparentPower = new(conv[int64](v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, electricalpowermeasurementdef.AttrApparentPower)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, electricalpowermeasurementdef.Wrap(b.server(electricalpowermeasurementdef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
+		ID: "sensor/reactive_power", Platform: "sensor",
+		When:  When{DeviceClass: []string{"reactive_power"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/electrical-sensor.element.ts:18-20 @862ad75f (PowerTopology mandatory, ElectricalPowerMeasurement O.a+)", "matter.js packages/model/src/standard/resources/electrical-power-measurement.resource.ts:179-181 @862ad75f (ReactivePower in millivolt-amps reactive, mVAR)", "home-assistant/core homeassistant/util/unit_conversion.py:647-661 @2026.10.3 (ReactivePowerConverter: mvar 1000, var 1, kvar 1/1000)", "go-ha-catalog data/sensor.json:601-605 (reactive_power units)", "go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},
+		Type:  &device.ElectricalSensorType,
+		Clusters: []Cluster{
+			{
+				Name: "PowerTopology", ID: powertopologydef.ClusterID,
+				Features: []Feature{{Name: "NodeTopology", When: nil}},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d powertopologydef.Declare
+					d.Features |= powertopologydef.FeatureNodeTopology
+					return d
+				},
+			},
+			{
+				Name: "ElectricalPowerMeasurement", ID: electricalpowermeasurementdef.ClusterID,
+				Features: []Feature{{Name: "AlternatingCurrent", When: nil}},
+				Attributes: []Attr{
+					{Name: "ReactivePower", Value: Value{From: "state", Units: map[string]Linear{"kvar": {Offset: 0, Scale: 1e+06, Add: 0}, "mvar": {Offset: 0, Scale: 1, Add: 0}, "var": {Offset: 0, Scale: 1000, Add: 0}}}},
+				},
+				Initial: []Attr{
+					{Name: "PowerMode", Value: Value{Const: "PowerModeAc", HasConst: true}},
+					{Name: "NumberOfMeasurementTypes", Value: Value{Const: float64(1), HasConst: true}},
+					{Name: "Accuracy", Value: Value{}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d electricalpowermeasurementdef.Declare
+					d.Features |= electricalpowermeasurementdef.FeatureAlternatingCurrent
+					d.Initial.PowerMode = new(electricalpowermeasurementdef.PowerModeAc)
+					d.Initial.NumberOfMeasurementTypes = new(uint8(1))
+					d.Initial.Accuracy = new([]electricalpowermeasurementdef.MeasurementAccuracyStruct{electricalpowermeasurementdef.MeasurementAccuracyStruct{MeasurementType: electricalpowermeasurementdef.MeasurementTypeReactivePower, Measured: true, MinMeasuredValue: int64(-4611686018427387904), MaxMeasuredValue: int64(4611686018427387904), AccuracyRanges: []electricalpowermeasurementdef.MeasurementAccuracyRangeStruct{electricalpowermeasurementdef.MeasurementAccuracyRangeStruct{RangeMin: int64(-4611686018427387904), RangeMax: int64(4611686018427387904), FixedMax: new(uint64(1))}}}})
+					d.Initial.Null = append(d.Initial.Null, electricalpowermeasurementdef.AttrActivePower)
+					d.Initial.Null = append(d.Initial.Null, electricalpowermeasurementdef.AttrReactivePower)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p electricalpowermeasurementdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.ReactivePower = new(conv[int64](v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, electricalpowermeasurementdef.AttrReactivePower)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, electricalpowermeasurementdef.Wrap(b.server(electricalpowermeasurementdef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
+		ID: "sensor/frequency", Platform: "sensor",
+		When:  When{DeviceClass: []string{"frequency"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/electrical-sensor.element.ts:18-20 @862ad75f (PowerTopology mandatory, ElectricalPowerMeasurement O.a+)", "matter.js packages/model/src/standard/resources/electrical-power-measurement.resource.ts:278 @862ad75f (Frequency in millihertz, mHz)", "go-fabric cluster/spec/electricalpowermeasurement/definition_gen.go:515-521 @v0.15.4 (Frequency 0 to 1000000)", "home-assistant/core homeassistant/util/unit_conversion.py:365-375 @2026.10.3 (FrequencyConverter: mHz 1e3, Hz 1, kHz 1e-3, MHz 1e-6, GHz 1e-9)", "go-ha-catalog data/sensor.json:497-503 (frequency units)", "go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},
+		Type:  &device.ElectricalSensorType,
+		Clusters: []Cluster{
+			{
+				Name: "PowerTopology", ID: powertopologydef.ClusterID,
+				Features: []Feature{{Name: "NodeTopology", When: nil}},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d powertopologydef.Declare
+					d.Features |= powertopologydef.FeatureNodeTopology
+					return d
+				},
+			},
+			{
+				Name: "ElectricalPowerMeasurement", ID: electricalpowermeasurementdef.ClusterID,
+				Features: []Feature{{Name: "AlternatingCurrent", When: nil}},
+				Attributes: []Attr{
+					{Name: "Frequency", Value: Value{From: "state", Units: map[string]Linear{"GHz": {Offset: 0, Scale: 1e+12, Add: 0}, "Hz": {Offset: 0, Scale: 1000, Add: 0}, "MHz": {Offset: 0, Scale: 1e+09, Add: 0}, "kHz": {Offset: 0, Scale: 1e+06, Add: 0}, "mHz": {Offset: 0, Scale: 1, Add: 0}}, Min: new(float64(0)), Max: new(float64(1e+06))}},
+				},
+				Initial: []Attr{
+					{Name: "PowerMode", Value: Value{Const: "PowerModeAc", HasConst: true}},
+					{Name: "NumberOfMeasurementTypes", Value: Value{Const: float64(1), HasConst: true}},
+					{Name: "Accuracy", Value: Value{}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d electricalpowermeasurementdef.Declare
+					d.Features |= electricalpowermeasurementdef.FeatureAlternatingCurrent
+					d.Initial.PowerMode = new(electricalpowermeasurementdef.PowerModeAc)
+					d.Initial.NumberOfMeasurementTypes = new(uint8(1))
+					d.Initial.Accuracy = new([]electricalpowermeasurementdef.MeasurementAccuracyStruct{electricalpowermeasurementdef.MeasurementAccuracyStruct{MeasurementType: electricalpowermeasurementdef.MeasurementTypeFrequency, Measured: true, MinMeasuredValue: int64(0), MaxMeasuredValue: int64(1000000), AccuracyRanges: []electricalpowermeasurementdef.MeasurementAccuracyRangeStruct{electricalpowermeasurementdef.MeasurementAccuracyRangeStruct{RangeMin: int64(0), RangeMax: int64(1000000), FixedMax: new(uint64(1))}}}})
+					d.Initial.Null = append(d.Initial.Null, electricalpowermeasurementdef.AttrActivePower)
+					d.Initial.Null = append(d.Initial.Null, electricalpowermeasurementdef.AttrFrequency)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p electricalpowermeasurementdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.Frequency = new(conv[int64](v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, electricalpowermeasurementdef.AttrFrequency)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, electricalpowermeasurementdef.Wrap(b.server(electricalpowermeasurementdef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
+		ID: "sensor/power_factor", Platform: "sensor",
+		When:  When{DeviceClass: []string{"power_factor"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/electrical-sensor.element.ts:18-20 @862ad75f (PowerTopology mandatory, ElectricalPowerMeasurement O.a+)", "matter.js packages/model/src/standard/resources/electrical-power-measurement.resource.ts:328 @862ad75f (PowerFactor in +/- 1/100ths of a percent)", "go-fabric cluster/spec/electricalpowermeasurement/definition_gen.go:542-548 @v0.15.4 (PowerFactor -10000 to 10000)", "home-assistant/core homeassistant/util/unit_conversion.py:941-956 @2026.10.3 (UnitlessRatioConverter: no unit 1, % 100)", "go-ha-catalog data/sensor.json:564-567 (power_factor units %, none: the key \"\")", "go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},
+		Type:  &device.ElectricalSensorType,
+		Clusters: []Cluster{
+			{
+				Name: "PowerTopology", ID: powertopologydef.ClusterID,
+				Features: []Feature{{Name: "NodeTopology", When: nil}},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d powertopologydef.Declare
+					d.Features |= powertopologydef.FeatureNodeTopology
+					return d
+				},
+			},
+			{
+				Name: "ElectricalPowerMeasurement", ID: electricalpowermeasurementdef.ClusterID,
+				Features: []Feature{{Name: "AlternatingCurrent", When: nil}},
+				Attributes: []Attr{
+					{Name: "PowerFactor", Value: Value{From: "state", Units: map[string]Linear{"": {Offset: 0, Scale: 10000, Add: 0}, "%": {Offset: 0, Scale: 100, Add: 0}}, Min: new(float64(-10000)), Max: new(float64(10000))}},
+				},
+				Initial: []Attr{
+					{Name: "PowerMode", Value: Value{Const: "PowerModeAc", HasConst: true}},
+					{Name: "NumberOfMeasurementTypes", Value: Value{Const: float64(1), HasConst: true}},
+					{Name: "Accuracy", Value: Value{}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d electricalpowermeasurementdef.Declare
+					d.Features |= electricalpowermeasurementdef.FeatureAlternatingCurrent
+					d.Initial.PowerMode = new(electricalpowermeasurementdef.PowerModeAc)
+					d.Initial.NumberOfMeasurementTypes = new(uint8(1))
+					d.Initial.Accuracy = new([]electricalpowermeasurementdef.MeasurementAccuracyStruct{electricalpowermeasurementdef.MeasurementAccuracyStruct{MeasurementType: electricalpowermeasurementdef.MeasurementTypePowerFactor, Measured: true, MinMeasuredValue: int64(-10000), MaxMeasuredValue: int64(10000), AccuracyRanges: []electricalpowermeasurementdef.MeasurementAccuracyRangeStruct{electricalpowermeasurementdef.MeasurementAccuracyRangeStruct{RangeMin: int64(-10000), RangeMax: int64(10000), FixedMax: new(uint64(1))}}}})
+					d.Initial.Null = append(d.Initial.Null, electricalpowermeasurementdef.AttrActivePower)
+					d.Initial.Null = append(d.Initial.Null, electricalpowermeasurementdef.AttrPowerFactor)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p electricalpowermeasurementdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.PowerFactor = new(conv[int64](v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, electricalpowermeasurementdef.AttrPowerFactor)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, electricalpowermeasurementdef.Wrap(b.server(electricalpowermeasurementdef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
 		ID: "sensor/energy", Platform: "sensor",
 		When:  When{DeviceClass: []string{"energy"}},
 		State: eligibility.StateMappable,
@@ -2246,6 +4077,80 @@ var rows = []Row{
 						return nil, nil
 					}
 					return p, electricalenergymeasurementdef.Wrap(b.server(electricalenergymeasurementdef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
+		ID: "sensor/volume_flow_rate", Platform: "sensor",
+		When:  When{DeviceClass: []string{"volume_flow_rate"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/flow-sensor.element.ts:19 @862ad75f (FlowMeasurement mandatory)", "matter.js packages/model/src/standard/resources/flow-measurement.resource.ts:19-24 @862ad75f (MeasuredValue = 10 x Flow in m³/h)", "go-fabric cluster/measurement/flow.go:34-38 @v0.15.4 (uint16, 0.1 m³/h, clamped to 0..65534)", "home-assistant/core homeassistant/util/unit_conversion.py:44-45,66-70,88-92,986-1004 @2026.10.3 (VolumeFlowRateConverter: ratios to m³/h)", "go-ha-catalog data/sensor.json:668-680 (volume_flow_rate units)", "go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},
+		Type:  &device.FlowSensorType,
+		Clusters: []Cluster{
+			{
+				Name: "FlowMeasurement", ID: flowmeasurementdef.ClusterID,
+				Attributes: []Attr{
+					{Name: "MeasuredValue", Value: Value{From: "state", Units: map[string]Linear{"L/h": {Offset: 0, Scale: 0.01, Add: 0}, "L/min": {Offset: 0, Scale: 0.6, Add: 0}, "L/s": {Offset: 0, Scale: 36, Add: 0}, "ft³/min": {Offset: 0, Scale: 16.9901079552, Add: 0}, "gal/d": {Offset: 0, Scale: 0.00157725491, Add: 0}, "gal/h": {Offset: 0, Scale: 0.03785411784, Add: 0}, "gal/min": {Offset: 0, Scale: 2.2712470704, Add: 0}, "mL/s": {Offset: 0, Scale: 0.036, Add: 0}, "m³/h": {Offset: 0, Scale: 10, Add: 0}, "m³/min": {Offset: 0, Scale: 600, Add: 0}, "m³/s": {Offset: 0, Scale: 36000, Add: 0}}, Min: new(float64(0)), Max: new(float64(65534))}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d flowmeasurementdef.Declare
+					d.Initial.Null = append(d.Initial.Null, flowmeasurementdef.AttrMeasuredValue)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p flowmeasurementdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.MeasuredValue = new(conv[uint16](v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, flowmeasurementdef.AttrMeasuredValue)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, flowmeasurementdef.Wrap(b.server(flowmeasurementdef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
+		ID: "sensor/moisture", Platform: "sensor",
+		When:  When{DeviceClass: []string{"moisture"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/soil-sensor.element.ts:20 @862ad75f (SoilMeasurement mandatory)", "matter.js packages/model/src/standard/resources/soil-measurement.resource.ts:20-32,36-37 @862ad75f (the limits in percent, one accuracy range with PercentMax at most 10.00 %; the measured value in percent)", "go-fabric cluster/spec/soilmeasurement/definition_gen.go:40-46,105,133-142 @v0.15.4 (MeasurementAccuracyStruct, MeasurementTypeSoilMoisture, the range's PercentMax in 1/100 %)", "go-ha-catalog data/sensor.json:521-523 (moisture unit %)", "go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},
+		Type:  &device.SoilSensorType,
+		Clusters: []Cluster{
+			{
+				Name: "SoilMeasurement", ID: soilmeasurementdef.ClusterID,
+				Attributes: []Attr{
+					{Name: "SoilMoistureMeasuredValue", Value: Value{From: "state", Units: map[string]Linear{"%": {Offset: 0, Scale: 1, Add: 0}}, Min: new(float64(0)), Max: new(float64(100))}},
+				},
+				Initial: []Attr{
+					{Name: "SoilMoistureMeasurementLimits", Value: Value{}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d soilmeasurementdef.Declare
+					d.Initial.SoilMoistureMeasurementLimits = &soilmeasurementdef.MeasurementAccuracyStruct{MeasurementType: soilmeasurementdef.MeasurementTypeSoilMoisture, Measured: true, MinMeasuredValue: int64(0), MaxMeasuredValue: int64(100), AccuracyRanges: []soilmeasurementdef.MeasurementAccuracyRangeStruct{soilmeasurementdef.MeasurementAccuracyRangeStruct{RangeMin: int64(0), RangeMax: int64(100), PercentMax: new(uint16(100))}}}
+					d.Initial.Null = append(d.Initial.Null, soilmeasurementdef.AttrSoilMoistureMeasuredValue)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p soilmeasurementdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.SoilMoistureMeasuredValue = new(conv[uint8](v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, soilmeasurementdef.AttrSoilMoistureMeasuredValue)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, soilmeasurementdef.Wrap(b.server(soilmeasurementdef.ClusterID)).Set(p)
 				},
 			},
 		},
@@ -2298,9 +4203,9 @@ var rows = []Row{
 	},
 	{
 		ID: "sensor/no_device_type", Platform: "sensor",
-		When:   When{DeviceClass: []string{"absolute_humidity", "apparent_power", "aqi", "area", "blood_glucose_concentration", "carbon_dioxide", "carbon_monoxide", "conductivity", "data_rate", "data_size", "date", "distance", "duration", "energy_distance", "energy_storage", "enum", "frequency", "gas", "irradiance", "moisture", "monetary", "nitrogen_dioxide", "nitrogen_monoxide", "nitrous_oxide", "ozone", "ph", "pm1", "pm10", "pm25", "pm4", "power_factor", "precipitation", "precipitation_intensity", "radon", "reactive_energy", "reactive_power", "signal_strength", "sound_pressure", "speed", "sulphur_dioxide", "temperature_delta", "timestamp", "uptime", "volatile_organic_compounds", "volatile_organic_compounds_parts", "volume", "volume_flow_rate", "volume_storage", "water", "weight", "wind_direction", "wind_speed"}},
+		When:   When{DeviceClass: []string{"absolute_humidity", "aqi", "area", "blood_glucose_concentration", "conductivity", "data_rate", "data_size", "date", "distance", "duration", "energy_distance", "energy_storage", "enum", "gas", "irradiance", "monetary", "nitrogen_monoxide", "nitrous_oxide", "ph", "pm4", "precipitation", "precipitation_intensity", "reactive_energy", "signal_strength", "sound_pressure", "speed", "sulphur_dioxide", "temperature_delta", "timestamp", "uptime", "volume", "volume_storage", "water", "weight", "wind_direction", "wind_speed"}},
 		State:  eligibility.StateUnmappable,
-		Reason: "no Matter device type for a sensor of device_class {device_class} in H1",
+		Reason: "no Matter device type for a sensor of device_class {device_class}",
 		Cites:  []string{"go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},
 	},
 	{
@@ -2366,5 +4271,375 @@ var rows = []Row{
 		When:   When{},
 		State:  eligibility.StateUnmappable,
 		Reason: "no Matter counterpart for a text entity",
+	},
+	{
+		ID: "vacuum/robotic_vacuum_cleaner", Platform: "vacuum",
+		When:  When{Features: &Set{Any: []string{"START"}}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/robotic-vacuum-cleaner.element.ts:19-25 @862ad75f (RvcRunMode and RvcOperationalState mandatory)", "go-fabric cluster/spec/rvcrunmode/definition_gen.go:56-71,95-99,129-132,165-177,202,221-224 @v0.15.4 (ModeChangeStatus, ModeOptionStruct, ModeTagStruct, ModeTag Idle and Cleaning, ChangeToMode)", "go-fabric cluster/spec/rvcoperationalstate/definition_gen.go:40-45,66-84,155-165,188-191 @v0.15.4 (Pause, Resume, GoHome; ErrorStateEnum; OperationalStateEnum; OperationalStateStruct)", "go-fabric device/defaults_ports.go:30-33 @v0.15.4 (without its port a cluster keeps the generated server)", "home-assistant/core homeassistant/components/vacuum/const.py:30-38,53-69 @2026.10.3 (activities; PAUSE, RETURN_HOME, START)", "home-assistant/core homeassistant/components/vacuum/services.py:104-119 @2026.10.3 (start, pause, return_to_base)", "home-assistant-matter-hub packages/backend/src/matter/behaviors/rvc-run-mode-server.ts:20-23 @664575a (Idle 0, Cleaning 1)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/vacuum/behaviors/vacuum-rvc-operational-state-server.ts:78-161 @664575a (activities onto operational states; pause, resume as start, go home as return_to_base)", "go-ha-catalog data/mqtt.json:6284-6479 (vacuum schema)", "go-ha-catalog data/features.json:102-116 (vacuum feature flags)"},
+		Type:  &device.RoboticVacuumCleanerType,
+		Caveats: []Caveat{
+			{When: When{}, Reason: "the clean modes (fan speed) and the service areas are not mapped"},
+		},
+		Clusters: []Cluster{
+			{
+				Name: "RvcRunMode", ID: rvcrunmodedef.ClusterID,
+				Attributes: []Attr{
+					{Name: "CurrentMode", Value: Value{From: "state"}},
+				},
+				Initial: []Attr{
+					{Name: "SupportedModes", Value: Value{}},
+					{Name: "CurrentMode", Value: Value{Const: float64(0), HasConst: true}},
+				},
+				Commands: []Command{
+					{Kind: "handle", On: []string{"ChangeToMode"}, Method: "run_mode", Raw: &Value{Field: "NewMode"}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d rvcrunmodedef.Declare
+					d.Initial.SupportedModes = new([]rvcrunmodedef.ModeOptionStruct{rvcrunmodedef.ModeOptionStruct{Label: "Idle", Mode: uint8(0), ModeTags: []rvcrunmodedef.ModeTagStruct{rvcrunmodedef.ModeTagStruct{Value: rvcrunmodedef.ModeTagIdle}}}, rvcrunmodedef.ModeOptionStruct{Label: "Cleaning", Mode: uint8(1), ModeTags: []rvcrunmodedef.ModeTagStruct{rvcrunmodedef.ModeTagStruct{Value: rvcrunmodedef.ModeTagCleaning}}}})
+					d.Initial.CurrentMode = new(uint8(0))
+					d.HandleChangeToMode = func(_ context.Context, req rvcrunmodedef.ChangeToModeRequest) (resp rvcrunmodedef.ChangeToModeResponse, err error) {
+						f := func(name string) (any, bool) {
+							switch name {
+							case "NewMode":
+								return req.NewMode, true
+							}
+							return nil, false
+						}
+						handled := false
+						if slices.Contains([]uint8{uint8(0), uint8(1)}, req.NewMode) {
+							b.emit(ci, 0, f)
+							handled = true
+						}
+						if !handled {
+							resp = rvcrunmodedef.ChangeToModeResponse{Status: rvcrunmodedef.ModeChangeStatusUnsupportedMode}
+						}
+						return resp, err
+					}
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p rvcrunmodedef.Patch
+					n := 0
+					switch b.text(&st, ci, 0) {
+					case "cleaning":
+						p.CurrentMode = new(uint8(1))
+						n++
+					case "docked":
+						p.CurrentMode = new(uint8(0))
+						n++
+					case "error":
+						p.CurrentMode = new(uint8(0))
+						n++
+					case "idle":
+						p.CurrentMode = new(uint8(0))
+						n++
+					case "paused":
+						p.CurrentMode = new(uint8(1))
+						n++
+					case "returning":
+						p.CurrentMode = new(uint8(0))
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, rvcrunmodedef.Wrap(b.server(rvcrunmodedef.ClusterID)).Set(p)
+				},
+			},
+			{
+				Name: "RvcOperationalState", ID: rvcoperationalstatedef.ClusterID,
+				Attributes: []Attr{
+					{Name: "OperationalState", Value: Value{From: "state"}},
+				},
+				Initial: []Attr{
+					{Name: "OperationalStateList", Value: Value{}},
+					{Name: "OperationalState", Value: Value{Const: "OperationalStateStopped", HasConst: true}},
+					{Name: "OperationalError", Value: Value{}},
+				},
+				Commands: []Command{
+					{Kind: "handle", On: []string{"Pause"}, Method: "pause", Raw: &Value{Const: "PAUSE", HasConst: true}, When: &When{Features: &Set{Any: []string{"PAUSE"}}}},
+					{Kind: "handle", On: []string{"Resume"}, Method: "resume", Raw: &Value{Const: "START", HasConst: true}},
+					{Kind: "handle", On: []string{"GoHome"}, Method: "go_home", Raw: &Value{Const: "RETURN_TO_BASE", HasConst: true}, When: &When{Features: &Set{Any: []string{"RETURN_HOME"}}}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d rvcoperationalstatedef.Declare
+					d.Initial.OperationalStateList = new([]rvcoperationalstatedef.OperationalStateStruct{rvcoperationalstatedef.OperationalStateStruct{OperationalStateId: rvcoperationalstatedef.OperationalStateStopped}, rvcoperationalstatedef.OperationalStateStruct{OperationalStateId: rvcoperationalstatedef.OperationalStateRunning}, rvcoperationalstatedef.OperationalStateStruct{OperationalStateId: rvcoperationalstatedef.OperationalStatePaused}, rvcoperationalstatedef.OperationalStateStruct{OperationalStateId: rvcoperationalstatedef.OperationalStateError}, rvcoperationalstatedef.OperationalStateStruct{OperationalStateId: rvcoperationalstatedef.OperationalStateSeekingCharger}, rvcoperationalstatedef.OperationalStateStruct{OperationalStateId: rvcoperationalstatedef.OperationalStateCharging}, rvcoperationalstatedef.OperationalStateStruct{OperationalStateId: rvcoperationalstatedef.OperationalStateDocked}})
+					d.Initial.OperationalState = new(rvcoperationalstatedef.OperationalStateStopped)
+					d.Initial.OperationalError = &rvcoperationalstatedef.ErrorStateStruct{ErrorStateId: rvcoperationalstatedef.ErrorStateNoError}
+					if b.match(&When{Features: &Set{Any: []string{"PAUSE"}}}) {
+						d.HandlePause = func(_ context.Context, req rvcoperationalstatedef.PauseRequest) (resp rvcoperationalstatedef.OperationalCommandResponse, err error) {
+							f := func(string) (any, bool) { return nil, false }
+							if true {
+								b.emit(ci, 0, f)
+							}
+							return resp, err
+						}
+					}
+					d.HandleResume = func(_ context.Context, req rvcoperationalstatedef.ResumeRequest) (resp rvcoperationalstatedef.OperationalCommandResponse, err error) {
+						f := func(string) (any, bool) { return nil, false }
+						if true {
+							b.emit(ci, 1, f)
+						}
+						return resp, err
+					}
+					if b.match(&When{Features: &Set{Any: []string{"RETURN_HOME"}}}) {
+						d.HandleGoHome = func(_ context.Context, req rvcoperationalstatedef.GoHomeRequest) (resp rvcoperationalstatedef.OperationalCommandResponse, err error) {
+							f := func(string) (any, bool) { return nil, false }
+							if true {
+								b.emit(ci, 2, f)
+							}
+							return resp, err
+						}
+					}
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p rvcoperationalstatedef.Patch
+					n := 0
+					switch b.text(&st, ci, 0) {
+					case "cleaning":
+						p.OperationalState = new(rvcoperationalstatedef.OperationalStateRunning)
+						n++
+					case "docked":
+						p.OperationalState = new(rvcoperationalstatedef.OperationalStateDocked)
+						n++
+					case "error":
+						p.OperationalState = new(rvcoperationalstatedef.OperationalStateError)
+						n++
+					case "idle":
+						p.OperationalState = new(rvcoperationalstatedef.OperationalStateStopped)
+						n++
+					case "paused":
+						p.OperationalState = new(rvcoperationalstatedef.OperationalStatePaused)
+						n++
+					case "returning":
+						p.OperationalState = new(rvcoperationalstatedef.OperationalStateSeekingCharger)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, rvcoperationalstatedef.Wrap(b.server(rvcoperationalstatedef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
+		ID: "vacuum/unmapped", Platform: "vacuum",
+		When:   When{},
+		State:  eligibility.StateUnmappable,
+		Reason: "a vacuum without the START feature cannot be started from a run mode",
+		Cites:  []string{"go-ha-catalog data/mqtt.json:6284-6479 (vacuum schema)", "go-ha-catalog data/features.json:102-116 (vacuum feature flags)"},
+	},
+	{
+		ID: "valve/water_valve", Platform: "valve",
+		When:  When{},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/water-valve.element.ts:19 @862ad75f (ValveConfigurationAndControl mandatory)", "go-fabric cluster/spec/valveconfigurationandcontrol/definition_gen.go:30-46,117-119 @v0.15.4 (OpenDuration, RemainingDuration, CurrentState, TargetState; Open, Close; ValveStateEnum)", "go-fabric device/defaults_declared.go:137-149 @v0.15.4 (the kit's valve server needs a StateSource and serves no feature; without it the generated server)", "home-assistant/core homeassistant/components/valve/const.py:36-51 @2026.10.3 (OPEN, CLOSE, SET_POSITION; the states)", "home-assistant/core homeassistant/components/valve/services.py:22-31 @2026.10.3 (open_valve, close_valve)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/valve/index.ts:11-31 @664575a (WaterValve; opening and closing are Transitioning)", "go-ha-catalog data/mqtt.json:6480-6679 (valve schema)", "go-ha-catalog data/features.json:118-123 (valve feature flags)"},
+		Type:  &device.WaterValveType,
+		Caveats: []Caveat{
+			{When: When{Features: &Set{Any: []string{"SET_POSITION"}}}, Reason: "the valve's position is not mapped: go-fabric's valve server serves no Level feature"},
+		},
+		Clusters: []Cluster{
+			{
+				Name: "ValveConfigurationAndControl", ID: valveconfigurationandcontroldef.ClusterID,
+				Attributes: []Attr{
+					{Name: "CurrentState", Value: Value{From: "state"}},
+					{Name: "TargetState", Value: Value{From: "state"}},
+				},
+				Commands: []Command{
+					{Kind: "handle", On: []string{"Open"}, Method: "open_valve", Raw: &Value{Const: "OPEN", HasConst: true}},
+					{Kind: "handle", On: []string{"Close"}, Method: "close_valve", Raw: &Value{Const: "CLOSE", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d valveconfigurationandcontroldef.Declare
+					d.Initial.Null = append(d.Initial.Null, valveconfigurationandcontroldef.AttrOpenDuration)
+					d.Initial.Null = append(d.Initial.Null, valveconfigurationandcontroldef.AttrRemainingDuration)
+					d.Initial.Null = append(d.Initial.Null, valveconfigurationandcontroldef.AttrCurrentState)
+					d.Initial.Null = append(d.Initial.Null, valveconfigurationandcontroldef.AttrTargetState)
+					d.HandleOpen = func(_ context.Context, req valveconfigurationandcontroldef.OpenRequest) (resp struct{}, err error) {
+						f := func(string) (any, bool) { return nil, false }
+						if true {
+							b.emit(ci, 0, f)
+						}
+						return resp, err
+					}
+					d.HandleClose = func(_ context.Context, req valveconfigurationandcontroldef.CloseRequest) (resp struct{}, err error) {
+						f := func(string) (any, bool) { return nil, false }
+						if true {
+							b.emit(ci, 1, f)
+						}
+						return resp, err
+					}
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p valveconfigurationandcontroldef.Patch
+					n := 0
+					switch b.text(&st, ci, 0) {
+					case "closed":
+						p.CurrentState = new(valveconfigurationandcontroldef.ValveStateClosed)
+						n++
+					case "closing":
+						p.CurrentState = new(valveconfigurationandcontroldef.ValveStateTransitioning)
+						n++
+					case "open":
+						p.CurrentState = new(valveconfigurationandcontroldef.ValveStateOpen)
+						n++
+					case "opening":
+						p.CurrentState = new(valveconfigurationandcontroldef.ValveStateTransitioning)
+						n++
+					}
+					switch b.text(&st, ci, 1) {
+					case "closed":
+						p.TargetState = new(valveconfigurationandcontroldef.ValveStateClosed)
+						n++
+					case "closing":
+						p.TargetState = new(valveconfigurationandcontroldef.ValveStateClosed)
+						n++
+					case "open":
+						p.TargetState = new(valveconfigurationandcontroldef.ValveStateOpen)
+						n++
+					case "opening":
+						p.TargetState = new(valveconfigurationandcontroldef.ValveStateOpen)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, valveconfigurationandcontroldef.Wrap(b.server(valveconfigurationandcontroldef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
+		ID: "water_heater/thermostat", Platform: "water_heater",
+		When:  When{},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/thermostat-device.element.ts:25 @862ad75f (Thermostat mandatory)", "matter.js packages/model/src/standard/elements/temperature.element.ts:12 @862ad75f (the temperature datatype, int16 in 0.01 degC)", "home-assistant/core homeassistant/components/water_heater/__init__.py:146-151,164-182,187-219 @2026.10.3 (the state is the operation mode; min_temp, max_temp; current_temperature, temperature)", "home-assistant/core homeassistant/components/water_heater/const.py:53-58 @2026.10.3 (the operation states eco, electric, performance, high_demand, heat_pump, gas)", "home-assistant/core homeassistant/const.py:299-300 @2026.10.3 (on, off)", "home-assistant/core homeassistant/components/water_heater/services.py:78-100 @2026.10.3 (turn_on, turn_off, set_temperature, set_operation_mode)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/water-heater/index.ts:14-20,34-45 @664575a (a heating-only Thermostat with the entity's limits)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/water-heater/behaviors/water-heater-thermostat-server.ts:46-81 @664575a (off is Off, else Heat; off to set_operation_mode, else turn_on; the setpoint to set_temperature)", "go-ha-catalog data/mqtt.json:6680-6900 (water_heater schema; min_temp, max_temp at 6770-6789)", "go-ha-catalog data/features.json:124-129 (water_heater feature flags)"},
+		Type:  &device.ThermostatType,
+		Caveats: []Caveat{
+			{When: When{}, Reason: "operation modes other than off are all SystemMode Heat; the WaterHeater device type (modes, boost) is not mapped yet"},
+		},
+		Clusters: []Cluster{
+			{
+				Name: "Thermostat", ID: thermostatdef.ClusterID,
+				Features: []Feature{{Name: "Heating", When: nil}},
+				Attributes: []Attr{
+					{Name: "LocalTemperature", Value: Value{From: "state.current_temperature", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}},
+					{Name: "OccupiedHeatingSetpoint", Value: Value{From: "state.temperature", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}},
+					{Name: "SystemMode", Value: Value{From: "state"}},
+				},
+				Initial: []Attr{
+					{Name: "ControlSequenceOfOperation", Value: Value{Const: "ControlSequenceOfOperationHeatingOnly", HasConst: true}},
+					{Name: "AbsMinHeatSetpointLimit", Value: Value{From: "extra.min_temp", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}},
+					{Name: "MinHeatSetpointLimit", Value: Value{From: "extra.min_temp", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}},
+					{Name: "AbsMaxHeatSetpointLimit", Value: Value{From: "extra.max_temp", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}},
+					{Name: "MaxHeatSetpointLimit", Value: Value{From: "extra.max_temp", Units: map[string]Linear{"°C": {Offset: 0, Scale: 100, Add: 0}, "°F": {Offset: -32, Scale: 55.55555555555556, Add: 0}}, DefaultUnit: "°C"}},
+				},
+				Commands: []Command{
+					{Kind: "write", On: []string{"SystemMode"}, Method: "operation_mode", Raw: &Value{Field: "SystemMode", Enum: map[int64]string{int64(thermostatdef.SystemModeHeat): "on", int64(thermostatdef.SystemModeOff): "off"}}},
+					{Kind: "write", On: []string{"OccupiedHeatingSetpoint"}, Method: "temperature", Raw: &Value{Field: "OccupiedHeatingSetpoint", Units: map[string]Linear{"°C": {Offset: 0, Scale: 0.01, Add: 0}, "°F": {Offset: 0, Scale: 0.018, Add: 32}}, DefaultUnit: "°C", Digits: 1}},
+					{Kind: "change", On: []string{"OccupiedHeatingSetpoint"}, Method: "temperature", Raw: &Value{Field: "OccupiedHeatingSetpoint", Units: map[string]Linear{"°C": {Offset: 0, Scale: 0.01, Add: 0}, "°F": {Offset: 0, Scale: 0.018, Add: 32}}, DefaultUnit: "°C", Digits: 1}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d thermostatdef.Declare
+					d.Features |= thermostatdef.FeatureHeating
+					d.Initial.ControlSequenceOfOperation = new(thermostatdef.ControlSequenceOfOperationHeatingOnly)
+					if v, ok := b.number(nil, ci, 1); ok {
+						d.Initial.AbsMinHeatSetpointLimit = new(conv[int16](v))
+					}
+					if v, ok := b.number(nil, ci, 2); ok {
+						d.Initial.MinHeatSetpointLimit = new(conv[int16](v))
+					}
+					if v, ok := b.number(nil, ci, 3); ok {
+						d.Initial.AbsMaxHeatSetpointLimit = new(conv[int16](v))
+					}
+					if v, ok := b.number(nil, ci, 4); ok {
+						d.Initial.MaxHeatSetpointLimit = new(conv[int16](v))
+					}
+					d.OnWrite = func(_ context.Context, next thermostatdef.State, attrID uint32) error {
+						f := func(name string) (any, bool) {
+							switch name {
+							case "OccupiedHeatingSetpoint":
+								return next.OccupiedHeatingSetpoint, true
+							case "SystemMode":
+								return next.SystemMode, true
+							}
+							return nil, false
+						}
+						if slices.Contains([]uint32{thermostatdef.AttrSystemMode}, attrID) && slices.Contains([]thermostatdef.SystemModeEnum{thermostatdef.SystemModeOff, thermostatdef.SystemModeHeat}, next.SystemMode) {
+							b.emit(ci, 0, f)
+						}
+						if slices.Contains([]uint32{thermostatdef.AttrOccupiedHeatingSetpoint}, attrID) && true {
+							b.emit(ci, 1, f)
+						}
+						return nil
+					}
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p thermostatdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.LocalTemperature = new(conv[int16](v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, thermostatdef.AttrLocalTemperature)
+						n++
+					}
+					if v, ok := b.number(&st, ci, 1); ok {
+						p.OccupiedHeatingSetpoint = new(conv[int16](v))
+						n++
+					}
+					switch b.text(&st, ci, 2) {
+					case "eco":
+						p.SystemMode = new(thermostatdef.SystemModeHeat)
+						n++
+					case "electric":
+						p.SystemMode = new(thermostatdef.SystemModeHeat)
+						n++
+					case "gas":
+						p.SystemMode = new(thermostatdef.SystemModeHeat)
+						n++
+					case "heat_pump":
+						p.SystemMode = new(thermostatdef.SystemModeHeat)
+						n++
+					case "high_demand":
+						p.SystemMode = new(thermostatdef.SystemModeHeat)
+						n++
+					case "off":
+						p.SystemMode = new(thermostatdef.SystemModeOff)
+						n++
+					case "on":
+						p.SystemMode = new(thermostatdef.SystemModeHeat)
+						n++
+					case "performance":
+						p.SystemMode = new(thermostatdef.SystemModeHeat)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, thermostatdef.Wrap(b.server(thermostatdef.ClusterID)).Set(p)
+				},
+				watch: func(b *binding, ci int) func() {
+					return b.target.OnChanged(thermostatdef.ClusterID, func(c contract.Change) {
+						st := thermostatdef.Wrap(b.server(thermostatdef.ClusterID)).Get()
+						f := func(name string) (any, bool) {
+							switch name {
+							case "OccupiedHeatingSetpoint":
+								return st.OccupiedHeatingSetpoint, true
+							}
+							return nil, false
+						}
+						if changed(c, thermostatdef.AttrOccupiedHeatingSetpoint) && true {
+							b.emit(ci, 2, f)
+						}
+					})
+				},
+			},
+		},
 	},
 }

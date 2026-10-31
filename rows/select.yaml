@@ -1,5 +1,18 @@
+# Home Assistant's select: its options become ModeSelect's modes, its
+# state the current mode, a controller's ChangeToMode the select_option
+# service with the chosen option.
 platform: select
 rows:
-  - id: unmapped
+  - id: mode_select
     when: {}
-    verdict: "unmappable: no generic Matter counterpart for a select entity in H1 (ModeSelect from its options is H2)"
+    type: ModeSelect
+    verdict: mappable
+    cites:
+      - matter.js packages/model/src/standard/elements/mode-select-device.element.ts:18 @862ad75f (ModeSelect mandatory)
+      - go-fabric cluster/spec/modeselect/definition_gen.go:30-40,54-58 @v0.15.4 (SupportedModes, CurrentMode, ChangeToMode; ModeOptionStruct)
+      - home-assistant/core homeassistant/components/select/__init__.py:108-122 @2026.10.3 (options capability; state is the current option)
+      - home-assistant/core homeassistant/components/select/services.py:42-46 @2026.10.3 (select_option with option)
+      - home-assistant-matter-hub packages/backend/src/matter/behaviors/mode-select-server.ts:10-16 @664575a (the option's 0-based index is the mode)
+    clusters:
+      - cluster: ModeSelect
+        options: {list: desc.options, current: state, method: select_option}

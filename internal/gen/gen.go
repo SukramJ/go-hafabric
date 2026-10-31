@@ -13,6 +13,7 @@ package gen
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"go/format"
 	"reflect"
@@ -54,6 +55,16 @@ func Table(files []rowfile.File) string {
 				}
 				if len(fs) > 0 {
 					name += " (" + strings.Join(fs, ", ") + ")"
+				}
+				for _, e := range c.Events {
+					var es []string
+					for _, x := range e.Emit {
+						es = append(es, x.Event)
+					}
+					name += " [on " + e.On + ": " + strings.Join(es, ", ") + "]"
+				}
+				if o := c.Options; o != nil {
+					name += " [options " + o.List + " at " + o.Current + " to " + o.Method + "]"
 				}
 				cs = append(cs, name)
 			}
@@ -687,7 +698,10 @@ func (g *gen) cluster(w *bytes.Buffer, c *rowfile.Cluster, d def) error {
 	if err := g.declare(w, c, d); err != nil {
 		return err
 	}
-	if len(c.Attributes) > 0 {
+	if c.Options != nil {
+		fmt.Fprintf(w, "Options: &OptionList{List: %q, Current: %q, Method: %q},\n", c.Options.List, c.Options.Current, c.Options.Method)
+	}
+	if len(c.Attributes) > 0 || c.Options != nil {
 		if err := g.apply(w, c, d); err != nil {
 			return err
 		}
@@ -697,7 +711,45 @@ func (g *gen) cluster(w *bytes.Buffer, c *rowfile.Cluster, d def) error {
 			return err
 		}
 	}
+	if len(c.Events) > 0 {
+		if err := g.events(w, c, d); err != nil {
+			return err
+		}
+	}
 	w.WriteString("},\n")
+	return nil
+}
+
+// events emits the cluster's events and the fire closure that emits them
+// through the typed server's Emit<Event>.
+func (g *gen) events(w *bytes.Buffer, c *rowfile.Cluster, d def) error {
+	var body bytes.Buffer
+	w.WriteString("Events: []Event{\n")
+	for i := range c.Events {
+		e := &c.Events[i]
+		names := make([]string, 0, len(e.Emit))
+		fmt.Fprintf(&body, "case %d:\n", i)
+		for _, x := range e.Emit {
+			m, ok := d.server.MethodByName("Emit" + x.Event)
+			if !ok || m.Type.NumIn() != 3 || m.Type.NumOut() != 1 {
+				return fmt.Errorf("event %q: %s has none", x.Event, d.name)
+			}
+			lit := map[string]any{}
+			for k, v := range x.Literal {
+				lit[k] = v
+			}
+			data, err := g.literal(m.Type.In(2), lit)
+			if err != nil {
+				return fmt.Errorf("event %s: %w", x.Event, err)
+			}
+			fmt.Fprintf(&body, "if err := s.Emit%s(endpoint, %s); err != nil {\nreturn err\n}\n", x.Event, data)
+			names = append(names, x.Event)
+		}
+		fmt.Fprintf(w, "{On: %q, Emit: %s},\n", e.On, strs(names))
+	}
+	w.WriteString("},\n")
+	fmt.Fprintf(w, "fire: func(b *binding, ei int, endpoint uint16) error {\ns := %s.Wrap(b.server(%s.ClusterID))\nswitch ei {\n%s}\nreturn nil\n},\n",
+		d.alias, d.alias, body.String())
 	return nil
 }
 
@@ -954,6 +1006,13 @@ func (g *gen) declare(w *bytes.Buffer, c *rowfile.Cluster, d def) error {
 	if err := g.onWrite(&body, c, d); err != nil {
 		return err
 	}
+	if c.Options != nil {
+		m, ok := materializers[d.name]
+		if !ok {
+			return fmt.Errorf("options: %s has no materializer", d.name)
+		}
+		fmt.Fprintf(&body, "b.options%s(&d, ci)\n", m)
+	}
 	fmt.Fprintf(w, "declare: func(b *binding, ci int) device.Declaration {\nvar d %s.Declare\n%sreturn d\n},\n", alias, body.String())
 	return nil
 }
@@ -1079,13 +1138,27 @@ func (g *gen) handlers(w *bytes.Buffer, c *rowfile.Cluster, d def) error {
 			guard = strings.Join(conds, " || ")
 			fmt.Fprintf(w, "if %s {\n", guard)
 		}
+		otherwise, err := g.otherwise(f.Type.Out(0), cmds)
+		if err != nil {
+			return fmt.Errorf("handle %s: %w", h, err)
+		}
 		fmt.Fprintf(w, "d.Handle%s = func(_ context.Context, req %s) (resp %s, err error) {\nf := %s\n", h, req, resp, fn)
+		if otherwise != "" {
+			w.WriteString("handled := false\n")
+		}
 		for _, i := range byName[h] {
 			cond, err := g.cond(d, &c.Commands[i], "req")
 			if err != nil {
 				return err
 			}
-			fmt.Fprintf(w, "if %s {\nb.emit(ci, %d, f)\n}\n", cond, i)
+			mark := ""
+			if otherwise != "" {
+				mark = "\nhandled = true"
+			}
+			fmt.Fprintf(w, "if %s {\nb.emit(ci, %d, f)%s\n}\n", cond, i, mark)
+		}
+		if otherwise != "" {
+			fmt.Fprintf(w, "if !handled {\nresp = %s\n}\n", otherwise)
 		}
 		w.WriteString("return resp, err\n}\n")
 		if guard != "" {
@@ -1093,6 +1166,28 @@ func (g *gen) handlers(w *bytes.Buffer, c *rowfile.Cluster, d def) error {
 		}
 	}
 	return nil
+}
+
+// otherwise is the response literal of a handler's commands' otherwise
+// ("" for none); the commands of one handler state at most one.
+func (g *gen) otherwise(resp reflect.Type, cmds []*rowfile.Command) (string, error) {
+	var lit map[string]any
+	for _, c := range cmds {
+		if c.Otherwise == nil {
+			continue
+		}
+		if lit != nil {
+			return "", errors.New("otherwise twice")
+		}
+		lit = c.Otherwise
+	}
+	if lit == nil {
+		return "", nil
+	}
+	if resp.Kind() != reflect.Struct || resp.NumField() == 0 {
+		return "", fmt.Errorf("otherwise: the response %s has no fields", resp)
+	}
+	return g.literal(resp, lit)
 }
 
 func (g *gen) onWrite(w *bytes.Buffer, c *rowfile.Cluster, d def) error {
@@ -1142,6 +1237,9 @@ func (g *gen) apply(w *bytes.Buffer, c *rowfile.Cluster, d def) error {
 			return err
 		}
 	}
+	if c.Options != nil {
+		fmt.Fprintf(&body, "n += b.options%sApply(&p, &st, ci)\n", materializers[d.name])
+	}
 	fmt.Fprintf(w, "apply: func(b *binding, ci int, st model.State) (any, error) {\nvar p %s.Patch\nn := 0\n%sif n == 0 {\nreturn nil, nil\n}\nreturn p, %s.Wrap(b.server(%s.ClusterID)).Set(p)\n},\n",
 		d.alias, body.String(), d.alias, d.alias)
 	return nil
@@ -1190,6 +1288,14 @@ func (g *gen) watch(w *bytes.Buffer, c *rowfile.Cluster, d def) error {
 	fmt.Fprintf(w, "watch: func(b *binding, ci int) func() {\nreturn b.target.OnChanged(%s.ClusterID, func(c contract.Change) {\n%sf := %s\n%s})\n},\n",
 		d.alias, get, fn, body.String())
 	return nil
+}
+
+// materializers are the clusters whose options a Go materializer of the
+// root package turns into attributes and a command handler (options.go:
+// b.options<Name> fills the declaration, b.options<Name>Apply the patch
+// of a state).
+var materializers = map[string]string{
+	"ModeSelect": "ModeSelect",
 }
 
 // Commands lists the command kinds a row may use, for the docs.

@@ -6,6 +6,91 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-31
+
+The roadmap rows R1–R5 (go-ha2fabric `docs/roadmap.md`), brief R1–R5:
+sensors, buttons, events, selects, climate, vacuum, valve, water heater,
+media player, and the row format's `events`, `options` and `otherwise`.
+
+### Added
+
+- The row format's `events` on a cluster: events emitted through the
+  cluster's typed server (`<cluster>def.Server.Emit<Event>`) when a value
+  of the entity changes; `Patch.Events` reports them.
+- The row format's `options` on a cluster: a list of the entity
+  (`desc.options` or `extra.<key>`) a materializer turns into the cluster's
+  attributes and command — ModeSelect's modes.
+  `OptionList` is the runtime form, `Row.Clusters[].Options`.
+- select: a ModeSelect from the entity's options (`select/mode_select`).
+- sensor: carbon_dioxide, carbon_monoxide, pm1, pm25, pm10,
+  volatile_organic_compounds(_parts), nitrogen_dioxide, ozone and radon
+  as an AirQualitySensor with the class's concentration cluster; a class
+  with ratio and mass units keeps the unit's family on the wire
+  (`MeasurementUnit` by the entity's unit), no molar mass is assumed.
+- sensor: apparent_power, reactive_power, frequency and power_factor as an
+  ElectricalSensor (ApparentPower mVA, ReactivePower mVAR, Frequency mHz,
+  PowerFactor in 1/100 %; a power factor without a unit is a ratio).
+- sensor: volume_flow_rate as a FlowSensor (0.1 m³/h), moisture as a
+  SoilSensor; binary_sensor: cold as a WaterFreezeDetector.
+- button: an OnOffPlugInUnit whose On presses the button (`press`), its
+  OnOff always off.
+- event: a GenericSwitch (MomentarySwitch, MomentarySwitchRelease) whose
+  every new event is a short press (InitialPress, ShortRelease); partial
+  until long and multi presses are read from the event type.
+- climate: a RoomAirConditioner for an entity with FAN_MODE, TURN_ON and
+  TURN_OFF — OnOff (`turn_on`, `turn_off`), the thermostat's Thermostat,
+  FanControl from `fan_mode` (writes of FanMode and of PercentSetting by
+  bands go to `fan_mode`) and RelativeHumidityMeasurement from
+  `current_humidity`.
+- vacuum: a RoboticVacuumCleaner for an entity with START — RvcRunMode
+  Idle/Cleaning (`run_mode`), RvcOperationalState from the activity
+  (`pause`, `resume`, `go_home`), on the clusters' generated servers.
+- valve: a WaterValve — CurrentState and TargetState from the state,
+  Open and Close to `open_valve` and `close_valve`, on the generated
+  server; a position is a caveat.
+- water_heater: a heating-only Thermostat — SystemMode Off for `off`, Heat
+  for every other operation mode (writes to `operation_mode` with `off` or
+  `on`), the setpoint to `temperature`, the limits from min_temp and
+  max_temp.
+- media_player: a tv is a BasicVideoPlayer (OnOff, MediaPlayback with
+  `media_play`, `media_pause`, `media_stop`, KeypadInput's Power and volume
+  keys to `key`); every other player a Speaker — OnOff from the power
+  (`turn_on`, `turn_off`) or, without it, from the mute (`volume_mute`),
+  LevelControl from `volume_level` (writes to `volume_level`, 0 to 254).
+- The row format's `otherwise` on a handled command: the handler's
+  response when none of its commands' `if` holds (RvcRunMode's
+  UnsupportedMode, KeypadInput's UnsupportedKey).
+- Method constants for the new methods: `MethodPress`, `MethodSelectOption`,
+  `MethodTurnOn`, `MethodTurnOff`, `MethodFanMode`, `MethodRunMode`,
+  `MethodPause`, `MethodResume`, `MethodGoHome`, `MethodOpenValve`,
+  `MethodCloseValve`, `MethodOperationMode`, `MethodVolumeMute`,
+  `MethodVolumeLevel`, `MethodMediaPlay`, `MethodMediaPause`,
+  `MethodMediaStop`, `MethodKey`.
+- `docs/by_design.md`: a switch is a plug-in unit, a moisture sensor a
+  SoilSensor, a button a plug-in unit, a select's mode its option's index.
+
+### Changed
+
+- go-fabric v0.15.4, go-hamqtt v0.39.0.
+- The unmappable verdicts of `sensor/no_device_type` and
+  `binary_sensor/no_device_type` no longer say "in H1" and list only the
+  classes no row maps; `number/unmapped` no longer says "in H1".
+- `climate/thermostat`'s caveats no longer say "in H1"; the preset caveat
+  names go-fabric's setpoint requirement, the fan caveat the missing
+  turn_on and turn_off.
+- `TestSensorUnitsAreTheCatalogs` holds the catalog's null unit as the
+  units key "" instead of dropping it.
+
+### Note for consumers
+
+- go-ha2fabric translates the new methods into Home Assistant service
+  calls: `press`, `select_option` (the option), `turn_on`/`turn_off`,
+  `fan_mode` (the fan mode's name), `run_mode` (`0` idle, `1` cleaning),
+  `pause`, `resume`, `go_home`, `open_valve`, `close_valve`,
+  `operation_mode` (`off` or `on`), `volume_mute` (`true`/`false`),
+  `volume_level` (0 to 254), `media_play`, `media_pause`, `media_stop`,
+  `key` (the CEC key code: 64 power, 65 volume up, 66 volume down, 67 mute).
+
 ## [0.2.1] - 2026-10-26
 
 The verbatim name of go-ha2fabric's H3 report (Q3), brief F1.

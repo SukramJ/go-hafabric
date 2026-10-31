@@ -1,5 +1,21 @@
+# Home Assistant's button: an action target. Its state is the timestamp of
+# the last press; a controller's On presses it.
 platform: button
 rows:
-  - id: unmapped
+  - id: plug
     when: {}
-    verdict: "unmappable: no generic Matter counterpart for a button entity in H1"
+    type: OnOffPlugInUnit
+    verdict: mappable
+    cites:
+      - matter.js packages/model/src/standard/elements/on-off-plug-in-unit.element.ts:27-31 @862ad75f (OnOff mandatory, feature LT)
+      - home-assistant/core homeassistant/components/button/__init__.py:101-106 @2026.10.3 (the state is the last press's timestamp)
+      - home-assistant/core homeassistant/components/button/services.py:11-15 @2026.10.3 (press, no fields)
+      - home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/button/index.ts:22-49 @664575a (OnOffPlugInUnit; On presses, OnOff returns to off)
+    clusters:
+      - cluster: OnOff
+        attributes:
+          - {attribute: OnOff, const: false}
+        commands:
+          - handle: "On"
+            method: press
+            raw: {const: PRESS}

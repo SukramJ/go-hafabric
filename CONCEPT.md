@@ -79,6 +79,21 @@ validator of go-fabric judges every generated declaration.
   or names, `modes`, `preset_modes`); a row's predicate and its feature
   conditions read them, so a cover without position declares no
   PositionAwareLift and a light without colour is a DimmableLight.
+- Decided in R1–R5: a cluster may carry `events` — events emitted through
+  the typed server's `Emit<Event>` when a value of the entity changes
+  (Home Assistant's event entity as a GenericSwitch press). The first
+  value only sets the baseline.
+- Decided in R1–R5: a cluster may carry `options` — a list of the entity
+  (a select's options) that a cluster-specific Go materializer
+  (`options.go`) turns into the cluster's attributes and command. A
+  materializer is code, not data, because the list's length is the
+  entity's; ModeSelect has one. Thermostat presets were planned as the
+  second and wait for go-fabric: its Thermostat server requires setpoints
+  on every preset (`cluster/thermo/presets.go:246-257` at v0.15.4), which a
+  Home Assistant preset mode does not carry.
+- Decided in R1–R5: a handled command may carry `otherwise`, the
+  handler's response when none of its commands' `if` holds (RvcRunMode's
+  UnsupportedMode, KeypadInput's UnsupportedKey).
 - Open: the import boundary. H1 imports `device`, `contract`, `schema`,
   `eligibility` and the `<cluster>def` packages, not `node` (brief H1 hard
   rule 1); a daemon adds the built devices to its own node.

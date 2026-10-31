@@ -1,0 +1,128 @@
+# Home Assistant's media_player: a tv is a BasicVideoPlayer, every other
+# one a Speaker. The state is the player's (off, on, idle, playing,
+# paused, standby, buffering); is_volume_muted and volume_level are keys
+# of the state. Commands go to the entity's named methods: turn_on,
+# turn_off, volume_mute (true or false), volume_level (the level 0 to 254),
+# media_play, media_pause, media_stop and key (a CEC key code).
+platform: media_player
+cites:
+  - go-ha-catalog data/features.json:61-83 (media_player feature flags)
+  - home-assistant/core homeassistant/components/media_player/const.py:69-84,196-230 @2026.10.3 (the states, the feature flags, the device classes)
+rows:
+  - id: video_player
+    when: {device_class: [tv]}
+    type: BasicVideoPlayer
+    verdict: mappable
+    caveats:
+      - when: {}
+        reason: "the volume is reached through KeypadInput's VolumeUp, VolumeDown and Mute keys only; sources and tracks are not mapped"
+    cites:
+      - matter.js packages/model/src/standard/elements/basic-video-player.element.ts:22,27,30 @862ad75f (OnOff, MediaPlayback and KeypadInput mandatory)
+      - go-fabric cluster/spec/mediaplayback/definition_gen.go:45-48,169-172,192-197,425-428 @v0.15.4 (Play, Pause, Stop; PlaybackStateEnum; StatusEnum; PlaybackResponse)
+      - go-fabric cluster/spec/keypadinput/definition_gen.go:95-98,238-240,253-255,272-274 @v0.15.4 (Power, VolumeUp, VolumeDown, Mute; StatusEnum; SendKey)
+      - go-fabric device/defaults_media.go:63-72 @v0.15.4 (the kit's media servers need their ports; without them the generated servers)
+      - home-assistant/core homeassistant/components/media_player/services.py:125-163 @2026.10.3 (turn_on, turn_off, toggle, volume_up, volume_down, media_play, media_pause, media_stop)
+      - home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/media-player/index.ts:24-39 @664575a (device_class tv is a video player)
+      - home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/media-player/behaviors/media-player-media-playback-server.ts:17-63 @664575a (the playback states and commands)
+      - home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/media-player/behaviors/media-player-keypad-input-server.ts:42-130 @664575a (keys onto services)
+    clusters:
+      - cluster: OnOff
+        attributes:
+          - {attribute: OnOff, from: state, enum: {"off": false, standby: false, "on": true, idle: true, playing: true, paused: true, buffering: true}}
+        commands:
+          - handle: "On"
+            when: &power {features: {all: [TURN_ON, TURN_OFF]}}
+            method: turn_on
+            raw: {const: "ON"}
+          - handle: "Off"
+            when: *power
+            method: turn_off
+            raw: {const: "OFF"}
+      - cluster: MediaPlayback
+        initial:
+          - {attribute: CurrentState, const: PlaybackStateNotPlaying}
+        attributes:
+          - {attribute: CurrentState, from: state, enum: {playing: PlaybackStatePlaying, paused: PlaybackStatePaused, buffering: PlaybackStateBuffering, idle: PlaybackStateNotPlaying, "on": PlaybackStateNotPlaying, "off": PlaybackStateNotPlaying, standby: PlaybackStateNotPlaying}}
+        commands:
+          - handle: Play
+            method: media_play
+            raw: {const: PLAY}
+          - handle: Pause
+            method: media_pause
+            raw: {const: PAUSE}
+          - handle: Stop
+            method: media_stop
+            raw: {const: STOP}
+      - cluster: KeypadInput
+        commands:
+          - handle: SendKey
+            if: {field: KeyCode, in: [CecKeyCodePower, CecKeyCodeVolumeUp, CecKeyCodeVolumeDown, CecKeyCodeMute]}
+            method: key
+            raw: {field: KeyCode}
+            otherwise: {Status: StatusUnsupportedKey}
+  - id: speaker
+    when: {features: {all: [TURN_ON, TURN_OFF]}}
+    type: Speaker
+    verdict: mappable
+    cites: &speaker_cites
+      - matter.js packages/model/src/standard/elements/speaker.element.ts:18-19 @862ad75f (OnOff and LevelControl mandatory)
+      - go-fabric cluster/spec/levelcontrol/values.go:19-44 @v0.15.4 (levels 0 to 254, a unit value times 254)
+      - home-assistant/core homeassistant/components/media_player/__init__.py:334,362-364,379-381 @2026.10.3 (volume_level 0 to 1, is_volume_muted)
+      - home-assistant/core homeassistant/components/media_player/services.py:125-130,182-203 @2026.10.3 (turn_on, turn_off, volume_set, volume_mute)
+      - home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/media-player/index.ts:41-91 @664575a (a Speaker; power with TURN_ON and TURN_OFF, else mute as OnOff; VolumeSet as LevelControl)
+      - home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/media-player/behaviors/media-player-power-on-off-server.ts:8-16 @664575a (off and standby are off)
+      - home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/media-player/behaviors/media-player-on-off-server.ts:8-17 @664575a (OnOff is not muted)
+    clusters:
+      - cluster: OnOff
+        attributes:
+          - {attribute: OnOff, from: state, enum: {"off": false, standby: false, "on": true, idle: true, playing: true, paused: true, buffering: true}}
+        commands:
+          - handle: "On"
+            method: turn_on
+            raw: {const: "ON"}
+          - handle: "Off"
+            method: turn_off
+            raw: {const: "OFF"}
+      - &volume
+        cluster: LevelControl
+        start_null: [CurrentLevel]
+        attributes:
+          - {attribute: CurrentLevel, from: state.volume_level, scale: 254, min: 0, max: 254}
+        commands:
+          - change: [CurrentLevel]
+            when: {features: {any: [VOLUME_SET]}}
+            method: volume_level
+            raw: {field: CurrentLevel}
+  - id: speaker_mute
+    when: {features: {any: [VOLUME_MUTE]}}
+    type: Speaker
+    verdict: mappable
+    cites: *speaker_cites
+    clusters:
+      - cluster: OnOff
+        attributes:
+          - {attribute: OnOff, from: state.is_volume_muted, enum: {"on": false, "off": true}}
+        commands:
+          - handle: "On"
+            method: volume_mute
+            raw: {const: false}
+          - handle: "Off"
+            method: volume_mute
+            raw: {const: true}
+      - *volume
+  - id: speaker_volume
+    when: {features: {any: [VOLUME_SET]}}
+    type: Speaker
+    verdict: mappable
+    caveats:
+      - when: {}
+        reason: "without turn_on and turn_off or volume_mute the Speaker's OnOff only shows the state"
+    cites: *speaker_cites
+    clusters:
+      - cluster: OnOff
+        attributes:
+          - {attribute: OnOff, from: state, enum: {"off": false, standby: false, "on": true, idle: true, playing: true, paused: true, buffering: true}}
+      - *volume
+  - id: unmapped
+    when: {}
+    verdict: "unmappable: a media player without turn_on and turn_off, volume_mute or volume_set has nothing a Speaker serves"

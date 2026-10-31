@@ -27,6 +27,7 @@ rows:
         commands:
           - handle: LockDoor
             raw: {const: LOCK}
+
           - write: [ActuatorEnabled]
             if: {field: ActuatorEnabled, in: ["true"]}
             raw: {field: LockState, enum: {LockStateLocked: locked}}
@@ -34,6 +35,9 @@ rows:
             if: {field: LockState, not_in: [LockStateLocked]}
             method: m
             json: {a.b: {field: ActuatorEnabled, enum: {"true": "on"}}}
+        events:
+          - on: state
+            emit: [{event: DoorLockAlarm, literal: {AlarmCode: AlarmCodeLockJammed}}]
 `
 
 func generate(t *testing.T, src string) error {
@@ -63,6 +67,9 @@ func TestGenerateRefuses(t *testing.T) {
 		"command field":     {"raw: {const: LOCK}", "raw: {field: Nope}"},
 		"write veto field":  {"write: [ActuatorEnabled]", "write: [Nope]"},
 		"change attribute":  {"change: [LockState]", "change: [Nope]"},
+		"event":             {"event: DoorLockAlarm", "event: Explosion"},
+		"event field":       {"literal: {AlarmCode: AlarmCodeLockJammed}", "literal: {Nope: 1}"},
+		"no materializer":   {"        events:\n", "        options: {list: desc.options, current: state, method: m}\n        events:\n"},
 		"part type":         {"    clusters:\n      - cluster: DoorLock", "    parts: [{type: Toaster}]\n    clusters:\n      - cluster: DoorLock"},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -78,6 +85,85 @@ func TestGenerateRefuses(t *testing.T) {
 	if err := generate(t, base); err != nil {
 		t.Fatalf("the base: %v", err)
 	}
+}
+
+func TestGenerateOptions(t *testing.T) {
+	src := `platform: select
+rows:
+  - id: s
+    when: {}
+    type: ModeSelect
+    verdict: mappable
+    cites: [x]
+    clusters:
+      - cluster: ModeSelect
+        options: {list: desc.options, current: state, method: select_option}
+`
+	f, err := rowfile.Parse([]byte(src))
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err := GenerateFiles([]rowfile.File{f})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"b.optionsModeSelect(&d, ci)", "n += b.optionsModeSelectApply(&p, &st, ci)", "MethodSelectOption"} {
+		if !strings.Contains(string(out), want) {
+			t.Errorf("no %q", want)
+		}
+	}
+	if !strings.Contains(Table([]rowfile.File{f}), "[options desc.options at state to select_option]") {
+		t.Error("the table names no options")
+	}
+}
+
+const vacuum = `platform: vacuum
+rows:
+  - id: v
+    when: {}
+    type: RoboticVacuumCleaner
+    verdict: mappable
+    cites: [x]
+    clusters:
+      - cluster: RvcRunMode
+        commands:
+          - handle: ChangeToMode
+            if: {field: NewMode, in: ["0", "1"]}
+            method: run_mode
+            raw: {field: NewMode}
+            otherwise: {Status: ModeChangeStatusUnsupportedMode}
+`
+
+func TestGenerateOtherwise(t *testing.T) {
+	out, err := GenerateFiles([]rowfile.File{parse(t, vacuum)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(out), "resp = rvcrunmodedef.ChangeToModeResponse{Status: rvcrunmodedef.ModeChangeStatusUnsupportedMode}") {
+		t.Fatalf("no otherwise response:\n%s", out)
+	}
+	for name, edit := range map[string][2]string{
+		"field": {"{Status: ModeChangeStatusUnsupportedMode}", "{Nope: 1}"},
+		"twice": {"            otherwise: {Status: ModeChangeStatusUnsupportedMode}\n", "            otherwise: {Status: ModeChangeStatusUnsupportedMode}\n          - handle: ChangeToMode\n            if: {field: NewMode, in: [\"2\"]}\n            raw: {const: x}\n            otherwise: {Status: ModeChangeStatusUnsupportedMode}\n"},
+	} {
+		if _, err := GenerateFiles([]rowfile.File{parse(t, strings.Replace(vacuum, edit[0], edit[1], 1))}); err == nil {
+			t.Errorf("%s: generated", name)
+		}
+	}
+	noFields := strings.Replace(base, "          - handle: LockDoor\n            raw: {const: LOCK}",
+		"          - handle: LockDoor\n            if: {field: PinCode, in: [\"1\"]}\n            raw: {const: LOCK}\n            otherwise: {Status: X}", 1)
+	if err := generate(t, noFields); err == nil {
+		t.Error("an otherwise on a status-only command generated")
+	}
+}
+
+func parse(t *testing.T, src string) rowfile.File {
+	t.Helper()
+	f, err := rowfile.Parse([]byte(src))
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	return f
 }
 
 func TestGenerateRepository(t *testing.T) {

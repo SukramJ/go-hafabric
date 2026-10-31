@@ -88,6 +88,227 @@ rows:
             add: 1
             min: 0
             max: 65534
+  - id: carbon_dioxide
+    when: {device_class: [carbon_dioxide]}
+    type: AirQualitySensor
+    verdict: mappable
+    cites: &air_quality_cites
+      - matter.js packages/model/src/standard/elements/air-quality-sensor.element.ts:19,22-34 @862ad75f (AirQuality mandatory, the concentration clusters optional)
+      - go-fabric cluster/spec/carbondioxideconcentrationmeasurement/definition_gen.go:47,87-89,108-115 @v0.15.4 (NumericMeasurement; MeasurementMedium; MeasurementUnit, the same names in every concentration package)
+      - go-fabric cluster/measurement/concentration.go:136-139 @v0.15.4 (AirQuality reads Unknown beside a concentration)
+      - go-ha-catalog data/sensor.json:383-385 (carbon_dioxide unit ppm)
+    clusters:
+      - &air_quality
+        cluster: AirQuality
+        initial: [{attribute: AirQuality, const: AirQualityUnknown}]
+      - cluster: CarbonDioxideConcentrationMeasurement
+        features: [NumericMeasurement]
+        initial:
+          - {attribute: MeasurementMedium, const: MeasurementMediumAir}
+          - {attribute: MeasurementUnit, const: MeasurementUnitPpm}
+        start_null: [MeasuredValue]
+        attributes:
+          - attribute: MeasuredValue
+            from: state
+            units: {"ppm": {scale: 1}}
+  - id: carbon_monoxide
+    when: {device_class: [carbon_monoxide]}
+    type: AirQualitySensor
+    verdict: mappable
+    cites:
+      - matter.js packages/model/src/standard/elements/air-quality-sensor.element.ts:19,22-34 @862ad75f (AirQuality mandatory, the concentration clusters optional)
+      - go-fabric cluster/spec/carbondioxideconcentrationmeasurement/definition_gen.go:47,87-89,108-115 @v0.15.4 (NumericMeasurement; MeasurementMedium; MeasurementUnit, the same names in every concentration package)
+      - go-fabric cluster/measurement/concentration.go:136-139 @v0.15.4 (AirQuality reads Unknown beside a concentration)
+      - "home-assistant/core homeassistant/util/unit_conversion.py:243-262 @2026.10.3 (CarbonMonoxideConcentrationConverter: ppm 1e6, ppb 1e9, mg/m³ and μg/m³ through the molar mass, 1e3 apart)"
+      - go-ha-catalog data/sensor.json:386-391 (carbon_monoxide units)
+    clusters:
+      - *air_quality
+      - cluster: CarbonMonoxideConcentrationMeasurement
+        features: [NumericMeasurement]
+        initial:
+          - {attribute: MeasurementMedium, const: MeasurementMediumAir}
+          - {attribute: MeasurementUnit, const: MeasurementUnitPpm, when: {unit: ["ppb", "ppm"]}}
+          - {attribute: MeasurementUnit, const: MeasurementUnitUgm3, when: {unit: ["mg/m³", "μg/m³"]}}
+        start_null: [MeasuredValue]
+        attributes:
+          - attribute: MeasuredValue
+            from: state
+            units: {"ppb": {scale: 0.001}, "ppm": {scale: 1}, "mg/m³": {scale: 1000}, "μg/m³": {scale: 1}}
+  - id: pm1
+    when: {device_class: [pm1]}
+    type: AirQualitySensor
+    verdict: mappable
+    cites:
+      - matter.js packages/model/src/standard/elements/air-quality-sensor.element.ts:19,22-34 @862ad75f (AirQuality mandatory, the concentration clusters optional)
+      - go-fabric cluster/spec/carbondioxideconcentrationmeasurement/definition_gen.go:47,87-89,108-115 @v0.15.4 (NumericMeasurement; MeasurementMedium; MeasurementUnit, the same names in every concentration package)
+      - go-fabric cluster/measurement/concentration.go:136-139 @v0.15.4 (AirQuality reads Unknown beside a concentration)
+      - go-ha-catalog data/sensor.json:544-546 (pm1 unit μg/m³)
+    clusters:
+      - *air_quality
+      - cluster: Pm1ConcentrationMeasurement
+        features: [NumericMeasurement]
+        initial:
+          - {attribute: MeasurementMedium, const: MeasurementMediumAir}
+          - {attribute: MeasurementUnit, const: MeasurementUnitUgm3}
+        start_null: [MeasuredValue]
+        attributes:
+          - attribute: MeasuredValue
+            from: state
+            units: {"μg/m³": {scale: 1}}
+  - id: pm25
+    when: {device_class: [pm25]}
+    type: AirQualitySensor
+    verdict: mappable
+    cites:
+      - matter.js packages/model/src/standard/elements/air-quality-sensor.element.ts:19,22-34 @862ad75f (AirQuality mandatory, the concentration clusters optional)
+      - go-fabric cluster/spec/carbondioxideconcentrationmeasurement/definition_gen.go:47,87-89,108-115 @v0.15.4 (NumericMeasurement; MeasurementMedium; MeasurementUnit, the same names in every concentration package)
+      - go-fabric cluster/measurement/concentration.go:136-139 @v0.15.4 (AirQuality reads Unknown beside a concentration)
+      - go-ha-catalog data/sensor.json:550-552 (pm25 unit μg/m³)
+    clusters:
+      - *air_quality
+      - cluster: Pm25ConcentrationMeasurement
+        features: [NumericMeasurement]
+        initial:
+          - {attribute: MeasurementMedium, const: MeasurementMediumAir}
+          - {attribute: MeasurementUnit, const: MeasurementUnitUgm3}
+        start_null: [MeasuredValue]
+        attributes:
+          - attribute: MeasuredValue
+            from: state
+            units: {"μg/m³": {scale: 1}}
+  - id: pm10
+    when: {device_class: [pm10]}
+    type: AirQualitySensor
+    verdict: mappable
+    cites:
+      - matter.js packages/model/src/standard/elements/air-quality-sensor.element.ts:19,22-34 @862ad75f (AirQuality mandatory, the concentration clusters optional)
+      - go-fabric cluster/spec/carbondioxideconcentrationmeasurement/definition_gen.go:47,87-89,108-115 @v0.15.4 (NumericMeasurement; MeasurementMedium; MeasurementUnit, the same names in every concentration package)
+      - go-fabric cluster/measurement/concentration.go:136-139 @v0.15.4 (AirQuality reads Unknown beside a concentration)
+      - go-ha-catalog data/sensor.json:547-549 (pm10 unit μg/m³)
+    clusters:
+      - *air_quality
+      - cluster: Pm10ConcentrationMeasurement
+        features: [NumericMeasurement]
+        initial:
+          - {attribute: MeasurementMedium, const: MeasurementMediumAir}
+          - {attribute: MeasurementUnit, const: MeasurementUnitUgm3}
+        start_null: [MeasuredValue]
+        attributes:
+          - attribute: MeasuredValue
+            from: state
+            units: {"μg/m³": {scale: 1}}
+  - id: volatile_organic_compounds
+    when: {device_class: [volatile_organic_compounds]}
+    type: AirQualitySensor
+    verdict: mappable
+    cites:
+      - matter.js packages/model/src/standard/elements/air-quality-sensor.element.ts:19,22-34 @862ad75f (AirQuality mandatory, the concentration clusters optional)
+      - go-fabric cluster/spec/carbondioxideconcentrationmeasurement/definition_gen.go:47,87-89,108-115 @v0.15.4 (NumericMeasurement; MeasurementMedium; MeasurementUnit, the same names in every concentration package)
+      - go-fabric cluster/measurement/concentration.go:136-139 @v0.15.4 (AirQuality reads Unknown beside a concentration)
+      - "home-assistant/core homeassistant/util/unit_conversion.py:495-503 @2026.10.3 (MassVolumeConcentrationConverter: 1000 μg/m³ = 1 mg/m³)"
+      - go-ha-catalog data/sensor.json:643-646 (volatile_organic_compounds units)
+    clusters:
+      - *air_quality
+      - cluster: TotalVolatileOrganicCompoundsConcentrationMeasurement
+        features: [NumericMeasurement]
+        initial:
+          - {attribute: MeasurementMedium, const: MeasurementMediumAir}
+          - {attribute: MeasurementUnit, const: MeasurementUnitUgm3}
+        start_null: [MeasuredValue]
+        attributes:
+          - attribute: MeasuredValue
+            from: state
+            units: {"mg/m³": {scale: 1000}, "μg/m³": {scale: 1}}
+  - id: volatile_organic_compounds_parts
+    when: {device_class: [volatile_organic_compounds_parts]}
+    type: AirQualitySensor
+    verdict: mappable
+    cites:
+      - matter.js packages/model/src/standard/elements/air-quality-sensor.element.ts:19,22-34 @862ad75f (AirQuality mandatory, the concentration clusters optional)
+      - go-fabric cluster/spec/carbondioxideconcentrationmeasurement/definition_gen.go:47,87-89,108-115 @v0.15.4 (NumericMeasurement; MeasurementMedium; MeasurementUnit, the same names in every concentration package)
+      - go-fabric cluster/measurement/concentration.go:136-139 @v0.15.4 (AirQuality reads Unknown beside a concentration)
+      - "home-assistant/core homeassistant/util/unit_conversion.py:941-956 @2026.10.3 (UnitlessRatioConverter: ppm 1e6, ppb 1e9)"
+      - go-ha-catalog data/sensor.json:647-650 (volatile_organic_compounds_parts units)
+    clusters:
+      - *air_quality
+      - cluster: TotalVolatileOrganicCompoundsConcentrationMeasurement
+        features: [NumericMeasurement]
+        initial:
+          - {attribute: MeasurementMedium, const: MeasurementMediumAir}
+          - {attribute: MeasurementUnit, const: MeasurementUnitPpb}
+        start_null: [MeasuredValue]
+        attributes:
+          - attribute: MeasuredValue
+            from: state
+            units: {"ppb": {scale: 1}, "ppm": {scale: 1000}}
+  - id: nitrogen_dioxide
+    when: {device_class: [nitrogen_dioxide]}
+    type: AirQualitySensor
+    verdict: mappable
+    cites:
+      - matter.js packages/model/src/standard/elements/air-quality-sensor.element.ts:19,22-34 @862ad75f (AirQuality mandatory, the concentration clusters optional)
+      - go-fabric cluster/spec/carbondioxideconcentrationmeasurement/definition_gen.go:47,87-89,108-115 @v0.15.4 (NumericMeasurement; MeasurementMedium; MeasurementUnit, the same names in every concentration package)
+      - go-fabric cluster/measurement/concentration.go:136-139 @v0.15.4 (AirQuality reads Unknown beside a concentration)
+      - "home-assistant/core homeassistant/util/unit_conversion.py:511-526 @2026.10.3 (NitrogenDioxideConcentrationConverter: ppm 1e6, ppb 1e9, μg/m³ through the molar mass)"
+      - go-ha-catalog data/sensor.json:524-528 (nitrogen_dioxide units)
+    clusters:
+      - *air_quality
+      - cluster: NitrogenDioxideConcentrationMeasurement
+        features: [NumericMeasurement]
+        initial:
+          - {attribute: MeasurementMedium, const: MeasurementMediumAir}
+          - {attribute: MeasurementUnit, const: MeasurementUnitPpb, when: {unit: ["ppb", "ppm"]}}
+          - {attribute: MeasurementUnit, const: MeasurementUnitUgm3, when: {unit: ["μg/m³"]}}
+        start_null: [MeasuredValue]
+        attributes:
+          - attribute: MeasuredValue
+            from: state
+            units: {"ppb": {scale: 1}, "ppm": {scale: 1000}, "μg/m³": {scale: 1}}
+  - id: ozone
+    when: {device_class: [ozone]}
+    type: AirQualitySensor
+    verdict: mappable
+    cites:
+      - matter.js packages/model/src/standard/elements/air-quality-sensor.element.ts:19,22-34 @862ad75f (AirQuality mandatory, the concentration clusters optional)
+      - go-fabric cluster/spec/carbondioxideconcentrationmeasurement/definition_gen.go:47,87-89,108-115 @v0.15.4 (NumericMeasurement; MeasurementMedium; MeasurementUnit, the same names in every concentration package)
+      - go-fabric cluster/measurement/concentration.go:136-139 @v0.15.4 (AirQuality reads Unknown beside a concentration)
+      - "home-assistant/core homeassistant/util/unit_conversion.py:545-560 @2026.10.3 (OzoneConcentrationConverter: ppm 1e6, ppb 1e9, μg/m³ through the molar mass)"
+      - go-ha-catalog data/sensor.json:536-540 (ozone units)
+    clusters:
+      - *air_quality
+      - cluster: OzoneConcentrationMeasurement
+        features: [NumericMeasurement]
+        initial:
+          - {attribute: MeasurementMedium, const: MeasurementMediumAir}
+          - {attribute: MeasurementUnit, const: MeasurementUnitPpb, when: {unit: ["ppb", "ppm"]}}
+          - {attribute: MeasurementUnit, const: MeasurementUnitUgm3, when: {unit: ["μg/m³"]}}
+        start_null: [MeasuredValue]
+        attributes:
+          - attribute: MeasuredValue
+            from: state
+            units: {"ppb": {scale: 1}, "ppm": {scale: 1000}, "μg/m³": {scale: 1}}
+  - id: radon
+    when: {device_class: [radon]}
+    type: AirQualitySensor
+    verdict: mappable
+    cites:
+      - matter.js packages/model/src/standard/elements/air-quality-sensor.element.ts:19,22-34 @862ad75f (AirQuality mandatory, the concentration clusters optional)
+      - go-fabric cluster/spec/carbondioxideconcentrationmeasurement/definition_gen.go:47,87-89,108-115 @v0.15.4 (NumericMeasurement; MeasurementMedium; MeasurementUnit, the same names in every concentration package)
+      - go-fabric cluster/measurement/concentration.go:136-139 @v0.15.4 (AirQuality reads Unknown beside a concentration)
+      - "home-assistant/core homeassistant/util/unit_conversion.py:111,623-633 @2026.10.3 (RadiationConcentrationConverter: 1 pCi/L = 37 Bq/m³)"
+      - go-ha-catalog data/sensor.json:593-596 (radon units)
+    clusters:
+      - *air_quality
+      - cluster: RadonConcentrationMeasurement
+        features: [NumericMeasurement]
+        initial:
+          - {attribute: MeasurementMedium, const: MeasurementMediumAir}
+          - {attribute: MeasurementUnit, const: MeasurementUnitBqm3}
+        start_null: [MeasuredValue]
+        attributes:
+          - attribute: MeasuredValue
+            from: state
+            units: {"Bq/m³": {scale: 1}, "pCi/L": {scale: 37}}
   - id: power
     when: {device_class: [power]}
     type: ElectricalSensor
@@ -154,6 +375,108 @@ rows:
           - attribute: ActiveCurrent
             from: state
             units: {"A": {scale: 1000}, "mA": {scale: 1}, "μA": {scale: 0.001}}
+  - id: apparent_power
+    when: {device_class: [apparent_power]}
+    type: ElectricalSensor
+    verdict: mappable
+    cites:
+      - matter.js packages/model/src/standard/elements/electrical-sensor.element.ts:18-20 @862ad75f (PowerTopology mandatory, ElectricalPowerMeasurement O.a+)
+      - "matter.js packages/model/src/standard/resources/electrical-power-measurement.resource.ts:201-203 @862ad75f (ApparentPower in millivolt-amps, mVA)"
+      - "home-assistant/core homeassistant/util/unit_conversion.py:195-209 @2026.10.3 (ApparentPowerConverter: mVA 1000, VA 1, kVA 1/1000)"
+      - "go-ha-catalog data/sensor.json:342-346 (apparent_power units)"
+    clusters:
+      - *topology
+      - cluster: ElectricalPowerMeasurement
+        features: [AlternatingCurrent]
+        initial:
+          - {attribute: PowerMode, const: PowerModeAc}
+          - {attribute: NumberOfMeasurementTypes, const: 1}
+          - attribute: Accuracy
+            literal:
+              - {MeasurementType: MeasurementTypeApparentPower, Measured: true, MinMeasuredValue: -4611686018427387904, MaxMeasuredValue: 4611686018427387904, AccuracyRanges: [{RangeMin: -4611686018427387904, RangeMax: 4611686018427387904, FixedMax: 1}]}
+        start_null: [ActivePower, ApparentPower]
+        attributes:
+          - attribute: ApparentPower
+            from: state
+            units: {"mVA": {scale: 1}, "VA": {scale: 1000}, "kVA": {scale: 1.0e6}}
+  - id: reactive_power
+    when: {device_class: [reactive_power]}
+    type: ElectricalSensor
+    verdict: mappable
+    cites:
+      - matter.js packages/model/src/standard/elements/electrical-sensor.element.ts:18-20 @862ad75f (PowerTopology mandatory, ElectricalPowerMeasurement O.a+)
+      - "matter.js packages/model/src/standard/resources/electrical-power-measurement.resource.ts:179-181 @862ad75f (ReactivePower in millivolt-amps reactive, mVAR)"
+      - "home-assistant/core homeassistant/util/unit_conversion.py:647-661 @2026.10.3 (ReactivePowerConverter: mvar 1000, var 1, kvar 1/1000)"
+      - "go-ha-catalog data/sensor.json:601-605 (reactive_power units)"
+    clusters:
+      - *topology
+      - cluster: ElectricalPowerMeasurement
+        features: [AlternatingCurrent]
+        initial:
+          - {attribute: PowerMode, const: PowerModeAc}
+          - {attribute: NumberOfMeasurementTypes, const: 1}
+          - attribute: Accuracy
+            literal:
+              - {MeasurementType: MeasurementTypeReactivePower, Measured: true, MinMeasuredValue: -4611686018427387904, MaxMeasuredValue: 4611686018427387904, AccuracyRanges: [{RangeMin: -4611686018427387904, RangeMax: 4611686018427387904, FixedMax: 1}]}
+        start_null: [ActivePower, ReactivePower]
+        attributes:
+          - attribute: ReactivePower
+            from: state
+            units: {"mvar": {scale: 1}, "var": {scale: 1000}, "kvar": {scale: 1.0e6}}
+  - id: frequency
+    when: {device_class: [frequency]}
+    type: ElectricalSensor
+    verdict: mappable
+    cites:
+      - matter.js packages/model/src/standard/elements/electrical-sensor.element.ts:18-20 @862ad75f (PowerTopology mandatory, ElectricalPowerMeasurement O.a+)
+      - "matter.js packages/model/src/standard/resources/electrical-power-measurement.resource.ts:278 @862ad75f (Frequency in millihertz, mHz)"
+      - "go-fabric cluster/spec/electricalpowermeasurement/definition_gen.go:515-521 @v0.15.4 (Frequency 0 to 1000000)"
+      - "home-assistant/core homeassistant/util/unit_conversion.py:365-375 @2026.10.3 (FrequencyConverter: mHz 1e3, Hz 1, kHz 1e-3, MHz 1e-6, GHz 1e-9)"
+      - "go-ha-catalog data/sensor.json:497-503 (frequency units)"
+    clusters:
+      - *topology
+      - cluster: ElectricalPowerMeasurement
+        features: [AlternatingCurrent]
+        initial:
+          - {attribute: PowerMode, const: PowerModeAc}
+          - {attribute: NumberOfMeasurementTypes, const: 1}
+          - attribute: Accuracy
+            literal:
+              - {MeasurementType: MeasurementTypeFrequency, Measured: true, MinMeasuredValue: 0, MaxMeasuredValue: 1000000, AccuracyRanges: [{RangeMin: 0, RangeMax: 1000000, FixedMax: 1}]}
+        start_null: [ActivePower, Frequency]
+        attributes:
+          - attribute: Frequency
+            from: state
+            min: 0
+            max: 1000000
+            units: {"mHz": {scale: 1}, "Hz": {scale: 1000}, "kHz": {scale: 1.0e6}, "MHz": {scale: 1.0e9}, "GHz": {scale: 1.0e12}}
+  - id: power_factor
+    when: {device_class: [power_factor]}
+    type: ElectricalSensor
+    verdict: mappable
+    cites:
+      - matter.js packages/model/src/standard/elements/electrical-sensor.element.ts:18-20 @862ad75f (PowerTopology mandatory, ElectricalPowerMeasurement O.a+)
+      - "matter.js packages/model/src/standard/resources/electrical-power-measurement.resource.ts:328 @862ad75f (PowerFactor in +/- 1/100ths of a percent)"
+      - "go-fabric cluster/spec/electricalpowermeasurement/definition_gen.go:542-548 @v0.15.4 (PowerFactor -10000 to 10000)"
+      - "home-assistant/core homeassistant/util/unit_conversion.py:941-956 @2026.10.3 (UnitlessRatioConverter: no unit 1, % 100)"
+      - "go-ha-catalog data/sensor.json:564-567 (power_factor units %, none: the key \"\")"
+    clusters:
+      - *topology
+      - cluster: ElectricalPowerMeasurement
+        features: [AlternatingCurrent]
+        initial:
+          - {attribute: PowerMode, const: PowerModeAc}
+          - {attribute: NumberOfMeasurementTypes, const: 1}
+          - attribute: Accuracy
+            literal:
+              - {MeasurementType: MeasurementTypePowerFactor, Measured: true, MinMeasuredValue: -10000, MaxMeasuredValue: 10000, AccuracyRanges: [{RangeMin: -10000, RangeMax: 10000, FixedMax: 1}]}
+        start_null: [ActivePower, PowerFactor]
+        attributes:
+          - attribute: PowerFactor
+            from: state
+            min: -10000
+            max: 10000
+            units: {"%": {scale: 100}, "": {scale: 10000}}
   - id: energy
     when: {device_class: [energy]}
     type: ElectricalSensor
@@ -187,6 +510,46 @@ rows:
               "GWh": {scale: 1.0e12}
               "TWh": {scale: 1.0e15}
               "thm": {scale: 2.9307107017222222e7}
+  - id: volume_flow_rate
+    when: {device_class: [volume_flow_rate]}
+    type: FlowSensor
+    verdict: mappable
+    cites:
+      - matter.js packages/model/src/standard/elements/flow-sensor.element.ts:19 @862ad75f (FlowMeasurement mandatory)
+      - matter.js packages/model/src/standard/resources/flow-measurement.resource.ts:19-24 @862ad75f (MeasuredValue = 10 x Flow in m³/h)
+      - go-fabric cluster/measurement/flow.go:34-38 @v0.15.4 (uint16, 0.1 m³/h, clamped to 0..65534)
+      - "home-assistant/core homeassistant/util/unit_conversion.py:44-45,66-70,88-92,986-1004 @2026.10.3 (VolumeFlowRateConverter: ratios to m³/h)"
+      - go-ha-catalog data/sensor.json:668-680 (volume_flow_rate units)
+    clusters:
+      - cluster: FlowMeasurement
+        start_null: [MeasuredValue]
+        attributes:
+          - attribute: MeasuredValue
+            from: state
+            min: 0
+            max: 65534
+            units: {"m³/h": {scale: 10}, "m³/min": {scale: 600}, "m³/s": {scale: 36000}, "ft³/min": {scale: 16.9901079552}, "L/h": {scale: 0.01}, "L/min": {scale: 0.6}, "L/s": {scale: 36}, "gal/h": {scale: 0.03785411784}, "gal/min": {scale: 2.2712470704}, "gal/d": {scale: 0.00157725491}, "mL/s": {scale: 0.036}}
+  - id: moisture
+    when: {device_class: [moisture]}
+    type: SoilSensor
+    verdict: mappable
+    cites:
+      - matter.js packages/model/src/standard/elements/soil-sensor.element.ts:20 @862ad75f (SoilMeasurement mandatory)
+      - matter.js packages/model/src/standard/resources/soil-measurement.resource.ts:20-32,36-37 @862ad75f (the limits in percent, one accuracy range with PercentMax at most 10.00 %; the measured value in percent)
+      - go-fabric cluster/spec/soilmeasurement/definition_gen.go:40-46,105,133-142 @v0.15.4 (MeasurementAccuracyStruct, MeasurementTypeSoilMoisture, the range's PercentMax in 1/100 %)
+      - go-ha-catalog data/sensor.json:521-523 (moisture unit %)
+    clusters:
+      - cluster: SoilMeasurement
+        initial:
+          - attribute: SoilMoistureMeasurementLimits
+            literal: {MeasurementType: MeasurementTypeSoilMoisture, Measured: true, MinMeasuredValue: 0, MaxMeasuredValue: 100, AccuracyRanges: [{RangeMin: 0, RangeMax: 100, PercentMax: 100}]}
+        start_null: [SoilMoistureMeasuredValue]
+        attributes:
+          - attribute: SoilMoistureMeasuredValue
+            from: state
+            min: 0
+            max: 100
+            units: {"%": {scale: 1}}
   - id: battery
     when: {device_class: [battery]}
     type: PowerSource
@@ -220,8 +583,8 @@ rows:
             default_unit: "%"
   - id: no_device_type
     when:
-      device_class: [absolute_humidity, apparent_power, aqi, area, blood_glucose_concentration, carbon_dioxide, carbon_monoxide, conductivity, data_rate, data_size, date, distance, duration, energy_distance, energy_storage, enum, frequency, gas, irradiance, moisture, monetary, nitrogen_dioxide, nitrogen_monoxide, nitrous_oxide, ozone, ph, pm1, pm10, pm25, pm4, power_factor, precipitation, precipitation_intensity, radon, reactive_energy, reactive_power, signal_strength, sound_pressure, speed, sulphur_dioxide, temperature_delta, timestamp, uptime, volatile_organic_compounds, volatile_organic_compounds_parts, volume, volume_flow_rate, volume_storage, water, weight, wind_direction, wind_speed]
-    verdict: "unmappable: no Matter device type for a sensor of device_class {device_class} in H1"
+      device_class: [absolute_humidity, aqi, area, blood_glucose_concentration, conductivity, data_rate, data_size, date, distance, duration, energy_distance, energy_storage, enum, gas, irradiance, monetary, nitrogen_monoxide, nitrous_oxide, ph, pm4, precipitation, precipitation_intensity, reactive_energy, signal_strength, sound_pressure, speed, sulphur_dioxide, temperature_delta, timestamp, uptime, volume, volume_storage, water, weight, wind_direction, wind_speed]
+    verdict: "unmappable: no Matter device type for a sensor of device_class {device_class}"
   - id: no_device_class
     when: {device_class: [none]}
     verdict: "unmappable: a sensor without device_class has no Matter device type"

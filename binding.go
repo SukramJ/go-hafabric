@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"slices"
 	"strings"
+	"sync"
 
 	colorcontroldef "github.com/SukramJ/go-fabric/cluster/spec/colorcontrol"
 	"github.com/SukramJ/go-fabric/contract"
@@ -29,6 +30,10 @@ type binding struct {
 	target *device.Device
 	// measure is the source of a row riding as a measurement.
 	measure *measure
+
+	// mu guards last: the baseline of each event's value (events.go).
+	mu   sync.Mutex
+	last map[[2]int]string
 }
 
 // match reports whether the entity satisfies w.

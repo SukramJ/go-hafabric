@@ -21,8 +21,8 @@ const (
 	KeysEnd   = "<!-- keys:end -->"
 )
 
-// Methods returns the method names the rows' commands deliver
-// (model.Command.Method), sorted and unique.
+// Methods returns the method names the rows' commands and options
+// deliver (model.Command.Method), sorted and unique.
 func Methods(files []rowfile.File) []string {
 	set := map[string]bool{}
 	for _, f := range files {
@@ -34,6 +34,9 @@ func Methods(files []rowfile.File) []string {
 						if m := cs[j].Commands[k].Method; m != "" {
 							set[m] = true
 						}
+					}
+					if o := cs[j].Options; o != nil {
+						set[o.Method] = true
 					}
 				}
 			}
@@ -175,6 +178,13 @@ func Keys(files []rowfile.File) []Key {
 								add(f.Platform, id, "state", false)
 							}
 						}
+					}
+					for k := range c.Events {
+						val(&rowfile.Value{From: c.Events[k].On})
+					}
+					if o := c.Options; o != nil {
+						val(&rowfile.Value{From: o.List})
+						val(&rowfile.Value{From: o.Current})
 					}
 					for k := range c.Commands {
 						cmd := &c.Commands[k]

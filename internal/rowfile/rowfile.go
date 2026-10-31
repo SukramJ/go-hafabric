@@ -105,6 +105,42 @@ type Cluster struct {
 	StartNull  []string  `yaml:"start_null"`
 	Attributes []Attr    `yaml:"attributes"`
 	Commands   []Command `yaml:"commands"`
+	// Events emit the cluster's events when a value of the entity
+	// changes.
+	Events []Event `yaml:"events"`
+	// Options materialize a list of the entity into the cluster's
+	// attributes and its command (a cluster with a materializer).
+	Options *Options `yaml:"options"`
+}
+
+// Options is a list of strings of the entity, the value that names its
+// current entry and the method a controller's choice goes to.
+type Options struct {
+	// List is "desc.options" (Description.Options' codes) or
+	// "extra.<key>" (a list of strings in Description.Extra).
+	List string `yaml:"list"`
+	// Current is the value whose entry in List is the current one:
+	// "state", "state.<key>" or "extra.<key>".
+	Current string `yaml:"current"`
+	// Method is the entity's method; the payload is the chosen string.
+	Method string `yaml:"method"`
+}
+
+// Event emits events of a cluster when the value On names changes from
+// a known value to another; the first value (after start or after the
+// entity was unavailable) only sets the baseline.
+type Event struct {
+	// On is the value: "state", "state.<key>" or "extra.<key>".
+	On string `yaml:"on"`
+	// Emit are the events, emitted in order.
+	Emit []Emit `yaml:"emit"`
+}
+
+// Emit is one event and its data, by field name of the event's
+// structure in the cluster's <cluster>def package.
+type Emit struct {
+	Event   string         `yaml:"event"`
+	Literal map[string]any `yaml:"literal"`
 }
 
 // Feature is a feature selection, a name or {name, when}.
@@ -183,6 +219,11 @@ type Command struct {
 	JSON   map[string]Value `yaml:"json"`
 	// Derive adds keys a conversion of several fields computes (Derives).
 	Derive string `yaml:"derive"`
+	// Otherwise is a handler's response, by field name of its response
+	// structure, when the if of none of the handler's commands holds: the
+	// command is refused with a status of the cluster's own (a handle
+	// with an if only).
+	Otherwise map[string]any `yaml:"otherwise"`
 }
 
 // Derives are the derived payloads a command may add, with the fields
@@ -344,8 +385,8 @@ func (r *Row) check() error {
 		}
 		for j := range p.Clusters {
 			c := &p.Clusters[j]
-			if len(c.Attributes) > 0 || len(c.Commands) > 0 {
-				return fmt.Errorf("part %s: cluster %s: a part declares no attributes or commands", p.Type, c.Cluster)
+			if len(c.Attributes) > 0 || len(c.Commands) > 0 || len(c.Events) > 0 || c.Options != nil {
+				return fmt.Errorf("part %s: cluster %s: a part declares no attributes, commands, events or options", p.Type, c.Cluster)
 			}
 			for k := range c.Initial {
 				if a := &c.Initial[k]; a.From != "" {
@@ -424,7 +465,57 @@ func (c *Cluster) check() error {
 			return fmt.Errorf("command %d: %w", i, err)
 		}
 	}
+	for i := range c.Events {
+		if err := c.Events[i].check(); err != nil {
+			return fmt.Errorf("event %d: %w", i, err)
+		}
+	}
+	if o := c.Options; o != nil {
+		if k, ok := strings.CutPrefix(o.List, "extra."); o.List != "desc.options" && (!ok || !valueFrom(o.List) || k == "") {
+			return fmt.Errorf("options: list %q: desc.options or extra.<key>", o.List)
+		}
+		if !valueFrom(o.Current) {
+			return fmt.Errorf("options: current %q: state, state.<key> or extra.<key>", o.Current)
+		}
+		if !ident(o.Method) {
+			return fmt.Errorf("options: method %q", o.Method)
+		}
+	}
 	return nil
+}
+
+func (e *Event) check() error {
+	if !valueFrom(e.On) {
+		return fmt.Errorf("on %q: state, state.<key> or extra.<key>", e.On)
+	}
+	if len(e.Emit) == 0 {
+		return errors.New("no emit")
+	}
+	for _, x := range e.Emit {
+		if !ident(x.Event) {
+			return fmt.Errorf("event %q", x.Event)
+		}
+		for k := range x.Literal {
+			if !ident(k) {
+				return fmt.Errorf("event %s: field %q", x.Event, k)
+			}
+		}
+	}
+	return nil
+}
+
+// valueFrom reports whether s names a value of the entity a change can
+// be seen on: "state", "state.<key>" or "extra.<key>".
+func valueFrom(s string) bool {
+	if s == "state" {
+		return true
+	}
+	for _, p := range []string{"state.", "extra."} {
+		if k, ok := strings.CutPrefix(s, p); ok {
+			return k != "" && !strings.Contains(k, "..")
+		}
+	}
+	return false
 }
 
 func (cmd *Command) check() error {
@@ -459,6 +550,16 @@ func (cmd *Command) check() error {
 		for _, n := range slices.Concat(cmd.If.In, cmd.If.NotIn) {
 			if !ident(n) && !number(n) {
 				return fmt.Errorf("if: constant %q", n)
+			}
+		}
+	}
+	if cmd.Otherwise != nil {
+		if cmd.Handle == "" || cmd.If == nil {
+			return errors.New("otherwise: a handle's with an if")
+		}
+		for k := range cmd.Otherwise {
+			if !ident(k) {
+				return fmt.Errorf("otherwise: field %q", k)
 			}
 		}
 	}
