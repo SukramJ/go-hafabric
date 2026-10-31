@@ -9,6 +9,7 @@ import (
 	airqualitydef "github.com/SukramJ/go-fabric/cluster/spec/airquality"
 	co2def "github.com/SukramJ/go-fabric/cluster/spec/carbondioxideconcentrationmeasurement"
 	codef "github.com/SukramJ/go-fabric/cluster/spec/carbonmonoxideconcentrationmeasurement"
+	epmdef "github.com/SukramJ/go-fabric/cluster/spec/electricalpowermeasurement"
 	no2def "github.com/SukramJ/go-fabric/cluster/spec/nitrogendioxideconcentrationmeasurement"
 	radondef "github.com/SukramJ/go-fabric/cluster/spec/radonconcentrationmeasurement"
 	tvocdef "github.com/SukramJ/go-fabric/cluster/spec/totalvolatileorganiccompoundsconcentrationmeasurement"
@@ -79,5 +80,40 @@ func TestSensorAirQualityPredicates(t *testing.T) {
 			v[0].DeviceType != uint16(device.AirQualitySensorType.ID) {
 			t.Errorf("%s: %+v", class, v[0])
 		}
+	}
+}
+
+func TestSensorElectricalQuantities(t *testing.T) {
+	r := serve(t, sensor("va", "apparent_power", "kVA"), sensor("var", "reactive_power", "var"),
+		sensor("hz", "frequency", "Hz"), sensor("pf", "power_factor", "%"), sensor("ratio", "power_factor", ""))
+	for _, k := range []string{"va", "var", "hz", "pf", "ratio"} {
+		wantType(t, r, k, &device.ElectricalSensorType, eligibility.StateMappable)
+	}
+	r.apply("va", value(1.5))
+	r.apply("var", value(230.0))
+	r.apply("hz", value(50.02))
+	r.apply("pf", value(-95.5))
+	r.apply("ratio", value(0.87))
+	read := func(k string) epmdef.State {
+		st, _ := epmdef.StateFrom(r.values(k, epmdef.ClusterID))
+		return st
+	}
+	for _, c := range []struct {
+		name string
+		got  *int64
+		want int64
+	}{
+		{"ApparentPower", read("va").ApparentPower, 1500000},
+		{"ReactivePower", read("var").ReactivePower, 230000},
+		{"Frequency", read("hz").Frequency, 50020},
+		{"PowerFactor %", read("pf").PowerFactor, -9550},
+		{"PowerFactor ratio", read("ratio").PowerFactor, 8700},
+	} {
+		if c.got == nil || *c.got != c.want {
+			t.Errorf("%s %v, want %d", c.name, c.got, c.want)
+		}
+	}
+	if a := read("hz").Accuracy; len(a) != 1 || a[0].MeasurementType != epmdef.MeasurementTypeFrequency {
+		t.Errorf("Accuracy %+v", a)
 	}
 }

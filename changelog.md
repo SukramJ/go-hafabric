@@ -21,6 +21,9 @@ All notable changes to this project are documented here. The format follows
   as an AirQualitySensor with the class's concentration cluster; a class
   with ratio and mass units keeps the unit's family on the wire
   (`MeasurementUnit` by the entity's unit), no molar mass is assumed.
+- sensor: apparent_power, reactive_power, frequency and power_factor as an
+  ElectricalSensor (ApparentPower mVA, ReactivePower mVAR, Frequency mHz,
+  PowerFactor in 1/100 %; a power factor without a unit is a ratio).
 
 ## [0.2.1] - 2026-10-26
 

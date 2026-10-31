@@ -375,6 +375,108 @@ rows:
           - attribute: ActiveCurrent
             from: state
             units: {"A": {scale: 1000}, "mA": {scale: 1}, "μA": {scale: 0.001}}
+  - id: apparent_power
+    when: {device_class: [apparent_power]}
+    type: ElectricalSensor
+    verdict: mappable
+    cites:
+      - matter.js packages/model/src/standard/elements/electrical-sensor.element.ts:18-20 @862ad75f (PowerTopology mandatory, ElectricalPowerMeasurement O.a+)
+      - "matter.js packages/model/src/standard/resources/electrical-power-measurement.resource.ts:201-203 @862ad75f (ApparentPower in millivolt-amps, mVA)"
+      - "home-assistant/core homeassistant/util/unit_conversion.py:195-209 @2026.10.3 (ApparentPowerConverter: mVA 1000, VA 1, kVA 1/1000)"
+      - "go-ha-catalog data/sensor.json:342-346 (apparent_power units)"
+    clusters:
+      - *topology
+      - cluster: ElectricalPowerMeasurement
+        features: [AlternatingCurrent]
+        initial:
+          - {attribute: PowerMode, const: PowerModeAc}
+          - {attribute: NumberOfMeasurementTypes, const: 1}
+          - attribute: Accuracy
+            literal:
+              - {MeasurementType: MeasurementTypeApparentPower, Measured: true, MinMeasuredValue: -4611686018427387904, MaxMeasuredValue: 4611686018427387904, AccuracyRanges: [{RangeMin: -4611686018427387904, RangeMax: 4611686018427387904, FixedMax: 1}]}
+        start_null: [ActivePower, ApparentPower]
+        attributes:
+          - attribute: ApparentPower
+            from: state
+            units: {"mVA": {scale: 1}, "VA": {scale: 1000}, "kVA": {scale: 1.0e6}}
+  - id: reactive_power
+    when: {device_class: [reactive_power]}
+    type: ElectricalSensor
+    verdict: mappable
+    cites:
+      - matter.js packages/model/src/standard/elements/electrical-sensor.element.ts:18-20 @862ad75f (PowerTopology mandatory, ElectricalPowerMeasurement O.a+)
+      - "matter.js packages/model/src/standard/resources/electrical-power-measurement.resource.ts:179-181 @862ad75f (ReactivePower in millivolt-amps reactive, mVAR)"
+      - "home-assistant/core homeassistant/util/unit_conversion.py:647-661 @2026.10.3 (ReactivePowerConverter: mvar 1000, var 1, kvar 1/1000)"
+      - "go-ha-catalog data/sensor.json:601-605 (reactive_power units)"
+    clusters:
+      - *topology
+      - cluster: ElectricalPowerMeasurement
+        features: [AlternatingCurrent]
+        initial:
+          - {attribute: PowerMode, const: PowerModeAc}
+          - {attribute: NumberOfMeasurementTypes, const: 1}
+          - attribute: Accuracy
+            literal:
+              - {MeasurementType: MeasurementTypeReactivePower, Measured: true, MinMeasuredValue: -4611686018427387904, MaxMeasuredValue: 4611686018427387904, AccuracyRanges: [{RangeMin: -4611686018427387904, RangeMax: 4611686018427387904, FixedMax: 1}]}
+        start_null: [ActivePower, ReactivePower]
+        attributes:
+          - attribute: ReactivePower
+            from: state
+            units: {"mvar": {scale: 1}, "var": {scale: 1000}, "kvar": {scale: 1.0e6}}
+  - id: frequency
+    when: {device_class: [frequency]}
+    type: ElectricalSensor
+    verdict: mappable
+    cites:
+      - matter.js packages/model/src/standard/elements/electrical-sensor.element.ts:18-20 @862ad75f (PowerTopology mandatory, ElectricalPowerMeasurement O.a+)
+      - "matter.js packages/model/src/standard/resources/electrical-power-measurement.resource.ts:278 @862ad75f (Frequency in millihertz, mHz)"
+      - "go-fabric cluster/spec/electricalpowermeasurement/definition_gen.go:515-521 @v0.15.4 (Frequency 0 to 1000000)"
+      - "home-assistant/core homeassistant/util/unit_conversion.py:365-375 @2026.10.3 (FrequencyConverter: mHz 1e3, Hz 1, kHz 1e-3, MHz 1e-6, GHz 1e-9)"
+      - "go-ha-catalog data/sensor.json:497-503 (frequency units)"
+    clusters:
+      - *topology
+      - cluster: ElectricalPowerMeasurement
+        features: [AlternatingCurrent]
+        initial:
+          - {attribute: PowerMode, const: PowerModeAc}
+          - {attribute: NumberOfMeasurementTypes, const: 1}
+          - attribute: Accuracy
+            literal:
+              - {MeasurementType: MeasurementTypeFrequency, Measured: true, MinMeasuredValue: 0, MaxMeasuredValue: 1000000, AccuracyRanges: [{RangeMin: 0, RangeMax: 1000000, FixedMax: 1}]}
+        start_null: [ActivePower, Frequency]
+        attributes:
+          - attribute: Frequency
+            from: state
+            min: 0
+            max: 1000000
+            units: {"mHz": {scale: 1}, "Hz": {scale: 1000}, "kHz": {scale: 1.0e6}, "MHz": {scale: 1.0e9}, "GHz": {scale: 1.0e12}}
+  - id: power_factor
+    when: {device_class: [power_factor]}
+    type: ElectricalSensor
+    verdict: mappable
+    cites:
+      - matter.js packages/model/src/standard/elements/electrical-sensor.element.ts:18-20 @862ad75f (PowerTopology mandatory, ElectricalPowerMeasurement O.a+)
+      - "matter.js packages/model/src/standard/resources/electrical-power-measurement.resource.ts:328 @862ad75f (PowerFactor in +/- 1/100ths of a percent)"
+      - "go-fabric cluster/spec/electricalpowermeasurement/definition_gen.go:542-548 @v0.15.4 (PowerFactor -10000 to 10000)"
+      - "home-assistant/core homeassistant/util/unit_conversion.py:941-956 @2026.10.3 (UnitlessRatioConverter: no unit 1, % 100)"
+      - "go-ha-catalog data/sensor.json:564-567 (power_factor units %, none: the key \"\")"
+    clusters:
+      - *topology
+      - cluster: ElectricalPowerMeasurement
+        features: [AlternatingCurrent]
+        initial:
+          - {attribute: PowerMode, const: PowerModeAc}
+          - {attribute: NumberOfMeasurementTypes, const: 1}
+          - attribute: Accuracy
+            literal:
+              - {MeasurementType: MeasurementTypePowerFactor, Measured: true, MinMeasuredValue: -10000, MaxMeasuredValue: 10000, AccuracyRanges: [{RangeMin: -10000, RangeMax: 10000, FixedMax: 1}]}
+        start_null: [ActivePower, PowerFactor]
+        attributes:
+          - attribute: PowerFactor
+            from: state
+            min: -10000
+            max: 10000
+            units: {"%": {scale: 100}, "": {scale: 10000}}
   - id: energy
     when: {device_class: [energy]}
     type: ElectricalSensor
@@ -441,7 +543,7 @@ rows:
             default_unit: "%"
   - id: no_device_type
     when:
-      device_class: [absolute_humidity, apparent_power, aqi, area, blood_glucose_concentration, conductivity, data_rate, data_size, date, distance, duration, energy_distance, energy_storage, enum, frequency, gas, irradiance, moisture, monetary, nitrogen_monoxide, nitrous_oxide, ph, pm4, power_factor, precipitation, precipitation_intensity, reactive_energy, reactive_power, signal_strength, sound_pressure, speed, sulphur_dioxide, temperature_delta, timestamp, uptime, volume, volume_flow_rate, volume_storage, water, weight, wind_direction, wind_speed]
+      device_class: [absolute_humidity, aqi, area, blood_glucose_concentration, conductivity, data_rate, data_size, date, distance, duration, energy_distance, energy_storage, enum, gas, irradiance, moisture, monetary, nitrogen_monoxide, nitrous_oxide, ph, pm4, precipitation, precipitation_intensity, reactive_energy, signal_strength, sound_pressure, speed, sulphur_dioxide, temperature_delta, timestamp, uptime, volume, volume_flow_rate, volume_storage, water, weight, wind_direction, wind_speed]
     verdict: "unmappable: no Matter device type for a sensor of device_class {device_class} in H1"
   - id: no_device_class
     when: {device_class: [none]}

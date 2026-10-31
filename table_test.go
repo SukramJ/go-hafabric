@@ -93,7 +93,8 @@ func TestDeviceClassesHaveOneRow(t *testing.T) {
 
 // TestSensorUnitsAreTheCatalogs: a mapped sensor row converts exactly the
 // units the catalog allows its device classes (data/sensor.json
-// device_class_units), so a unit the catalog adds fails here.
+// device_class_units; its null, an entity without a unit, is the units
+// key ""), so a unit the catalog adds fails here.
 func TestSensorUnitsAreTheCatalogs(t *testing.T) {
 	cat, err := hacatalog.LoadSensor()
 	if err != nil {
@@ -115,7 +116,13 @@ func TestSensorUnitsAreTheCatalogs(t *testing.T) {
 			tables = append(tables, m.Value.Units)
 		}
 		for _, class := range r.When.DeviceClass {
-			want := slices.DeleteFunc(slices.Clone(cat.DeviceClassUnits[class]), func(u string) bool { return u == "null" || u == "" })
+			// The catalog's null (a sensor without a unit) is the key "".
+			want := slices.Clone(cat.DeviceClassUnits[class])
+			for i, u := range want {
+				if u == "null" {
+					want[i] = ""
+				}
+			}
 			slices.Sort(want)
 			if len(tables) == 0 {
 				if len(want) > 1 {

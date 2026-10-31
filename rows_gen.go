@@ -2791,6 +2791,226 @@ var rows = []Row{
 		},
 	},
 	{
+		ID: "sensor/apparent_power", Platform: "sensor",
+		When:  When{DeviceClass: []string{"apparent_power"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/electrical-sensor.element.ts:18-20 @862ad75f (PowerTopology mandatory, ElectricalPowerMeasurement O.a+)", "matter.js packages/model/src/standard/resources/electrical-power-measurement.resource.ts:201-203 @862ad75f (ApparentPower in millivolt-amps, mVA)", "home-assistant/core homeassistant/util/unit_conversion.py:195-209 @2026.10.3 (ApparentPowerConverter: mVA 1000, VA 1, kVA 1/1000)", "go-ha-catalog data/sensor.json:342-346 (apparent_power units)", "go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},
+		Type:  &device.ElectricalSensorType,
+		Clusters: []Cluster{
+			{
+				Name: "PowerTopology", ID: powertopologydef.ClusterID,
+				Features: []Feature{{Name: "NodeTopology", When: nil}},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d powertopologydef.Declare
+					d.Features |= powertopologydef.FeatureNodeTopology
+					return d
+				},
+			},
+			{
+				Name: "ElectricalPowerMeasurement", ID: electricalpowermeasurementdef.ClusterID,
+				Features: []Feature{{Name: "AlternatingCurrent", When: nil}},
+				Attributes: []Attr{
+					{Name: "ApparentPower", Value: Value{From: "state", Units: map[string]Linear{"VA": {Offset: 0, Scale: 1000, Add: 0}, "kVA": {Offset: 0, Scale: 1e+06, Add: 0}, "mVA": {Offset: 0, Scale: 1, Add: 0}}}},
+				},
+				Initial: []Attr{
+					{Name: "PowerMode", Value: Value{Const: "PowerModeAc", HasConst: true}},
+					{Name: "NumberOfMeasurementTypes", Value: Value{Const: float64(1), HasConst: true}},
+					{Name: "Accuracy", Value: Value{}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d electricalpowermeasurementdef.Declare
+					d.Features |= electricalpowermeasurementdef.FeatureAlternatingCurrent
+					d.Initial.PowerMode = new(electricalpowermeasurementdef.PowerModeAc)
+					d.Initial.NumberOfMeasurementTypes = new(uint8(1))
+					d.Initial.Accuracy = new([]electricalpowermeasurementdef.MeasurementAccuracyStruct{electricalpowermeasurementdef.MeasurementAccuracyStruct{MeasurementType: electricalpowermeasurementdef.MeasurementTypeApparentPower, Measured: true, MinMeasuredValue: int64(-4611686018427387904), MaxMeasuredValue: int64(4611686018427387904), AccuracyRanges: []electricalpowermeasurementdef.MeasurementAccuracyRangeStruct{electricalpowermeasurementdef.MeasurementAccuracyRangeStruct{RangeMin: int64(-4611686018427387904), RangeMax: int64(4611686018427387904), FixedMax: new(uint64(1))}}}})
+					d.Initial.Null = append(d.Initial.Null, electricalpowermeasurementdef.AttrActivePower)
+					d.Initial.Null = append(d.Initial.Null, electricalpowermeasurementdef.AttrApparentPower)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p electricalpowermeasurementdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.ApparentPower = new(conv[int64](v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, electricalpowermeasurementdef.AttrApparentPower)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, electricalpowermeasurementdef.Wrap(b.server(electricalpowermeasurementdef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
+		ID: "sensor/reactive_power", Platform: "sensor",
+		When:  When{DeviceClass: []string{"reactive_power"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/electrical-sensor.element.ts:18-20 @862ad75f (PowerTopology mandatory, ElectricalPowerMeasurement O.a+)", "matter.js packages/model/src/standard/resources/electrical-power-measurement.resource.ts:179-181 @862ad75f (ReactivePower in millivolt-amps reactive, mVAR)", "home-assistant/core homeassistant/util/unit_conversion.py:647-661 @2026.10.3 (ReactivePowerConverter: mvar 1000, var 1, kvar 1/1000)", "go-ha-catalog data/sensor.json:601-605 (reactive_power units)", "go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},
+		Type:  &device.ElectricalSensorType,
+		Clusters: []Cluster{
+			{
+				Name: "PowerTopology", ID: powertopologydef.ClusterID,
+				Features: []Feature{{Name: "NodeTopology", When: nil}},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d powertopologydef.Declare
+					d.Features |= powertopologydef.FeatureNodeTopology
+					return d
+				},
+			},
+			{
+				Name: "ElectricalPowerMeasurement", ID: electricalpowermeasurementdef.ClusterID,
+				Features: []Feature{{Name: "AlternatingCurrent", When: nil}},
+				Attributes: []Attr{
+					{Name: "ReactivePower", Value: Value{From: "state", Units: map[string]Linear{"kvar": {Offset: 0, Scale: 1e+06, Add: 0}, "mvar": {Offset: 0, Scale: 1, Add: 0}, "var": {Offset: 0, Scale: 1000, Add: 0}}}},
+				},
+				Initial: []Attr{
+					{Name: "PowerMode", Value: Value{Const: "PowerModeAc", HasConst: true}},
+					{Name: "NumberOfMeasurementTypes", Value: Value{Const: float64(1), HasConst: true}},
+					{Name: "Accuracy", Value: Value{}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d electricalpowermeasurementdef.Declare
+					d.Features |= electricalpowermeasurementdef.FeatureAlternatingCurrent
+					d.Initial.PowerMode = new(electricalpowermeasurementdef.PowerModeAc)
+					d.Initial.NumberOfMeasurementTypes = new(uint8(1))
+					d.Initial.Accuracy = new([]electricalpowermeasurementdef.MeasurementAccuracyStruct{electricalpowermeasurementdef.MeasurementAccuracyStruct{MeasurementType: electricalpowermeasurementdef.MeasurementTypeReactivePower, Measured: true, MinMeasuredValue: int64(-4611686018427387904), MaxMeasuredValue: int64(4611686018427387904), AccuracyRanges: []electricalpowermeasurementdef.MeasurementAccuracyRangeStruct{electricalpowermeasurementdef.MeasurementAccuracyRangeStruct{RangeMin: int64(-4611686018427387904), RangeMax: int64(4611686018427387904), FixedMax: new(uint64(1))}}}})
+					d.Initial.Null = append(d.Initial.Null, electricalpowermeasurementdef.AttrActivePower)
+					d.Initial.Null = append(d.Initial.Null, electricalpowermeasurementdef.AttrReactivePower)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p electricalpowermeasurementdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.ReactivePower = new(conv[int64](v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, electricalpowermeasurementdef.AttrReactivePower)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, electricalpowermeasurementdef.Wrap(b.server(electricalpowermeasurementdef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
+		ID: "sensor/frequency", Platform: "sensor",
+		When:  When{DeviceClass: []string{"frequency"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/electrical-sensor.element.ts:18-20 @862ad75f (PowerTopology mandatory, ElectricalPowerMeasurement O.a+)", "matter.js packages/model/src/standard/resources/electrical-power-measurement.resource.ts:278 @862ad75f (Frequency in millihertz, mHz)", "go-fabric cluster/spec/electricalpowermeasurement/definition_gen.go:515-521 @v0.15.4 (Frequency 0 to 1000000)", "home-assistant/core homeassistant/util/unit_conversion.py:365-375 @2026.10.3 (FrequencyConverter: mHz 1e3, Hz 1, kHz 1e-3, MHz 1e-6, GHz 1e-9)", "go-ha-catalog data/sensor.json:497-503 (frequency units)", "go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},
+		Type:  &device.ElectricalSensorType,
+		Clusters: []Cluster{
+			{
+				Name: "PowerTopology", ID: powertopologydef.ClusterID,
+				Features: []Feature{{Name: "NodeTopology", When: nil}},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d powertopologydef.Declare
+					d.Features |= powertopologydef.FeatureNodeTopology
+					return d
+				},
+			},
+			{
+				Name: "ElectricalPowerMeasurement", ID: electricalpowermeasurementdef.ClusterID,
+				Features: []Feature{{Name: "AlternatingCurrent", When: nil}},
+				Attributes: []Attr{
+					{Name: "Frequency", Value: Value{From: "state", Units: map[string]Linear{"GHz": {Offset: 0, Scale: 1e+12, Add: 0}, "Hz": {Offset: 0, Scale: 1000, Add: 0}, "MHz": {Offset: 0, Scale: 1e+09, Add: 0}, "kHz": {Offset: 0, Scale: 1e+06, Add: 0}, "mHz": {Offset: 0, Scale: 1, Add: 0}}, Min: new(float64(0)), Max: new(float64(1e+06))}},
+				},
+				Initial: []Attr{
+					{Name: "PowerMode", Value: Value{Const: "PowerModeAc", HasConst: true}},
+					{Name: "NumberOfMeasurementTypes", Value: Value{Const: float64(1), HasConst: true}},
+					{Name: "Accuracy", Value: Value{}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d electricalpowermeasurementdef.Declare
+					d.Features |= electricalpowermeasurementdef.FeatureAlternatingCurrent
+					d.Initial.PowerMode = new(electricalpowermeasurementdef.PowerModeAc)
+					d.Initial.NumberOfMeasurementTypes = new(uint8(1))
+					d.Initial.Accuracy = new([]electricalpowermeasurementdef.MeasurementAccuracyStruct{electricalpowermeasurementdef.MeasurementAccuracyStruct{MeasurementType: electricalpowermeasurementdef.MeasurementTypeFrequency, Measured: true, MinMeasuredValue: int64(0), MaxMeasuredValue: int64(1000000), AccuracyRanges: []electricalpowermeasurementdef.MeasurementAccuracyRangeStruct{electricalpowermeasurementdef.MeasurementAccuracyRangeStruct{RangeMin: int64(0), RangeMax: int64(1000000), FixedMax: new(uint64(1))}}}})
+					d.Initial.Null = append(d.Initial.Null, electricalpowermeasurementdef.AttrActivePower)
+					d.Initial.Null = append(d.Initial.Null, electricalpowermeasurementdef.AttrFrequency)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p electricalpowermeasurementdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.Frequency = new(conv[int64](v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, electricalpowermeasurementdef.AttrFrequency)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, electricalpowermeasurementdef.Wrap(b.server(electricalpowermeasurementdef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
+		ID: "sensor/power_factor", Platform: "sensor",
+		When:  When{DeviceClass: []string{"power_factor"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/electrical-sensor.element.ts:18-20 @862ad75f (PowerTopology mandatory, ElectricalPowerMeasurement O.a+)", "matter.js packages/model/src/standard/resources/electrical-power-measurement.resource.ts:328 @862ad75f (PowerFactor in +/- 1/100ths of a percent)", "go-fabric cluster/spec/electricalpowermeasurement/definition_gen.go:542-548 @v0.15.4 (PowerFactor -10000 to 10000)", "home-assistant/core homeassistant/util/unit_conversion.py:941-956 @2026.10.3 (UnitlessRatioConverter: no unit 1, % 100)", "go-ha-catalog data/sensor.json:564-567 (power_factor units %, none: the key \"\")", "go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},
+		Type:  &device.ElectricalSensorType,
+		Clusters: []Cluster{
+			{
+				Name: "PowerTopology", ID: powertopologydef.ClusterID,
+				Features: []Feature{{Name: "NodeTopology", When: nil}},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d powertopologydef.Declare
+					d.Features |= powertopologydef.FeatureNodeTopology
+					return d
+				},
+			},
+			{
+				Name: "ElectricalPowerMeasurement", ID: electricalpowermeasurementdef.ClusterID,
+				Features: []Feature{{Name: "AlternatingCurrent", When: nil}},
+				Attributes: []Attr{
+					{Name: "PowerFactor", Value: Value{From: "state", Units: map[string]Linear{"": {Offset: 0, Scale: 10000, Add: 0}, "%": {Offset: 0, Scale: 100, Add: 0}}, Min: new(float64(-10000)), Max: new(float64(10000))}},
+				},
+				Initial: []Attr{
+					{Name: "PowerMode", Value: Value{Const: "PowerModeAc", HasConst: true}},
+					{Name: "NumberOfMeasurementTypes", Value: Value{Const: float64(1), HasConst: true}},
+					{Name: "Accuracy", Value: Value{}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d electricalpowermeasurementdef.Declare
+					d.Features |= electricalpowermeasurementdef.FeatureAlternatingCurrent
+					d.Initial.PowerMode = new(electricalpowermeasurementdef.PowerModeAc)
+					d.Initial.NumberOfMeasurementTypes = new(uint8(1))
+					d.Initial.Accuracy = new([]electricalpowermeasurementdef.MeasurementAccuracyStruct{electricalpowermeasurementdef.MeasurementAccuracyStruct{MeasurementType: electricalpowermeasurementdef.MeasurementTypePowerFactor, Measured: true, MinMeasuredValue: int64(-10000), MaxMeasuredValue: int64(10000), AccuracyRanges: []electricalpowermeasurementdef.MeasurementAccuracyRangeStruct{electricalpowermeasurementdef.MeasurementAccuracyRangeStruct{RangeMin: int64(-10000), RangeMax: int64(10000), FixedMax: new(uint64(1))}}}})
+					d.Initial.Null = append(d.Initial.Null, electricalpowermeasurementdef.AttrActivePower)
+					d.Initial.Null = append(d.Initial.Null, electricalpowermeasurementdef.AttrPowerFactor)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p electricalpowermeasurementdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.PowerFactor = new(conv[int64](v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, electricalpowermeasurementdef.AttrPowerFactor)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, electricalpowermeasurementdef.Wrap(b.server(electricalpowermeasurementdef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
 		ID: "sensor/energy", Platform: "sensor",
 		When:  When{DeviceClass: []string{"energy"}},
 		State: eligibility.StateMappable,
@@ -2889,7 +3109,7 @@ var rows = []Row{
 	},
 	{
 		ID: "sensor/no_device_type", Platform: "sensor",
-		When:   When{DeviceClass: []string{"absolute_humidity", "apparent_power", "aqi", "area", "blood_glucose_concentration", "conductivity", "data_rate", "data_size", "date", "distance", "duration", "energy_distance", "energy_storage", "enum", "frequency", "gas", "irradiance", "moisture", "monetary", "nitrogen_monoxide", "nitrous_oxide", "ph", "pm4", "power_factor", "precipitation", "precipitation_intensity", "reactive_energy", "reactive_power", "signal_strength", "sound_pressure", "speed", "sulphur_dioxide", "temperature_delta", "timestamp", "uptime", "volume", "volume_flow_rate", "volume_storage", "water", "weight", "wind_direction", "wind_speed"}},
+		When:   When{DeviceClass: []string{"absolute_humidity", "aqi", "area", "blood_glucose_concentration", "conductivity", "data_rate", "data_size", "date", "distance", "duration", "energy_distance", "energy_storage", "enum", "gas", "irradiance", "moisture", "monetary", "nitrogen_monoxide", "nitrous_oxide", "ph", "pm4", "precipitation", "precipitation_intensity", "reactive_energy", "signal_strength", "sound_pressure", "speed", "sulphur_dioxide", "temperature_delta", "timestamp", "uptime", "volume", "volume_flow_rate", "volume_storage", "water", "weight", "wind_direction", "wind_speed"}},
 		State:  eligibility.StateUnmappable,
 		Reason: "no Matter device type for a sensor of device_class {device_class} in H1",
 		Cites:  []string{"go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},
