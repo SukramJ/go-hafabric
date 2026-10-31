@@ -9,7 +9,10 @@ import (
 	"context"
 	"slices"
 
+	airqualitydef "github.com/SukramJ/go-fabric/cluster/spec/airquality"
 	booleanstatedef "github.com/SukramJ/go-fabric/cluster/spec/booleanstate"
+	carbondioxideconcentrationmeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/carbondioxideconcentrationmeasurement"
+	carbonmonoxideconcentrationmeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/carbonmonoxideconcentrationmeasurement"
 	colorcontroldef "github.com/SukramJ/go-fabric/cluster/spec/colorcontrol"
 	doorlockdef "github.com/SukramJ/go-fabric/cluster/spec/doorlock"
 	electricalenergymeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/electricalenergymeasurement"
@@ -18,15 +21,22 @@ import (
 	illuminancemeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/illuminancemeasurement"
 	levelcontroldef "github.com/SukramJ/go-fabric/cluster/spec/levelcontrol"
 	modeselectdef "github.com/SukramJ/go-fabric/cluster/spec/modeselect"
+	nitrogendioxideconcentrationmeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/nitrogendioxideconcentrationmeasurement"
 	occupancysensingdef "github.com/SukramJ/go-fabric/cluster/spec/occupancysensing"
 	onoffdef "github.com/SukramJ/go-fabric/cluster/spec/onoff"
+	ozoneconcentrationmeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/ozoneconcentrationmeasurement"
+	pm10concentrationmeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/pm10concentrationmeasurement"
+	pm1concentrationmeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/pm1concentrationmeasurement"
+	pm25concentrationmeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/pm25concentrationmeasurement"
 	powersourcedef "github.com/SukramJ/go-fabric/cluster/spec/powersource"
 	powertopologydef "github.com/SukramJ/go-fabric/cluster/spec/powertopology"
 	pressuremeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/pressuremeasurement"
+	radonconcentrationmeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/radonconcentrationmeasurement"
 	relativehumiditymeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/relativehumiditymeasurement"
 	smokecoalarmdef "github.com/SukramJ/go-fabric/cluster/spec/smokecoalarm"
 	temperaturemeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/temperaturemeasurement"
 	thermostatdef "github.com/SukramJ/go-fabric/cluster/spec/thermostat"
+	totalvolatileorganiccompoundsconcentrationmeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/totalvolatileorganiccompoundsconcentrationmeasurement"
 	windowcoveringdef "github.com/SukramJ/go-fabric/cluster/spec/windowcovering"
 	"github.com/SukramJ/go-fabric/contract"
 	"github.com/SukramJ/go-fabric/device"
@@ -2059,6 +2069,564 @@ var rows = []Row{
 		},
 	},
 	{
+		ID: "sensor/carbon_dioxide", Platform: "sensor",
+		When:  When{DeviceClass: []string{"carbon_dioxide"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/air-quality-sensor.element.ts:19,22-34 @862ad75f (AirQuality mandatory, the concentration clusters optional)", "go-fabric cluster/spec/carbondioxideconcentrationmeasurement/definition_gen.go:47,87-89,108-115 @v0.15.4 (NumericMeasurement; MeasurementMedium; MeasurementUnit, the same names in every concentration package)", "go-fabric cluster/measurement/concentration.go:136-139 @v0.15.4 (AirQuality reads Unknown beside a concentration)", "go-ha-catalog data/sensor.json:383-385 (carbon_dioxide unit ppm)", "go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},
+		Type:  &device.AirQualitySensorType,
+		Clusters: []Cluster{
+			{
+				Name: "AirQuality", ID: airqualitydef.ClusterID,
+				Initial: []Attr{
+					{Name: "AirQuality", Value: Value{Const: "AirQualityUnknown", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d airqualitydef.Declare
+					d.Initial.AirQuality = new(airqualitydef.AirQualityUnknown)
+					return d
+				},
+			},
+			{
+				Name: "CarbonDioxideConcentrationMeasurement", ID: carbondioxideconcentrationmeasurementdef.ClusterID,
+				Features: []Feature{{Name: "NumericMeasurement", When: nil}},
+				Attributes: []Attr{
+					{Name: "MeasuredValue", Value: Value{From: "state", Units: map[string]Linear{"ppm": {Offset: 0, Scale: 1, Add: 0}}}},
+				},
+				Initial: []Attr{
+					{Name: "MeasurementMedium", Value: Value{Const: "MeasurementMediumAir", HasConst: true}},
+					{Name: "MeasurementUnit", Value: Value{Const: "MeasurementUnitPpm", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d carbondioxideconcentrationmeasurementdef.Declare
+					d.Features |= carbondioxideconcentrationmeasurementdef.FeatureNumericMeasurement
+					d.Initial.MeasurementMedium = new(carbondioxideconcentrationmeasurementdef.MeasurementMediumAir)
+					d.Initial.MeasurementUnit = new(carbondioxideconcentrationmeasurementdef.MeasurementUnitPpm)
+					d.Initial.Null = append(d.Initial.Null, carbondioxideconcentrationmeasurementdef.AttrMeasuredValue)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p carbondioxideconcentrationmeasurementdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.MeasuredValue = new(float32(v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, carbondioxideconcentrationmeasurementdef.AttrMeasuredValue)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, carbondioxideconcentrationmeasurementdef.Wrap(b.server(carbondioxideconcentrationmeasurementdef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
+		ID: "sensor/carbon_monoxide", Platform: "sensor",
+		When:  When{DeviceClass: []string{"carbon_monoxide"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/air-quality-sensor.element.ts:19,22-34 @862ad75f (AirQuality mandatory, the concentration clusters optional)", "go-fabric cluster/spec/carbondioxideconcentrationmeasurement/definition_gen.go:47,87-89,108-115 @v0.15.4 (NumericMeasurement; MeasurementMedium; MeasurementUnit, the same names in every concentration package)", "go-fabric cluster/measurement/concentration.go:136-139 @v0.15.4 (AirQuality reads Unknown beside a concentration)", "home-assistant/core homeassistant/util/unit_conversion.py:243-262 @2026.10.3 (CarbonMonoxideConcentrationConverter: ppm 1e6, ppb 1e9, mg/m³ and μg/m³ through the molar mass, 1e3 apart)", "go-ha-catalog data/sensor.json:386-391 (carbon_monoxide units)", "go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},
+		Type:  &device.AirQualitySensorType,
+		Clusters: []Cluster{
+			{
+				Name: "AirQuality", ID: airqualitydef.ClusterID,
+				Initial: []Attr{
+					{Name: "AirQuality", Value: Value{Const: "AirQualityUnknown", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d airqualitydef.Declare
+					d.Initial.AirQuality = new(airqualitydef.AirQualityUnknown)
+					return d
+				},
+			},
+			{
+				Name: "CarbonMonoxideConcentrationMeasurement", ID: carbonmonoxideconcentrationmeasurementdef.ClusterID,
+				Features: []Feature{{Name: "NumericMeasurement", When: nil}},
+				Attributes: []Attr{
+					{Name: "MeasuredValue", Value: Value{From: "state", Units: map[string]Linear{"mg/m³": {Offset: 0, Scale: 1000, Add: 0}, "ppb": {Offset: 0, Scale: 0.001, Add: 0}, "ppm": {Offset: 0, Scale: 1, Add: 0}, "μg/m³": {Offset: 0, Scale: 1, Add: 0}}}},
+				},
+				Initial: []Attr{
+					{Name: "MeasurementMedium", Value: Value{Const: "MeasurementMediumAir", HasConst: true}},
+					{Name: "MeasurementUnit", Value: Value{Const: "MeasurementUnitPpm", HasConst: true}, When: &When{Unit: []string{"ppb", "ppm"}}},
+					{Name: "MeasurementUnit", Value: Value{Const: "MeasurementUnitUgm3", HasConst: true}, When: &When{Unit: []string{"mg/m³", "μg/m³"}}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d carbonmonoxideconcentrationmeasurementdef.Declare
+					d.Features |= carbonmonoxideconcentrationmeasurementdef.FeatureNumericMeasurement
+					d.Initial.MeasurementMedium = new(carbonmonoxideconcentrationmeasurementdef.MeasurementMediumAir)
+					if b.match(&When{Unit: []string{"ppb", "ppm"}}) {
+						d.Initial.MeasurementUnit = new(carbonmonoxideconcentrationmeasurementdef.MeasurementUnitPpm)
+					}
+					if b.match(&When{Unit: []string{"mg/m³", "μg/m³"}}) {
+						d.Initial.MeasurementUnit = new(carbonmonoxideconcentrationmeasurementdef.MeasurementUnitUgm3)
+					}
+					d.Initial.Null = append(d.Initial.Null, carbonmonoxideconcentrationmeasurementdef.AttrMeasuredValue)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p carbonmonoxideconcentrationmeasurementdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.MeasuredValue = new(float32(v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, carbonmonoxideconcentrationmeasurementdef.AttrMeasuredValue)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, carbonmonoxideconcentrationmeasurementdef.Wrap(b.server(carbonmonoxideconcentrationmeasurementdef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
+		ID: "sensor/pm1", Platform: "sensor",
+		When:  When{DeviceClass: []string{"pm1"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/air-quality-sensor.element.ts:19,22-34 @862ad75f (AirQuality mandatory, the concentration clusters optional)", "go-fabric cluster/spec/carbondioxideconcentrationmeasurement/definition_gen.go:47,87-89,108-115 @v0.15.4 (NumericMeasurement; MeasurementMedium; MeasurementUnit, the same names in every concentration package)", "go-fabric cluster/measurement/concentration.go:136-139 @v0.15.4 (AirQuality reads Unknown beside a concentration)", "go-ha-catalog data/sensor.json:544-546 (pm1 unit μg/m³)", "go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},
+		Type:  &device.AirQualitySensorType,
+		Clusters: []Cluster{
+			{
+				Name: "AirQuality", ID: airqualitydef.ClusterID,
+				Initial: []Attr{
+					{Name: "AirQuality", Value: Value{Const: "AirQualityUnknown", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d airqualitydef.Declare
+					d.Initial.AirQuality = new(airqualitydef.AirQualityUnknown)
+					return d
+				},
+			},
+			{
+				Name: "Pm1ConcentrationMeasurement", ID: pm1concentrationmeasurementdef.ClusterID,
+				Features: []Feature{{Name: "NumericMeasurement", When: nil}},
+				Attributes: []Attr{
+					{Name: "MeasuredValue", Value: Value{From: "state", Units: map[string]Linear{"μg/m³": {Offset: 0, Scale: 1, Add: 0}}}},
+				},
+				Initial: []Attr{
+					{Name: "MeasurementMedium", Value: Value{Const: "MeasurementMediumAir", HasConst: true}},
+					{Name: "MeasurementUnit", Value: Value{Const: "MeasurementUnitUgm3", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d pm1concentrationmeasurementdef.Declare
+					d.Features |= pm1concentrationmeasurementdef.FeatureNumericMeasurement
+					d.Initial.MeasurementMedium = new(pm1concentrationmeasurementdef.MeasurementMediumAir)
+					d.Initial.MeasurementUnit = new(pm1concentrationmeasurementdef.MeasurementUnitUgm3)
+					d.Initial.Null = append(d.Initial.Null, pm1concentrationmeasurementdef.AttrMeasuredValue)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p pm1concentrationmeasurementdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.MeasuredValue = new(float32(v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, pm1concentrationmeasurementdef.AttrMeasuredValue)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, pm1concentrationmeasurementdef.Wrap(b.server(pm1concentrationmeasurementdef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
+		ID: "sensor/pm25", Platform: "sensor",
+		When:  When{DeviceClass: []string{"pm25"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/air-quality-sensor.element.ts:19,22-34 @862ad75f (AirQuality mandatory, the concentration clusters optional)", "go-fabric cluster/spec/carbondioxideconcentrationmeasurement/definition_gen.go:47,87-89,108-115 @v0.15.4 (NumericMeasurement; MeasurementMedium; MeasurementUnit, the same names in every concentration package)", "go-fabric cluster/measurement/concentration.go:136-139 @v0.15.4 (AirQuality reads Unknown beside a concentration)", "go-ha-catalog data/sensor.json:550-552 (pm25 unit μg/m³)", "go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},
+		Type:  &device.AirQualitySensorType,
+		Clusters: []Cluster{
+			{
+				Name: "AirQuality", ID: airqualitydef.ClusterID,
+				Initial: []Attr{
+					{Name: "AirQuality", Value: Value{Const: "AirQualityUnknown", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d airqualitydef.Declare
+					d.Initial.AirQuality = new(airqualitydef.AirQualityUnknown)
+					return d
+				},
+			},
+			{
+				Name: "Pm25ConcentrationMeasurement", ID: pm25concentrationmeasurementdef.ClusterID,
+				Features: []Feature{{Name: "NumericMeasurement", When: nil}},
+				Attributes: []Attr{
+					{Name: "MeasuredValue", Value: Value{From: "state", Units: map[string]Linear{"μg/m³": {Offset: 0, Scale: 1, Add: 0}}}},
+				},
+				Initial: []Attr{
+					{Name: "MeasurementMedium", Value: Value{Const: "MeasurementMediumAir", HasConst: true}},
+					{Name: "MeasurementUnit", Value: Value{Const: "MeasurementUnitUgm3", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d pm25concentrationmeasurementdef.Declare
+					d.Features |= pm25concentrationmeasurementdef.FeatureNumericMeasurement
+					d.Initial.MeasurementMedium = new(pm25concentrationmeasurementdef.MeasurementMediumAir)
+					d.Initial.MeasurementUnit = new(pm25concentrationmeasurementdef.MeasurementUnitUgm3)
+					d.Initial.Null = append(d.Initial.Null, pm25concentrationmeasurementdef.AttrMeasuredValue)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p pm25concentrationmeasurementdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.MeasuredValue = new(float32(v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, pm25concentrationmeasurementdef.AttrMeasuredValue)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, pm25concentrationmeasurementdef.Wrap(b.server(pm25concentrationmeasurementdef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
+		ID: "sensor/pm10", Platform: "sensor",
+		When:  When{DeviceClass: []string{"pm10"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/air-quality-sensor.element.ts:19,22-34 @862ad75f (AirQuality mandatory, the concentration clusters optional)", "go-fabric cluster/spec/carbondioxideconcentrationmeasurement/definition_gen.go:47,87-89,108-115 @v0.15.4 (NumericMeasurement; MeasurementMedium; MeasurementUnit, the same names in every concentration package)", "go-fabric cluster/measurement/concentration.go:136-139 @v0.15.4 (AirQuality reads Unknown beside a concentration)", "go-ha-catalog data/sensor.json:547-549 (pm10 unit μg/m³)", "go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},
+		Type:  &device.AirQualitySensorType,
+		Clusters: []Cluster{
+			{
+				Name: "AirQuality", ID: airqualitydef.ClusterID,
+				Initial: []Attr{
+					{Name: "AirQuality", Value: Value{Const: "AirQualityUnknown", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d airqualitydef.Declare
+					d.Initial.AirQuality = new(airqualitydef.AirQualityUnknown)
+					return d
+				},
+			},
+			{
+				Name: "Pm10ConcentrationMeasurement", ID: pm10concentrationmeasurementdef.ClusterID,
+				Features: []Feature{{Name: "NumericMeasurement", When: nil}},
+				Attributes: []Attr{
+					{Name: "MeasuredValue", Value: Value{From: "state", Units: map[string]Linear{"μg/m³": {Offset: 0, Scale: 1, Add: 0}}}},
+				},
+				Initial: []Attr{
+					{Name: "MeasurementMedium", Value: Value{Const: "MeasurementMediumAir", HasConst: true}},
+					{Name: "MeasurementUnit", Value: Value{Const: "MeasurementUnitUgm3", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d pm10concentrationmeasurementdef.Declare
+					d.Features |= pm10concentrationmeasurementdef.FeatureNumericMeasurement
+					d.Initial.MeasurementMedium = new(pm10concentrationmeasurementdef.MeasurementMediumAir)
+					d.Initial.MeasurementUnit = new(pm10concentrationmeasurementdef.MeasurementUnitUgm3)
+					d.Initial.Null = append(d.Initial.Null, pm10concentrationmeasurementdef.AttrMeasuredValue)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p pm10concentrationmeasurementdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.MeasuredValue = new(float32(v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, pm10concentrationmeasurementdef.AttrMeasuredValue)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, pm10concentrationmeasurementdef.Wrap(b.server(pm10concentrationmeasurementdef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
+		ID: "sensor/volatile_organic_compounds", Platform: "sensor",
+		When:  When{DeviceClass: []string{"volatile_organic_compounds"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/air-quality-sensor.element.ts:19,22-34 @862ad75f (AirQuality mandatory, the concentration clusters optional)", "go-fabric cluster/spec/carbondioxideconcentrationmeasurement/definition_gen.go:47,87-89,108-115 @v0.15.4 (NumericMeasurement; MeasurementMedium; MeasurementUnit, the same names in every concentration package)", "go-fabric cluster/measurement/concentration.go:136-139 @v0.15.4 (AirQuality reads Unknown beside a concentration)", "home-assistant/core homeassistant/util/unit_conversion.py:495-503 @2026.10.3 (MassVolumeConcentrationConverter: 1000 μg/m³ = 1 mg/m³)", "go-ha-catalog data/sensor.json:643-646 (volatile_organic_compounds units)", "go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},
+		Type:  &device.AirQualitySensorType,
+		Clusters: []Cluster{
+			{
+				Name: "AirQuality", ID: airqualitydef.ClusterID,
+				Initial: []Attr{
+					{Name: "AirQuality", Value: Value{Const: "AirQualityUnknown", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d airqualitydef.Declare
+					d.Initial.AirQuality = new(airqualitydef.AirQualityUnknown)
+					return d
+				},
+			},
+			{
+				Name: "TotalVolatileOrganicCompoundsConcentrationMeasurement", ID: totalvolatileorganiccompoundsconcentrationmeasurementdef.ClusterID,
+				Features: []Feature{{Name: "NumericMeasurement", When: nil}},
+				Attributes: []Attr{
+					{Name: "MeasuredValue", Value: Value{From: "state", Units: map[string]Linear{"mg/m³": {Offset: 0, Scale: 1000, Add: 0}, "μg/m³": {Offset: 0, Scale: 1, Add: 0}}}},
+				},
+				Initial: []Attr{
+					{Name: "MeasurementMedium", Value: Value{Const: "MeasurementMediumAir", HasConst: true}},
+					{Name: "MeasurementUnit", Value: Value{Const: "MeasurementUnitUgm3", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d totalvolatileorganiccompoundsconcentrationmeasurementdef.Declare
+					d.Features |= totalvolatileorganiccompoundsconcentrationmeasurementdef.FeatureNumericMeasurement
+					d.Initial.MeasurementMedium = new(totalvolatileorganiccompoundsconcentrationmeasurementdef.MeasurementMediumAir)
+					d.Initial.MeasurementUnit = new(totalvolatileorganiccompoundsconcentrationmeasurementdef.MeasurementUnitUgm3)
+					d.Initial.Null = append(d.Initial.Null, totalvolatileorganiccompoundsconcentrationmeasurementdef.AttrMeasuredValue)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p totalvolatileorganiccompoundsconcentrationmeasurementdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.MeasuredValue = new(float32(v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, totalvolatileorganiccompoundsconcentrationmeasurementdef.AttrMeasuredValue)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, totalvolatileorganiccompoundsconcentrationmeasurementdef.Wrap(b.server(totalvolatileorganiccompoundsconcentrationmeasurementdef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
+		ID: "sensor/volatile_organic_compounds_parts", Platform: "sensor",
+		When:  When{DeviceClass: []string{"volatile_organic_compounds_parts"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/air-quality-sensor.element.ts:19,22-34 @862ad75f (AirQuality mandatory, the concentration clusters optional)", "go-fabric cluster/spec/carbondioxideconcentrationmeasurement/definition_gen.go:47,87-89,108-115 @v0.15.4 (NumericMeasurement; MeasurementMedium; MeasurementUnit, the same names in every concentration package)", "go-fabric cluster/measurement/concentration.go:136-139 @v0.15.4 (AirQuality reads Unknown beside a concentration)", "home-assistant/core homeassistant/util/unit_conversion.py:941-956 @2026.10.3 (UnitlessRatioConverter: ppm 1e6, ppb 1e9)", "go-ha-catalog data/sensor.json:647-650 (volatile_organic_compounds_parts units)", "go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},
+		Type:  &device.AirQualitySensorType,
+		Clusters: []Cluster{
+			{
+				Name: "AirQuality", ID: airqualitydef.ClusterID,
+				Initial: []Attr{
+					{Name: "AirQuality", Value: Value{Const: "AirQualityUnknown", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d airqualitydef.Declare
+					d.Initial.AirQuality = new(airqualitydef.AirQualityUnknown)
+					return d
+				},
+			},
+			{
+				Name: "TotalVolatileOrganicCompoundsConcentrationMeasurement", ID: totalvolatileorganiccompoundsconcentrationmeasurementdef.ClusterID,
+				Features: []Feature{{Name: "NumericMeasurement", When: nil}},
+				Attributes: []Attr{
+					{Name: "MeasuredValue", Value: Value{From: "state", Units: map[string]Linear{"ppb": {Offset: 0, Scale: 1, Add: 0}, "ppm": {Offset: 0, Scale: 1000, Add: 0}}}},
+				},
+				Initial: []Attr{
+					{Name: "MeasurementMedium", Value: Value{Const: "MeasurementMediumAir", HasConst: true}},
+					{Name: "MeasurementUnit", Value: Value{Const: "MeasurementUnitPpb", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d totalvolatileorganiccompoundsconcentrationmeasurementdef.Declare
+					d.Features |= totalvolatileorganiccompoundsconcentrationmeasurementdef.FeatureNumericMeasurement
+					d.Initial.MeasurementMedium = new(totalvolatileorganiccompoundsconcentrationmeasurementdef.MeasurementMediumAir)
+					d.Initial.MeasurementUnit = new(totalvolatileorganiccompoundsconcentrationmeasurementdef.MeasurementUnitPpb)
+					d.Initial.Null = append(d.Initial.Null, totalvolatileorganiccompoundsconcentrationmeasurementdef.AttrMeasuredValue)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p totalvolatileorganiccompoundsconcentrationmeasurementdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.MeasuredValue = new(float32(v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, totalvolatileorganiccompoundsconcentrationmeasurementdef.AttrMeasuredValue)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, totalvolatileorganiccompoundsconcentrationmeasurementdef.Wrap(b.server(totalvolatileorganiccompoundsconcentrationmeasurementdef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
+		ID: "sensor/nitrogen_dioxide", Platform: "sensor",
+		When:  When{DeviceClass: []string{"nitrogen_dioxide"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/air-quality-sensor.element.ts:19,22-34 @862ad75f (AirQuality mandatory, the concentration clusters optional)", "go-fabric cluster/spec/carbondioxideconcentrationmeasurement/definition_gen.go:47,87-89,108-115 @v0.15.4 (NumericMeasurement; MeasurementMedium; MeasurementUnit, the same names in every concentration package)", "go-fabric cluster/measurement/concentration.go:136-139 @v0.15.4 (AirQuality reads Unknown beside a concentration)", "home-assistant/core homeassistant/util/unit_conversion.py:511-526 @2026.10.3 (NitrogenDioxideConcentrationConverter: ppm 1e6, ppb 1e9, μg/m³ through the molar mass)", "go-ha-catalog data/sensor.json:524-528 (nitrogen_dioxide units)", "go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},
+		Type:  &device.AirQualitySensorType,
+		Clusters: []Cluster{
+			{
+				Name: "AirQuality", ID: airqualitydef.ClusterID,
+				Initial: []Attr{
+					{Name: "AirQuality", Value: Value{Const: "AirQualityUnknown", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d airqualitydef.Declare
+					d.Initial.AirQuality = new(airqualitydef.AirQualityUnknown)
+					return d
+				},
+			},
+			{
+				Name: "NitrogenDioxideConcentrationMeasurement", ID: nitrogendioxideconcentrationmeasurementdef.ClusterID,
+				Features: []Feature{{Name: "NumericMeasurement", When: nil}},
+				Attributes: []Attr{
+					{Name: "MeasuredValue", Value: Value{From: "state", Units: map[string]Linear{"ppb": {Offset: 0, Scale: 1, Add: 0}, "ppm": {Offset: 0, Scale: 1000, Add: 0}, "μg/m³": {Offset: 0, Scale: 1, Add: 0}}}},
+				},
+				Initial: []Attr{
+					{Name: "MeasurementMedium", Value: Value{Const: "MeasurementMediumAir", HasConst: true}},
+					{Name: "MeasurementUnit", Value: Value{Const: "MeasurementUnitPpb", HasConst: true}, When: &When{Unit: []string{"ppb", "ppm"}}},
+					{Name: "MeasurementUnit", Value: Value{Const: "MeasurementUnitUgm3", HasConst: true}, When: &When{Unit: []string{"μg/m³"}}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d nitrogendioxideconcentrationmeasurementdef.Declare
+					d.Features |= nitrogendioxideconcentrationmeasurementdef.FeatureNumericMeasurement
+					d.Initial.MeasurementMedium = new(nitrogendioxideconcentrationmeasurementdef.MeasurementMediumAir)
+					if b.match(&When{Unit: []string{"ppb", "ppm"}}) {
+						d.Initial.MeasurementUnit = new(nitrogendioxideconcentrationmeasurementdef.MeasurementUnitPpb)
+					}
+					if b.match(&When{Unit: []string{"μg/m³"}}) {
+						d.Initial.MeasurementUnit = new(nitrogendioxideconcentrationmeasurementdef.MeasurementUnitUgm3)
+					}
+					d.Initial.Null = append(d.Initial.Null, nitrogendioxideconcentrationmeasurementdef.AttrMeasuredValue)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p nitrogendioxideconcentrationmeasurementdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.MeasuredValue = new(float32(v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, nitrogendioxideconcentrationmeasurementdef.AttrMeasuredValue)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, nitrogendioxideconcentrationmeasurementdef.Wrap(b.server(nitrogendioxideconcentrationmeasurementdef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
+		ID: "sensor/ozone", Platform: "sensor",
+		When:  When{DeviceClass: []string{"ozone"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/air-quality-sensor.element.ts:19,22-34 @862ad75f (AirQuality mandatory, the concentration clusters optional)", "go-fabric cluster/spec/carbondioxideconcentrationmeasurement/definition_gen.go:47,87-89,108-115 @v0.15.4 (NumericMeasurement; MeasurementMedium; MeasurementUnit, the same names in every concentration package)", "go-fabric cluster/measurement/concentration.go:136-139 @v0.15.4 (AirQuality reads Unknown beside a concentration)", "home-assistant/core homeassistant/util/unit_conversion.py:545-560 @2026.10.3 (OzoneConcentrationConverter: ppm 1e6, ppb 1e9, μg/m³ through the molar mass)", "go-ha-catalog data/sensor.json:536-540 (ozone units)", "go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},
+		Type:  &device.AirQualitySensorType,
+		Clusters: []Cluster{
+			{
+				Name: "AirQuality", ID: airqualitydef.ClusterID,
+				Initial: []Attr{
+					{Name: "AirQuality", Value: Value{Const: "AirQualityUnknown", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d airqualitydef.Declare
+					d.Initial.AirQuality = new(airqualitydef.AirQualityUnknown)
+					return d
+				},
+			},
+			{
+				Name: "OzoneConcentrationMeasurement", ID: ozoneconcentrationmeasurementdef.ClusterID,
+				Features: []Feature{{Name: "NumericMeasurement", When: nil}},
+				Attributes: []Attr{
+					{Name: "MeasuredValue", Value: Value{From: "state", Units: map[string]Linear{"ppb": {Offset: 0, Scale: 1, Add: 0}, "ppm": {Offset: 0, Scale: 1000, Add: 0}, "μg/m³": {Offset: 0, Scale: 1, Add: 0}}}},
+				},
+				Initial: []Attr{
+					{Name: "MeasurementMedium", Value: Value{Const: "MeasurementMediumAir", HasConst: true}},
+					{Name: "MeasurementUnit", Value: Value{Const: "MeasurementUnitPpb", HasConst: true}, When: &When{Unit: []string{"ppb", "ppm"}}},
+					{Name: "MeasurementUnit", Value: Value{Const: "MeasurementUnitUgm3", HasConst: true}, When: &When{Unit: []string{"μg/m³"}}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d ozoneconcentrationmeasurementdef.Declare
+					d.Features |= ozoneconcentrationmeasurementdef.FeatureNumericMeasurement
+					d.Initial.MeasurementMedium = new(ozoneconcentrationmeasurementdef.MeasurementMediumAir)
+					if b.match(&When{Unit: []string{"ppb", "ppm"}}) {
+						d.Initial.MeasurementUnit = new(ozoneconcentrationmeasurementdef.MeasurementUnitPpb)
+					}
+					if b.match(&When{Unit: []string{"μg/m³"}}) {
+						d.Initial.MeasurementUnit = new(ozoneconcentrationmeasurementdef.MeasurementUnitUgm3)
+					}
+					d.Initial.Null = append(d.Initial.Null, ozoneconcentrationmeasurementdef.AttrMeasuredValue)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p ozoneconcentrationmeasurementdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.MeasuredValue = new(float32(v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, ozoneconcentrationmeasurementdef.AttrMeasuredValue)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, ozoneconcentrationmeasurementdef.Wrap(b.server(ozoneconcentrationmeasurementdef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
+		ID: "sensor/radon", Platform: "sensor",
+		When:  When{DeviceClass: []string{"radon"}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/air-quality-sensor.element.ts:19,22-34 @862ad75f (AirQuality mandatory, the concentration clusters optional)", "go-fabric cluster/spec/carbondioxideconcentrationmeasurement/definition_gen.go:47,87-89,108-115 @v0.15.4 (NumericMeasurement; MeasurementMedium; MeasurementUnit, the same names in every concentration package)", "go-fabric cluster/measurement/concentration.go:136-139 @v0.15.4 (AirQuality reads Unknown beside a concentration)", "home-assistant/core homeassistant/util/unit_conversion.py:111,623-633 @2026.10.3 (RadiationConcentrationConverter: 1 pCi/L = 37 Bq/m³)", "go-ha-catalog data/sensor.json:593-596 (radon units)", "go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},
+		Type:  &device.AirQualitySensorType,
+		Clusters: []Cluster{
+			{
+				Name: "AirQuality", ID: airqualitydef.ClusterID,
+				Initial: []Attr{
+					{Name: "AirQuality", Value: Value{Const: "AirQualityUnknown", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d airqualitydef.Declare
+					d.Initial.AirQuality = new(airqualitydef.AirQualityUnknown)
+					return d
+				},
+			},
+			{
+				Name: "RadonConcentrationMeasurement", ID: radonconcentrationmeasurementdef.ClusterID,
+				Features: []Feature{{Name: "NumericMeasurement", When: nil}},
+				Attributes: []Attr{
+					{Name: "MeasuredValue", Value: Value{From: "state", Units: map[string]Linear{"Bq/m³": {Offset: 0, Scale: 1, Add: 0}, "pCi/L": {Offset: 0, Scale: 37, Add: 0}}}},
+				},
+				Initial: []Attr{
+					{Name: "MeasurementMedium", Value: Value{Const: "MeasurementMediumAir", HasConst: true}},
+					{Name: "MeasurementUnit", Value: Value{Const: "MeasurementUnitBqm3", HasConst: true}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d radonconcentrationmeasurementdef.Declare
+					d.Features |= radonconcentrationmeasurementdef.FeatureNumericMeasurement
+					d.Initial.MeasurementMedium = new(radonconcentrationmeasurementdef.MeasurementMediumAir)
+					d.Initial.MeasurementUnit = new(radonconcentrationmeasurementdef.MeasurementUnitBqm3)
+					d.Initial.Null = append(d.Initial.Null, radonconcentrationmeasurementdef.AttrMeasuredValue)
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p radonconcentrationmeasurementdef.Patch
+					n := 0
+					if v, ok := b.number(&st, ci, 0); ok {
+						p.MeasuredValue = new(float32(v))
+						n++
+					} else if b.null(&st, ci, 0) {
+						p.Null = append(p.Null, radonconcentrationmeasurementdef.AttrMeasuredValue)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, radonconcentrationmeasurementdef.Wrap(b.server(radonconcentrationmeasurementdef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
 		ID: "sensor/power", Platform: "sensor",
 		When:  When{DeviceClass: []string{"power"}},
 		State: eligibility.StateMappable,
@@ -2321,7 +2889,7 @@ var rows = []Row{
 	},
 	{
 		ID: "sensor/no_device_type", Platform: "sensor",
-		When:   When{DeviceClass: []string{"absolute_humidity", "apparent_power", "aqi", "area", "blood_glucose_concentration", "carbon_dioxide", "carbon_monoxide", "conductivity", "data_rate", "data_size", "date", "distance", "duration", "energy_distance", "energy_storage", "enum", "frequency", "gas", "irradiance", "moisture", "monetary", "nitrogen_dioxide", "nitrogen_monoxide", "nitrous_oxide", "ozone", "ph", "pm1", "pm10", "pm25", "pm4", "power_factor", "precipitation", "precipitation_intensity", "radon", "reactive_energy", "reactive_power", "signal_strength", "sound_pressure", "speed", "sulphur_dioxide", "temperature_delta", "timestamp", "uptime", "volatile_organic_compounds", "volatile_organic_compounds_parts", "volume", "volume_flow_rate", "volume_storage", "water", "weight", "wind_direction", "wind_speed"}},
+		When:   When{DeviceClass: []string{"absolute_humidity", "apparent_power", "aqi", "area", "blood_glucose_concentration", "conductivity", "data_rate", "data_size", "date", "distance", "duration", "energy_distance", "energy_storage", "enum", "frequency", "gas", "irradiance", "moisture", "monetary", "nitrogen_monoxide", "nitrous_oxide", "ph", "pm4", "power_factor", "precipitation", "precipitation_intensity", "reactive_energy", "reactive_power", "signal_strength", "sound_pressure", "speed", "sulphur_dioxide", "temperature_delta", "timestamp", "uptime", "volume", "volume_flow_rate", "volume_storage", "water", "weight", "wind_direction", "wind_speed"}},
 		State:  eligibility.StateUnmappable,
 		Reason: "no Matter device type for a sensor of device_class {device_class} in H1",
 		Cites:  []string{"go-ha-catalog data/mqtt.json:5242-5405 (sensor schema)", "go-ha-catalog data/device_classes.json:129-192 (sensor device classes)"},

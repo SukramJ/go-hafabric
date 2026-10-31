@@ -15,6 +15,12 @@ All notable changes to this project are documented here. The format follows
   (`desc.options` or `extra.<key>`) a materializer turns into the cluster's
   attributes and command — ModeSelect's modes, Thermostat's presets.
   `OptionList` is the runtime form, `Row.Clusters[].Options`.
+- select: a ModeSelect from the entity's options (`select/mode_select`).
+- sensor: carbon_dioxide, carbon_monoxide, pm1, pm25, pm10,
+  volatile_organic_compounds(_parts), nitrogen_dioxide, ozone and radon
+  as an AirQualitySensor with the class's concentration cluster; a class
+  with ratio and mass units keeps the unit's family on the wire
+  (`MeasurementUnit` by the entity's unit), no molar mass is assumed.
 
 ## [0.2.1] - 2026-10-26
 
