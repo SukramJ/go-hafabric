@@ -36,6 +36,12 @@ All notable changes to this project are documented here. The format follows
   FanControl from `fan_mode` (writes of FanMode and of PercentSetting by
   bands go to `fan_mode`) and RelativeHumidityMeasurement from
   `current_humidity`.
+- vacuum: a RoboticVacuumCleaner for an entity with START — RvcRunMode
+  Idle/Cleaning (`run_mode`), RvcOperationalState from the activity
+  (`pause`, `resume`, `go_home`), on the clusters' generated servers.
+- The row format's `otherwise` on a handled command: the handler's
+  response when none of its commands' `if` holds (RvcRunMode's
+  UnsupportedMode).
 
 ### Changed
 

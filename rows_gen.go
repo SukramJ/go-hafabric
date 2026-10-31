@@ -34,6 +34,8 @@ import (
 	pressuremeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/pressuremeasurement"
 	radonconcentrationmeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/radonconcentrationmeasurement"
 	relativehumiditymeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/relativehumiditymeasurement"
+	rvcoperationalstatedef "github.com/SukramJ/go-fabric/cluster/spec/rvcoperationalstate"
+	rvcrunmodedef "github.com/SukramJ/go-fabric/cluster/spec/rvcrunmode"
 	smokecoalarmdef "github.com/SukramJ/go-fabric/cluster/spec/smokecoalarm"
 	soilmeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/soilmeasurement"
 	switchclusterdef "github.com/SukramJ/go-fabric/cluster/spec/switchcluster"
@@ -52,11 +54,15 @@ import (
 const (
 	MethodDirection       = "direction"
 	MethodFanMode         = "fan_mode"
+	MethodGoHome          = "go_home"
 	MethodMode            = "mode"
 	MethodOscillation     = "oscillation"
+	MethodPause           = "pause"
 	MethodPercentage      = "percentage"
 	MethodPresetMode      = "preset_mode"
 	MethodPress           = "press"
+	MethodResume          = "resume"
+	MethodRunMode         = "run_mode"
 	MethodSelectOption    = "select_option"
 	MethodSetPosition     = "set_position"
 	MethodTemperature     = "temperature"
@@ -68,7 +74,7 @@ const (
 )
 
 // methods are the method constants, sorted.
-var methods = []string{MethodDirection, MethodFanMode, MethodMode, MethodOscillation, MethodPercentage, MethodPresetMode, MethodPress, MethodSelectOption, MethodSetPosition, MethodTemperature, MethodTemperatureHigh, MethodTemperatureLow, MethodTilt, MethodTurnOff, MethodTurnOn}
+var methods = []string{MethodDirection, MethodFanMode, MethodGoHome, MethodMode, MethodOscillation, MethodPause, MethodPercentage, MethodPresetMode, MethodPress, MethodResume, MethodRunMode, MethodSelectOption, MethodSetPosition, MethodTemperature, MethodTemperatureHigh, MethodTemperatureLow, MethodTilt, MethodTurnOff, MethodTurnOn}
 
 // rows is the table, in the order [Map] tries it.
 var rows = []Row{
@@ -3766,5 +3772,165 @@ var rows = []Row{
 		When:   When{},
 		State:  eligibility.StateUnmappable,
 		Reason: "no Matter counterpart for a text entity",
+	},
+	{
+		ID: "vacuum/robotic_vacuum_cleaner", Platform: "vacuum",
+		When:  When{Features: &Set{Any: []string{"START"}}},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/robotic-vacuum-cleaner.element.ts:19-25 @862ad75f (RvcRunMode and RvcOperationalState mandatory)", "go-fabric cluster/spec/rvcrunmode/definition_gen.go:56-71,95-99,129-132,165-177,202,221-224 @v0.15.4 (ModeChangeStatus, ModeOptionStruct, ModeTagStruct, ModeTag Idle and Cleaning, ChangeToMode)", "go-fabric cluster/spec/rvcoperationalstate/definition_gen.go:40-45,66-84,155-165,188-191 @v0.15.4 (Pause, Resume, GoHome; ErrorStateEnum; OperationalStateEnum; OperationalStateStruct)", "go-fabric device/defaults_ports.go:30-33 @v0.15.4 (without its port a cluster keeps the generated server)", "home-assistant/core homeassistant/components/vacuum/const.py:30-38,53-69 @2026.10.3 (activities; PAUSE, RETURN_HOME, START)", "home-assistant/core homeassistant/components/vacuum/services.py:104-119 @2026.10.3 (start, pause, return_to_base)", "home-assistant-matter-hub packages/backend/src/matter/behaviors/rvc-run-mode-server.ts:20-23 @664575a (Idle 0, Cleaning 1)", "home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/vacuum/behaviors/vacuum-rvc-operational-state-server.ts:78-161 @664575a (activities onto operational states; pause, resume as start, go home as return_to_base)", "go-ha-catalog data/mqtt.json:6284-6479 (vacuum schema)", "go-ha-catalog data/features.json:102-116 (vacuum feature flags)"},
+		Type:  &device.RoboticVacuumCleanerType,
+		Caveats: []Caveat{
+			{When: When{}, Reason: "the clean modes (fan speed) and the service areas are not mapped"},
+		},
+		Clusters: []Cluster{
+			{
+				Name: "RvcRunMode", ID: rvcrunmodedef.ClusterID,
+				Attributes: []Attr{
+					{Name: "CurrentMode", Value: Value{From: "state"}},
+				},
+				Initial: []Attr{
+					{Name: "SupportedModes", Value: Value{}},
+					{Name: "CurrentMode", Value: Value{Const: float64(0), HasConst: true}},
+				},
+				Commands: []Command{
+					{Kind: "handle", On: []string{"ChangeToMode"}, Method: "run_mode", Raw: &Value{Field: "NewMode"}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d rvcrunmodedef.Declare
+					d.Initial.SupportedModes = new([]rvcrunmodedef.ModeOptionStruct{rvcrunmodedef.ModeOptionStruct{Label: "Idle", Mode: uint8(0), ModeTags: []rvcrunmodedef.ModeTagStruct{rvcrunmodedef.ModeTagStruct{Value: rvcrunmodedef.ModeTagIdle}}}, rvcrunmodedef.ModeOptionStruct{Label: "Cleaning", Mode: uint8(1), ModeTags: []rvcrunmodedef.ModeTagStruct{rvcrunmodedef.ModeTagStruct{Value: rvcrunmodedef.ModeTagCleaning}}}})
+					d.Initial.CurrentMode = new(uint8(0))
+					d.HandleChangeToMode = func(_ context.Context, req rvcrunmodedef.ChangeToModeRequest) (resp rvcrunmodedef.ChangeToModeResponse, err error) {
+						f := func(name string) (any, bool) {
+							switch name {
+							case "NewMode":
+								return req.NewMode, true
+							}
+							return nil, false
+						}
+						handled := false
+						if slices.Contains([]uint8{uint8(0), uint8(1)}, req.NewMode) {
+							b.emit(ci, 0, f)
+							handled = true
+						}
+						if !handled {
+							resp = rvcrunmodedef.ChangeToModeResponse{Status: rvcrunmodedef.ModeChangeStatusUnsupportedMode}
+						}
+						return resp, err
+					}
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p rvcrunmodedef.Patch
+					n := 0
+					switch b.text(&st, ci, 0) {
+					case "cleaning":
+						p.CurrentMode = new(uint8(1))
+						n++
+					case "docked":
+						p.CurrentMode = new(uint8(0))
+						n++
+					case "error":
+						p.CurrentMode = new(uint8(0))
+						n++
+					case "idle":
+						p.CurrentMode = new(uint8(0))
+						n++
+					case "paused":
+						p.CurrentMode = new(uint8(1))
+						n++
+					case "returning":
+						p.CurrentMode = new(uint8(0))
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, rvcrunmodedef.Wrap(b.server(rvcrunmodedef.ClusterID)).Set(p)
+				},
+			},
+			{
+				Name: "RvcOperationalState", ID: rvcoperationalstatedef.ClusterID,
+				Attributes: []Attr{
+					{Name: "OperationalState", Value: Value{From: "state"}},
+				},
+				Initial: []Attr{
+					{Name: "OperationalStateList", Value: Value{}},
+					{Name: "OperationalState", Value: Value{Const: "OperationalStateStopped", HasConst: true}},
+					{Name: "OperationalError", Value: Value{}},
+				},
+				Commands: []Command{
+					{Kind: "handle", On: []string{"Pause"}, Method: "pause", Raw: &Value{Const: "PAUSE", HasConst: true}, When: &When{Features: &Set{Any: []string{"PAUSE"}}}},
+					{Kind: "handle", On: []string{"Resume"}, Method: "resume", Raw: &Value{Const: "START", HasConst: true}},
+					{Kind: "handle", On: []string{"GoHome"}, Method: "go_home", Raw: &Value{Const: "RETURN_TO_BASE", HasConst: true}, When: &When{Features: &Set{Any: []string{"RETURN_HOME"}}}},
+				},
+				declare: func(b *binding, ci int) device.Declaration {
+					var d rvcoperationalstatedef.Declare
+					d.Initial.OperationalStateList = new([]rvcoperationalstatedef.OperationalStateStruct{rvcoperationalstatedef.OperationalStateStruct{OperationalStateId: rvcoperationalstatedef.OperationalStateStopped}, rvcoperationalstatedef.OperationalStateStruct{OperationalStateId: rvcoperationalstatedef.OperationalStateRunning}, rvcoperationalstatedef.OperationalStateStruct{OperationalStateId: rvcoperationalstatedef.OperationalStatePaused}, rvcoperationalstatedef.OperationalStateStruct{OperationalStateId: rvcoperationalstatedef.OperationalStateError}, rvcoperationalstatedef.OperationalStateStruct{OperationalStateId: rvcoperationalstatedef.OperationalStateSeekingCharger}, rvcoperationalstatedef.OperationalStateStruct{OperationalStateId: rvcoperationalstatedef.OperationalStateCharging}, rvcoperationalstatedef.OperationalStateStruct{OperationalStateId: rvcoperationalstatedef.OperationalStateDocked}})
+					d.Initial.OperationalState = new(rvcoperationalstatedef.OperationalStateStopped)
+					d.Initial.OperationalError = &rvcoperationalstatedef.ErrorStateStruct{ErrorStateId: rvcoperationalstatedef.ErrorStateNoError}
+					if b.match(&When{Features: &Set{Any: []string{"PAUSE"}}}) {
+						d.HandlePause = func(_ context.Context, req rvcoperationalstatedef.PauseRequest) (resp rvcoperationalstatedef.OperationalCommandResponse, err error) {
+							f := func(string) (any, bool) { return nil, false }
+							if true {
+								b.emit(ci, 0, f)
+							}
+							return resp, err
+						}
+					}
+					d.HandleResume = func(_ context.Context, req rvcoperationalstatedef.ResumeRequest) (resp rvcoperationalstatedef.OperationalCommandResponse, err error) {
+						f := func(string) (any, bool) { return nil, false }
+						if true {
+							b.emit(ci, 1, f)
+						}
+						return resp, err
+					}
+					if b.match(&When{Features: &Set{Any: []string{"RETURN_HOME"}}}) {
+						d.HandleGoHome = func(_ context.Context, req rvcoperationalstatedef.GoHomeRequest) (resp rvcoperationalstatedef.OperationalCommandResponse, err error) {
+							f := func(string) (any, bool) { return nil, false }
+							if true {
+								b.emit(ci, 2, f)
+							}
+							return resp, err
+						}
+					}
+					return d
+				},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p rvcoperationalstatedef.Patch
+					n := 0
+					switch b.text(&st, ci, 0) {
+					case "cleaning":
+						p.OperationalState = new(rvcoperationalstatedef.OperationalStateRunning)
+						n++
+					case "docked":
+						p.OperationalState = new(rvcoperationalstatedef.OperationalStateDocked)
+						n++
+					case "error":
+						p.OperationalState = new(rvcoperationalstatedef.OperationalStateError)
+						n++
+					case "idle":
+						p.OperationalState = new(rvcoperationalstatedef.OperationalStateStopped)
+						n++
+					case "paused":
+						p.OperationalState = new(rvcoperationalstatedef.OperationalStatePaused)
+						n++
+					case "returning":
+						p.OperationalState = new(rvcoperationalstatedef.OperationalStateSeekingCharger)
+						n++
+					}
+					if n == 0 {
+						return nil, nil
+					}
+					return p, rvcoperationalstatedef.Wrap(b.server(rvcoperationalstatedef.ClusterID)).Set(p)
+				},
+			},
+		},
+	},
+	{
+		ID: "vacuum/unmapped", Platform: "vacuum",
+		When:   When{},
+		State:  eligibility.StateUnmappable,
+		Reason: "a vacuum without the START feature cannot be started from a run mode",
+		Cites:  []string{"go-ha-catalog data/mqtt.json:6284-6479 (vacuum schema)", "go-ha-catalog data/features.json:102-116 (vacuum feature flags)"},
 	},
 }

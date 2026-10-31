@@ -1,0 +1,72 @@
+# Home Assistant's vacuum (a StateVacuumEntity: its state is the
+# activity). The run mode is Idle or Cleaning, the operational state the
+# activity; a controller's commands go to the entity's named methods
+# (run_mode with the mode, pause, resume, go_home).
+platform: vacuum
+cites:
+  - go-ha-catalog data/mqtt.json:6284-6479 (vacuum schema)
+  - go-ha-catalog data/features.json:102-116 (vacuum feature flags)
+rows:
+  - id: robotic_vacuum_cleaner
+    when: {features: {any: [START]}}
+    type: RoboticVacuumCleaner
+    verdict: mappable
+    caveats:
+      - when: {}
+        reason: "the clean modes (fan speed) and the service areas are not mapped"
+    cites:
+      - matter.js packages/model/src/standard/elements/robotic-vacuum-cleaner.element.ts:19-25 @862ad75f (RvcRunMode and RvcOperationalState mandatory)
+      - go-fabric cluster/spec/rvcrunmode/definition_gen.go:56-71,95-99,129-132,165-177,202,221-224 @v0.15.4 (ModeChangeStatus, ModeOptionStruct, ModeTagStruct, ModeTag Idle and Cleaning, ChangeToMode)
+      - go-fabric cluster/spec/rvcoperationalstate/definition_gen.go:40-45,66-84,155-165,188-191 @v0.15.4 (Pause, Resume, GoHome; ErrorStateEnum; OperationalStateEnum; OperationalStateStruct)
+      - go-fabric device/defaults_ports.go:30-33 @v0.15.4 (without its port a cluster keeps the generated server)
+      - home-assistant/core homeassistant/components/vacuum/const.py:30-38,53-69 @2026.10.3 (activities; PAUSE, RETURN_HOME, START)
+      - home-assistant/core homeassistant/components/vacuum/services.py:104-119 @2026.10.3 (start, pause, return_to_base)
+      - home-assistant-matter-hub packages/backend/src/matter/behaviors/rvc-run-mode-server.ts:20-23 @664575a (Idle 0, Cleaning 1)
+      - home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/vacuum/behaviors/vacuum-rvc-operational-state-server.ts:78-161 @664575a (activities onto operational states; pause, resume as start, go home as return_to_base)
+    clusters:
+      - cluster: RvcRunMode
+        initial:
+          - attribute: SupportedModes
+            literal:
+              - {Label: Idle, Mode: 0, ModeTags: [{Value: ModeTagIdle}]}
+              - {Label: Cleaning, Mode: 1, ModeTags: [{Value: ModeTagCleaning}]}
+          - {attribute: CurrentMode, const: 0}
+        attributes:
+          - {attribute: CurrentMode, from: state, enum: {cleaning: 1, paused: 1, docked: 0, idle: 0, returning: 0, error: 0}}
+        commands:
+          - handle: ChangeToMode
+            if: {field: NewMode, in: ["0", "1"]}
+            method: run_mode
+            raw: {field: NewMode}
+            otherwise: {Status: ModeChangeStatusUnsupportedMode}
+      - cluster: RvcOperationalState
+        initial:
+          - attribute: OperationalStateList
+            literal:
+              - {OperationalStateId: OperationalStateStopped}
+              - {OperationalStateId: OperationalStateRunning}
+              - {OperationalStateId: OperationalStatePaused}
+              - {OperationalStateId: OperationalStateError}
+              - {OperationalStateId: OperationalStateSeekingCharger}
+              - {OperationalStateId: OperationalStateCharging}
+              - {OperationalStateId: OperationalStateDocked}
+          - {attribute: OperationalState, const: OperationalStateStopped}
+          - attribute: OperationalError
+            literal: {ErrorStateId: ErrorStateNoError}
+        attributes:
+          - {attribute: OperationalState, from: state, enum: {cleaning: OperationalStateRunning, paused: OperationalStatePaused, returning: OperationalStateSeekingCharger, docked: OperationalStateDocked, idle: OperationalStateStopped, error: OperationalStateError}}
+        commands:
+          - handle: Pause
+            when: {features: {any: [PAUSE]}}
+            method: pause
+            raw: {const: PAUSE}
+          - handle: Resume
+            method: resume
+            raw: {const: START}
+          - handle: GoHome
+            when: {features: {any: [RETURN_HOME]}}
+            method: go_home
+            raw: {const: RETURN_TO_BASE}
+  - id: unmapped
+    when: {}
+    verdict: "unmappable: a vacuum without the START feature cannot be started from a run mode"

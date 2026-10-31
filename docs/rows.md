@@ -70,6 +70,7 @@ rows:
             raw: {...}           # the payload as one value, or
             json: {state: {...}, color.h: {...}}   # a JSON object by dotted key
             derive: rgb_from_xy  # keys computed from several fields
+            otherwise: {Status: ModeChangeStatusUnsupportedMode}   # the response when no if holds
         events:                  # events Plan.Apply emits when a value changes
           - on: state            # state, state.<key> or extra.<key>
             emit:                # in order, through Server.Emit<Event>
@@ -113,6 +114,11 @@ the named method (the MQTT `<method>_command_topic` of the platform).
 Every method a row names is an exported constant of the package
 (`hamapping.MethodPresetMode` for `preset_mode`), generated with the rows,
 so a consumer's command handler compares against the constant.
+`otherwise` (a `handle` with an `if` only) is the handler's response, by
+field name of its response structure, when the `if` of none of the
+handler's commands holds: the command is answered with the cluster's own
+status and nothing is handed out. Without it a handler answers the zero
+response, the cluster's success.
 
 **Events.** `events` emit events of the cluster through its typed server
 (`<cluster>def.Server.Emit<Event>`, on the device's endpoint number) when
@@ -202,6 +208,8 @@ options as `[options <list> at <current> to <method>]`.
 | `sensor/no_device_class` | device_class none |  |  | unmappable: a sensor without device_class has no Matter device type |  |
 | `switch/plug` | device_class none, outlet, switch | OnOffPlugInUnit | OnOff | mappable | matter.js packages/model/src/standard/elements/on-off-plug-in-unit.element.ts:27-31 @862ad75f (OnOff mandatory, feature LT) |
 | `text/unmapped` | any |  |  | unmappable: no Matter counterpart for a text entity |  |
+| `vacuum/robotic_vacuum_cleaner` | features any of START | RoboticVacuumCleaner | RvcRunMode; RvcOperationalState | mappable | matter.js packages/model/src/standard/elements/robotic-vacuum-cleaner.element.ts:19-25 @862ad75f (RvcRunMode and RvcOperationalState mandatory); go-fabric cluster/spec/rvcrunmode/definition_gen.go:56-71,95-99,129-132,165-177,202,221-224 @v0.15.4 (ModeChangeStatus, ModeOptionStruct, ModeTagStruct, ModeTag Idle and Cleaning, ChangeToMode); go-fabric cluster/spec/rvcoperationalstate/definition_gen.go:40-45,66-84,155-165,188-191 @v0.15.4 (Pause, Resume, GoHome; ErrorStateEnum; OperationalStateEnum; OperationalStateStruct); go-fabric device/defaults_ports.go:30-33 @v0.15.4 (without its port a cluster keeps the generated server); home-assistant/core homeassistant/components/vacuum/const.py:30-38,53-69 @2026.10.3 (activities; PAUSE, RETURN_HOME, START); home-assistant/core homeassistant/components/vacuum/services.py:104-119 @2026.10.3 (start, pause, return_to_base); home-assistant-matter-hub packages/backend/src/matter/behaviors/rvc-run-mode-server.ts:20-23 @664575a (Idle 0, Cleaning 1); home-assistant-matter-hub packages/backend/src/matter/endpoints/legacy/vacuum/behaviors/vacuum-rvc-operational-state-server.ts:78-161 @664575a (activities onto operational states; pause, resume as start, go home as return_to_base) |
+| `vacuum/unmapped` | any |  |  | unmappable: a vacuum without the START feature cannot be started from a run mode |  |
 
 <!-- rows:end -->
 
@@ -280,5 +288,7 @@ is the catalog's flag bits or names. The table is generated from the rows.
 | `switch` | `extra.payload_off` | `switch/plug` | value | yes |
 | `switch` | `extra.payload_on` | `switch/plug` | value | yes |
 | `switch` | `state` | `switch/plug` | value | — |
+| `vacuum` | `extra.supported_features` | `vacuum/robotic_vacuum_cleaner` | predicate | yes |
+| `vacuum` | `state` | `vacuum/robotic_vacuum_cleaner` | value | — |
 
 <!-- keys:end -->

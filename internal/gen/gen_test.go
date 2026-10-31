@@ -27,6 +27,7 @@ rows:
         commands:
           - handle: LockDoor
             raw: {const: LOCK}
+
           - write: [ActuatorEnabled]
             if: {field: ActuatorEnabled, in: ["true"]}
             raw: {field: LockState, enum: {LockStateLocked: locked}}
@@ -114,6 +115,55 @@ rows:
 	if !strings.Contains(Table([]rowfile.File{f}), "[options desc.options at state to select_option]") {
 		t.Error("the table names no options")
 	}
+}
+
+const vacuum = `platform: vacuum
+rows:
+  - id: v
+    when: {}
+    type: RoboticVacuumCleaner
+    verdict: mappable
+    cites: [x]
+    clusters:
+      - cluster: RvcRunMode
+        commands:
+          - handle: ChangeToMode
+            if: {field: NewMode, in: ["0", "1"]}
+            method: run_mode
+            raw: {field: NewMode}
+            otherwise: {Status: ModeChangeStatusUnsupportedMode}
+`
+
+func TestGenerateOtherwise(t *testing.T) {
+	out, err := GenerateFiles([]rowfile.File{parse(t, vacuum)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(out), "resp = rvcrunmodedef.ChangeToModeResponse{Status: rvcrunmodedef.ModeChangeStatusUnsupportedMode}") {
+		t.Fatalf("no otherwise response:\n%s", out)
+	}
+	for name, edit := range map[string][2]string{
+		"field": {"{Status: ModeChangeStatusUnsupportedMode}", "{Nope: 1}"},
+		"twice": {"            otherwise: {Status: ModeChangeStatusUnsupportedMode}\n", "            otherwise: {Status: ModeChangeStatusUnsupportedMode}\n          - handle: ChangeToMode\n            if: {field: NewMode, in: [\"2\"]}\n            raw: {const: x}\n            otherwise: {Status: ModeChangeStatusUnsupportedMode}\n"},
+	} {
+		if _, err := GenerateFiles([]rowfile.File{parse(t, strings.Replace(vacuum, edit[0], edit[1], 1))}); err == nil {
+			t.Errorf("%s: generated", name)
+		}
+	}
+	noFields := strings.Replace(base, "          - handle: LockDoor\n            raw: {const: LOCK}",
+		"          - handle: LockDoor\n            if: {field: PinCode, in: [\"1\"]}\n            raw: {const: LOCK}\n            otherwise: {Status: X}", 1)
+	if err := generate(t, noFields); err == nil {
+		t.Error("an otherwise on a status-only command generated")
+	}
+}
+
+func parse(t *testing.T, src string) rowfile.File {
+	t.Helper()
+	f, err := rowfile.Parse([]byte(src))
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	return f
 }
 
 func TestGenerateRepository(t *testing.T) {

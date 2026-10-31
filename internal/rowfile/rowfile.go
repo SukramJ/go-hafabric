@@ -219,6 +219,11 @@ type Command struct {
 	JSON   map[string]Value `yaml:"json"`
 	// Derive adds keys a conversion of several fields computes (Derives).
 	Derive string `yaml:"derive"`
+	// Otherwise is a handler's response, by field name of its response
+	// structure, when the if of none of the handler's commands holds: the
+	// command is refused with a status of the cluster's own (a handle
+	// with an if only).
+	Otherwise map[string]any `yaml:"otherwise"`
 }
 
 // Derives are the derived payloads a command may add, with the fields
@@ -545,6 +550,16 @@ func (cmd *Command) check() error {
 		for _, n := range slices.Concat(cmd.If.In, cmd.If.NotIn) {
 			if !ident(n) && !number(n) {
 				return fmt.Errorf("if: constant %q", n)
+			}
+		}
+	}
+	if cmd.Otherwise != nil {
+		if cmd.Handle == "" || cmd.If == nil {
+			return errors.New("otherwise: a handle's with an if")
+		}
+		for k := range cmd.Otherwise {
+			if !ident(k) {
+				return fmt.Errorf("otherwise: field %q", k)
 			}
 		}
 	}

@@ -241,7 +241,8 @@ func TestPredicates(t *testing.T) {
 		{"presets", "climate", model.Description{Extra: map[string]any{"modes": []string{"heat"}, "preset_modes": []string{"eco"}}}, "climate/thermostat", eligibility.StatePartial},
 		{"lock", "lock", model.Description{}, "lock/door_lock", eligibility.StateMappable},
 		{"fan", "fan", model.Description{}, "fan/fan", eligibility.StateMappable},
-		{"vacuum", "vacuum", model.Description{}, "", eligibility.StateUnmappable},
+		{"vacuum without start", "vacuum", model.Description{}, "vacuum/unmapped", eligibility.StateUnmappable},
+		{"vacuum", "vacuum", model.Description{Extra: map[string]any{"supported_features": 8192}}, "vacuum/robotic_vacuum_cleaner", eligibility.StatePartial},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			_, v := hamapping.Map(testDevice, []model.Entity{entity("e", c.platform, c.desc)})

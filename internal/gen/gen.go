@@ -13,6 +13,7 @@ package gen
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"go/format"
 	"reflect"
@@ -1137,13 +1138,27 @@ func (g *gen) handlers(w *bytes.Buffer, c *rowfile.Cluster, d def) error {
 			guard = strings.Join(conds, " || ")
 			fmt.Fprintf(w, "if %s {\n", guard)
 		}
+		otherwise, err := g.otherwise(f.Type.Out(0), cmds)
+		if err != nil {
+			return fmt.Errorf("handle %s: %w", h, err)
+		}
 		fmt.Fprintf(w, "d.Handle%s = func(_ context.Context, req %s) (resp %s, err error) {\nf := %s\n", h, req, resp, fn)
+		if otherwise != "" {
+			w.WriteString("handled := false\n")
+		}
 		for _, i := range byName[h] {
 			cond, err := g.cond(d, &c.Commands[i], "req")
 			if err != nil {
 				return err
 			}
-			fmt.Fprintf(w, "if %s {\nb.emit(ci, %d, f)\n}\n", cond, i)
+			mark := ""
+			if otherwise != "" {
+				mark = "\nhandled = true"
+			}
+			fmt.Fprintf(w, "if %s {\nb.emit(ci, %d, f)%s\n}\n", cond, i, mark)
+		}
+		if otherwise != "" {
+			fmt.Fprintf(w, "if !handled {\nresp = %s\n}\n", otherwise)
 		}
 		w.WriteString("return resp, err\n}\n")
 		if guard != "" {
@@ -1151,6 +1166,28 @@ func (g *gen) handlers(w *bytes.Buffer, c *rowfile.Cluster, d def) error {
 		}
 	}
 	return nil
+}
+
+// otherwise is the response literal of a handler's commands' otherwise
+// ("" for none); the commands of one handler state at most one.
+func (g *gen) otherwise(resp reflect.Type, cmds []*rowfile.Command) (string, error) {
+	var lit map[string]any
+	for _, c := range cmds {
+		if c.Otherwise == nil {
+			continue
+		}
+		if lit != nil {
+			return "", errors.New("otherwise twice")
+		}
+		lit = c.Otherwise
+	}
+	if lit == nil {
+		return "", nil
+	}
+	if resp.Kind() != reflect.Struct || resp.NumField() == 0 {
+		return "", fmt.Errorf("otherwise: the response %s has no fields", resp)
+	}
+	return g.literal(resp, lit)
 }
 
 func (g *gen) onWrite(w *bytes.Buffer, c *rowfile.Cluster, d def) error {
