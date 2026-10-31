@@ -14,6 +14,7 @@ import (
 	fancontroldef "github.com/SukramJ/go-fabric/cluster/spec/fancontrol"
 	illuminancemeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/illuminancemeasurement"
 	levelcontroldef "github.com/SukramJ/go-fabric/cluster/spec/levelcontrol"
+	modeselectdef "github.com/SukramJ/go-fabric/cluster/spec/modeselect"
 	occupancysensingdef "github.com/SukramJ/go-fabric/cluster/spec/occupancysensing"
 	onoffdef "github.com/SukramJ/go-fabric/cluster/spec/onoff"
 	powersourcedef "github.com/SukramJ/go-fabric/cluster/spec/powersource"
@@ -64,6 +65,7 @@ var defs = func() map[string]def {
 		newDef[fancontroldef.Declare, fancontroldef.Patch, fancontroldef.State, fancontroldef.Server](fancontroldef.Name, fancontroldef.ClusterID, "fancontrol"),
 		newDef[illuminancemeasurementdef.Declare, illuminancemeasurementdef.Patch, illuminancemeasurementdef.State, illuminancemeasurementdef.Server](illuminancemeasurementdef.Name, illuminancemeasurementdef.ClusterID, "illuminancemeasurement"),
 		newDef[levelcontroldef.Declare, levelcontroldef.Patch, levelcontroldef.State, levelcontroldef.Server](levelcontroldef.Name, levelcontroldef.ClusterID, "levelcontrol"),
+		newDef[modeselectdef.Declare, modeselectdef.Patch, modeselectdef.State, modeselectdef.Server](modeselectdef.Name, modeselectdef.ClusterID, "modeselect"),
 		newDef[occupancysensingdef.Declare, occupancysensingdef.Patch, occupancysensingdef.State, occupancysensingdef.Server](occupancysensingdef.Name, occupancysensingdef.ClusterID, "occupancysensing"),
 		newDef[onoffdef.Declare, onoffdef.Patch, onoffdef.State, onoffdef.Server](onoffdef.Name, onoffdef.ClusterID, "onoff"),
 		newDef[powersourcedef.Declare, powersourcedef.Patch, powersourcedef.State, powersourcedef.Server](powersourcedef.Name, powersourcedef.ClusterID, "powersource"),

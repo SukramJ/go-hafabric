@@ -88,11 +88,30 @@ type Cluster struct {
 	// Events emit the cluster's events when a value of the entity
 	// changes.
 	Events []Event
+	// Options is a list of the entity a materializer turns into the
+	// cluster's attributes and command (options.go); nil for none.
+	Options *OptionList
 
 	declare func(b *binding, ci int) device.Declaration
 	apply   func(b *binding, ci int, st model.State) (any, error)
 	watch   func(b *binding, ci int) func()
 	fire    func(b *binding, ei int, endpoint uint16) error
+}
+
+// OptionList is a list of strings of the entity — a select's options, a
+// climate's preset modes — that a cluster-specific materializer
+// (options.go) turns into the cluster's attributes, the entry Current
+// names into its current one, and a controller's choice into a
+// model.Command of Method with the chosen string as the payload.
+type OptionList struct {
+	// List is "desc.options" (Description.Options' codes, in order) or
+	// "extra.<key>" (a list of strings in Description.Extra).
+	List string
+	// Current is the value naming the current entry: "state",
+	// "state.<key>" or "extra.<key>".
+	Current string
+	// Method is the entity's method a choice goes to.
+	Method string
 }
 
 // Event emits events of a cluster, in order, through the cluster's typed

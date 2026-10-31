@@ -108,6 +108,22 @@ type Cluster struct {
 	// Events emit the cluster's events when a value of the entity
 	// changes.
 	Events []Event `yaml:"events"`
+	// Options materialize a list of the entity into the cluster's
+	// attributes and its command (a cluster with a materializer).
+	Options *Options `yaml:"options"`
+}
+
+// Options is a list of strings of the entity, the value that names its
+// current entry and the method a controller's choice goes to.
+type Options struct {
+	// List is "desc.options" (Description.Options' codes) or
+	// "extra.<key>" (a list of strings in Description.Extra).
+	List string `yaml:"list"`
+	// Current is the value whose entry in List is the current one:
+	// "state", "state.<key>" or "extra.<key>".
+	Current string `yaml:"current"`
+	// Method is the entity's method; the payload is the chosen string.
+	Method string `yaml:"method"`
 }
 
 // Event emits events of a cluster when the value On names changes from
@@ -364,8 +380,8 @@ func (r *Row) check() error {
 		}
 		for j := range p.Clusters {
 			c := &p.Clusters[j]
-			if len(c.Attributes) > 0 || len(c.Commands) > 0 || len(c.Events) > 0 {
-				return fmt.Errorf("part %s: cluster %s: a part declares no attributes, commands or events", p.Type, c.Cluster)
+			if len(c.Attributes) > 0 || len(c.Commands) > 0 || len(c.Events) > 0 || c.Options != nil {
+				return fmt.Errorf("part %s: cluster %s: a part declares no attributes, commands, events or options", p.Type, c.Cluster)
 			}
 			for k := range c.Initial {
 				if a := &c.Initial[k]; a.From != "" {
@@ -447,6 +463,17 @@ func (c *Cluster) check() error {
 	for i := range c.Events {
 		if err := c.Events[i].check(); err != nil {
 			return fmt.Errorf("event %d: %w", i, err)
+		}
+	}
+	if o := c.Options; o != nil {
+		if k, ok := strings.CutPrefix(o.List, "extra."); o.List != "desc.options" && (!ok || !valueFrom(o.List) || k == "") {
+			return fmt.Errorf("options: list %q: desc.options or extra.<key>", o.List)
+		}
+		if !valueFrom(o.Current) {
+			return fmt.Errorf("options: current %q: state, state.<key> or extra.<key>", o.Current)
+		}
+		if !ident(o.Method) {
+			return fmt.Errorf("options: method %q", o.Method)
 		}
 	}
 	return nil

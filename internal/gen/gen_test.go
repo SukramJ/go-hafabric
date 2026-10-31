@@ -68,6 +68,7 @@ func TestGenerateRefuses(t *testing.T) {
 		"change attribute":  {"change: [LockState]", "change: [Nope]"},
 		"event":             {"event: DoorLockAlarm", "event: Explosion"},
 		"event field":       {"literal: {AlarmCode: AlarmCodeLockJammed}", "literal: {Nope: 1}"},
+		"no materializer":   {"        events:\n", "        options: {list: desc.options, current: state, method: m}\n        events:\n"},
 		"part type":         {"    clusters:\n      - cluster: DoorLock", "    parts: [{type: Toaster}]\n    clusters:\n      - cluster: DoorLock"},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -82,6 +83,36 @@ func TestGenerateRefuses(t *testing.T) {
 	}
 	if err := generate(t, base); err != nil {
 		t.Fatalf("the base: %v", err)
+	}
+}
+
+func TestGenerateOptions(t *testing.T) {
+	src := `platform: select
+rows:
+  - id: s
+    when: {}
+    type: ModeSelect
+    verdict: mappable
+    cites: [x]
+    clusters:
+      - cluster: ModeSelect
+        options: {list: desc.options, current: state, method: select_option}
+`
+	f, err := rowfile.Parse([]byte(src))
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err := GenerateFiles([]rowfile.File{f})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"b.optionsModeSelect(&d, ci)", "n += b.optionsModeSelectApply(&p, &st, ci)", "MethodSelectOption"} {
+		if !strings.Contains(string(out), want) {
+			t.Errorf("no %q", want)
+		}
+	}
+	if !strings.Contains(Table([]rowfile.File{f}), "[options desc.options at state to select_option]") {
+		t.Error("the table names no options")
 	}
 }
 

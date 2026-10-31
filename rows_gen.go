@@ -17,6 +17,7 @@ import (
 	fancontroldef "github.com/SukramJ/go-fabric/cluster/spec/fancontrol"
 	illuminancemeasurementdef "github.com/SukramJ/go-fabric/cluster/spec/illuminancemeasurement"
 	levelcontroldef "github.com/SukramJ/go-fabric/cluster/spec/levelcontrol"
+	modeselectdef "github.com/SukramJ/go-fabric/cluster/spec/modeselect"
 	occupancysensingdef "github.com/SukramJ/go-fabric/cluster/spec/occupancysensing"
 	onoffdef "github.com/SukramJ/go-fabric/cluster/spec/onoff"
 	powersourcedef "github.com/SukramJ/go-fabric/cluster/spec/powersource"
@@ -41,6 +42,7 @@ const (
 	MethodOscillation     = "oscillation"
 	MethodPercentage      = "percentage"
 	MethodPresetMode      = "preset_mode"
+	MethodSelectOption    = "select_option"
 	MethodSetPosition     = "set_position"
 	MethodTemperature     = "temperature"
 	MethodTemperatureHigh = "temperature_high"
@@ -49,7 +51,7 @@ const (
 )
 
 // methods are the method constants, sorted.
-var methods = []string{MethodDirection, MethodMode, MethodOscillation, MethodPercentage, MethodPresetMode, MethodSetPosition, MethodTemperature, MethodTemperatureHigh, MethodTemperatureLow, MethodTilt}
+var methods = []string{MethodDirection, MethodMode, MethodOscillation, MethodPercentage, MethodPresetMode, MethodSelectOption, MethodSetPosition, MethodTemperature, MethodTemperatureHigh, MethodTemperatureLow, MethodTilt}
 
 // rows is the table, in the order [Map] tries it.
 var rows = []Row{
@@ -1882,10 +1884,31 @@ var rows = []Row{
 		Reason: "no generic Matter counterpart for a number entity in H1",
 	},
 	{
-		ID: "select/unmapped", Platform: "select",
-		When:   When{},
-		State:  eligibility.StateUnmappable,
-		Reason: "no generic Matter counterpart for a select entity in H1 (ModeSelect from its options is H2)",
+		ID: "select/mode_select", Platform: "select",
+		When:  When{},
+		State: eligibility.StateMappable,
+		Cites: []string{"matter.js packages/model/src/standard/elements/mode-select-device.element.ts:18 @862ad75f (ModeSelect mandatory)", "go-fabric cluster/spec/modeselect/definition_gen.go:30-40,54-58 @v0.15.4 (SupportedModes, CurrentMode, ChangeToMode; ModeOptionStruct)", "home-assistant/core homeassistant/components/select/__init__.py:108-122 @2026.10.3 (options capability; state is the current option)", "home-assistant/core homeassistant/components/select/services.py:42-46 @2026.10.3 (select_option with option)", "home-assistant-matter-hub packages/backend/src/matter/behaviors/mode-select-server.ts:10-16 @664575a (the option's 0-based index is the mode)"},
+		Type:  &device.ModeSelectType,
+		Clusters: []Cluster{
+			{
+				Name: "ModeSelect", ID: modeselectdef.ClusterID,
+				declare: func(b *binding, ci int) device.Declaration {
+					var d modeselectdef.Declare
+					b.optionsModeSelect(&d, ci)
+					return d
+				},
+				Options: &OptionList{List: "desc.options", Current: "state", Method: "select_option"},
+				apply: func(b *binding, ci int, st model.State) (any, error) {
+					var p modeselectdef.Patch
+					n := 0
+					n += b.optionsModeSelectApply(&p, &st, ci)
+					if n == 0 {
+						return nil, nil
+					}
+					return p, modeselectdef.Wrap(b.server(modeselectdef.ClusterID)).Set(p)
+				},
+			},
+		},
 	},
 	{
 		ID: "sensor/temperature", Platform: "sensor",

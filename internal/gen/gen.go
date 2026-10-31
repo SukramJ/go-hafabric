@@ -62,6 +62,9 @@ func Table(files []rowfile.File) string {
 					}
 					name += " [on " + e.On + ": " + strings.Join(es, ", ") + "]"
 				}
+				if o := c.Options; o != nil {
+					name += " [options " + o.List + " at " + o.Current + " to " + o.Method + "]"
+				}
 				cs = append(cs, name)
 			}
 			for _, p := range r.Parts {
@@ -694,7 +697,10 @@ func (g *gen) cluster(w *bytes.Buffer, c *rowfile.Cluster, d def) error {
 	if err := g.declare(w, c, d); err != nil {
 		return err
 	}
-	if len(c.Attributes) > 0 {
+	if c.Options != nil {
+		fmt.Fprintf(w, "Options: &OptionList{List: %q, Current: %q, Method: %q},\n", c.Options.List, c.Options.Current, c.Options.Method)
+	}
+	if len(c.Attributes) > 0 || c.Options != nil {
 		if err := g.apply(w, c, d); err != nil {
 			return err
 		}
@@ -999,6 +1005,13 @@ func (g *gen) declare(w *bytes.Buffer, c *rowfile.Cluster, d def) error {
 	if err := g.onWrite(&body, c, d); err != nil {
 		return err
 	}
+	if c.Options != nil {
+		m, ok := materializers[d.name]
+		if !ok {
+			return fmt.Errorf("options: %s has no materializer", d.name)
+		}
+		fmt.Fprintf(&body, "b.options%s(&d, ci)\n", m)
+	}
 	fmt.Fprintf(w, "declare: func(b *binding, ci int) device.Declaration {\nvar d %s.Declare\n%sreturn d\n},\n", alias, body.String())
 	return nil
 }
@@ -1187,6 +1200,9 @@ func (g *gen) apply(w *bytes.Buffer, c *rowfile.Cluster, d def) error {
 			return err
 		}
 	}
+	if c.Options != nil {
+		fmt.Fprintf(&body, "n += b.options%sApply(&p, &st, ci)\n", materializers[d.name])
+	}
 	fmt.Fprintf(w, "apply: func(b *binding, ci int, st model.State) (any, error) {\nvar p %s.Patch\nn := 0\n%sif n == 0 {\nreturn nil, nil\n}\nreturn p, %s.Wrap(b.server(%s.ClusterID)).Set(p)\n},\n",
 		d.alias, body.String(), d.alias, d.alias)
 	return nil
@@ -1235,6 +1251,14 @@ func (g *gen) watch(w *bytes.Buffer, c *rowfile.Cluster, d def) error {
 	fmt.Fprintf(w, "watch: func(b *binding, ci int) func() {\nreturn b.target.OnChanged(%s.ClusterID, func(c contract.Change) {\n%sf := %s\n%s})\n},\n",
 		d.alias, get, fn, body.String())
 	return nil
+}
+
+// materializers are the clusters whose options a Go materializer of the
+// root package turns into attributes and a command handler (options.go:
+// b.options<Name> fills the declaration, b.options<Name>Apply the patch
+// of a state).
+var materializers = map[string]string{
+	"ModeSelect": "ModeSelect",
 }
 
 // Commands lists the command kinds a row may use, for the docs.

@@ -11,6 +11,10 @@ All notable changes to this project are documented here. The format follows
 - The row format's `events` on a cluster: events emitted through the
   cluster's typed server (`<cluster>def.Server.Emit<Event>`) when a value
   of the entity changes; `Patch.Events` reports them.
+- The row format's `options` on a cluster: a list of the entity
+  (`desc.options` or `extra.<key>`) a materializer turns into the cluster's
+  attributes and command — ModeSelect's modes, Thermostat's presets.
+  `OptionList` is the runtime form, `Row.Clusters[].Options`.
 
 ## [0.2.1] - 2026-10-26
 

@@ -30,6 +30,7 @@ rows:
         events:
           - on: state
             emit: [{event: InitialPress, literal: {NewPosition: 1}}, {event: ShortRelease}]
+        options: {list: desc.options, current: state, method: select_option}
   - id: rest
     when: {}
     verdict: "unmappable: no"
@@ -79,6 +80,9 @@ func TestParseRefuses(t *testing.T) {
 		"event on key":         {"- on: state", "- on: \"extra.\""},
 		"event no emit":        {"emit: [{event: InitialPress, literal: {NewPosition: 1}}, {event: ShortRelease}]", "emit: []"},
 		"event name":           {"{event: ShortRelease}", "{event: \"Short Release\"}"},
+		"options list":         {"list: desc.options", "list: desc.min"},
+		"options current":      {"current: state,", "current: device_class,"},
+		"options method":       {"method: select_option", "method: \"\""},
 		"event field":          {"literal: {NewPosition: 1}", "literal: {\"New Position\": 1}"},
 	} {
 		t.Run(name, func(t *testing.T) {

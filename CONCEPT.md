@@ -83,6 +83,11 @@ validator of go-fabric judges every generated declaration.
   the typed server's `Emit<Event>` when a value of the entity changes
   (Home Assistant's event entity as a GenericSwitch press). The first
   value only sets the baseline.
+- Decided in R1–R5: a cluster may carry `options` — a list of the entity
+  (a select's options, a climate's preset modes) that a cluster-specific
+  Go materializer (`options.go`) turns into the cluster's attributes and
+  command. A materializer is code, not data, because the list's length
+  is the entity's: ModeSelect and Thermostat presets have one.
 - Open: the import boundary. H1 imports `device`, `contract`, `schema`,
   `eligibility` and the `<cluster>def` packages, not `node` (brief H1 hard
   rule 1); a daemon adds the built devices to its own node.

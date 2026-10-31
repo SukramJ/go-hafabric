@@ -210,6 +210,10 @@ func verdict(e model.Entity, row *Row) Verdict {
 		v.State, v.Reason = eligibility.StateUnmappable, missing
 		return v
 	}
+	if why := unmaterializable(e, row); why != "" {
+		v.State, v.Reason = eligibility.StateUnmappable, why
+		return v
+	}
 	v.State, v.Reason = row.State, reason
 	var caveats []string
 	if reason != "" {

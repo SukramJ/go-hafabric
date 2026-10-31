@@ -13,7 +13,7 @@ import (
 )
 
 // TestEveryRowMethodHasAConstant: the method constants are exactly the
-// methods the rows' commands deliver.
+// methods the rows' commands and options deliver.
 func TestEveryRowMethodHasAConstant(t *testing.T) {
 	var want []string
 	for _, r := range Rows() {
@@ -26,6 +26,9 @@ func TestEveryRowMethodHasAConstant(t *testing.T) {
 				if cmd.Method != "" && !slices.Contains(want, cmd.Method) {
 					want = append(want, cmd.Method)
 				}
+			}
+			if c.Options != nil && !slices.Contains(want, c.Options.Method) {
+				want = append(want, c.Options.Method)
 			}
 		}
 	}
